@@ -1013,8 +1013,14 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 				end
 			elseif node.alloc then
 				if jewel and jewel.jewelRadiusIndex then
-					-- Draw only the selected jewel radius
-					local radData = build.data.jewelRadius[jewel.jewelRadiusIndex]
+					-- Draw only the selected jewel radius (factoring in Time-Lost upgrades such as Baryanic Leylines)
+					local effectiveRadiusIndex = jewel.jewelRadiusIndex
+					if jewel.base and jewel.base.subType == "Radius"
+						and jewel.rarity ~= "UNIQUE" and jewel.rarity ~= "RELIC"
+						and build.calcsTab and build.calcsTab.mainEnv and build.calcsTab.mainEnv.modDB then
+						effectiveRadiusIndex = data.resolveTimeLostRadiusIndex(effectiveRadiusIndex, build.calcsTab.mainEnv.modDB:Sum("INC", nil, "NonUniqueTimeLostJewelRadius"))
+					end
+					local radData = build.data.jewelRadius[effectiveRadiusIndex]
 					local outerSize = radData.outer * data.gameConstants["PassiveTreeJewelDistanceMultiplier"] * scale
 					local innerSize = radData.inner * data.gameConstants["PassiveTreeJewelDistanceMultiplier"] * scale * 1.06
 					SetDrawColor(1,1,1,0.7)
@@ -1505,11 +1511,38 @@ function PassiveTreeViewClass:AddNodeTooltip(tooltip, node, build, incSmallPassi
 	-- we only want to run the timeLost function on a node that can could be in a jewel socket radius of up to Large
 	-- essentially trying to avoid calling ProcessStats for a Normal/Notable node that can't possibly be affected
 	-- loops potentially every socket (24) until itemsTab is loaded or a jewel socket is hovered, then it will only loop the allocated sockets
-	local function isNodeInARadius(node) 
+	-- Radius indexes to probe: Very Large (4) plus any Time-Lost upgrade tiers (e.g. Baryanic Leylines'
+	-- "Very Large +40%" at 16) so nodes only reachable via an increased radius still show jewel mods.
+	local radiusProbeIndexes = { 4 }
+	if data.nonUniqueTimeLostJewelRadiusUpgrades then
+		for _, map in pairs(data.nonUniqueTimeLostJewelRadiusUpgrades) do
+			for _, upgradedIndex in pairs(map) do
+				local seen = false
+				for _, existing in ipairs(radiusProbeIndexes) do
+					if existing == upgradedIndex then
+						seen = true
+						break
+					end
+				end
+				if not seen then
+					t_insert(radiusProbeIndexes, upgradedIndex)
+				end
+			end
+		end
+	end
+	local function isNodeInARadius(node)
 		local isInRadius = false
 		for id, socket in pairs(build.itemsTab.sockets) do
 			if build.itemsTab.activeSocketList and socket.inactive == false or socket.inactive == nil then
-				isInRadius = isInRadius or (build.spec.nodes[id] and build.spec.nodes[id].nodesInRadius and build.spec.nodes[id].nodesInRadius[4][node.id] ~= nil)
+				local socketNode = build.spec.nodes[id]
+				if socketNode and socketNode.nodesInRadius then
+					for _, radiusIndex in ipairs(radiusProbeIndexes) do
+						if socketNode.nodesInRadius[radiusIndex] and socketNode.nodesInRadius[radiusIndex][node.id] ~= nil then
+							isInRadius = true
+							break
+						end
+					end
+				end
 				if isInRadius then break end
 			end
 		end
