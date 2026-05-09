@@ -96,5 +96,14 @@ Chaos Damage from Hits also Contributes to Shock Chance
 Widowhail
 Crude Bow
 (150-250)% increased bonuses gained from Equipped Quiver
+]],[[
+Ironbound Warden
+Warden Bow
++(100-130) to Armour
+(5-12)% increased Attack Speed
++(8-15)% to Block chance
+5% increased Block chance per 100 total Item Armour on Equipped Armour Items
+Hits with this weapon have 1 to 4 Added Physical Damage per 1% Block Chance
+Arrows Return if they have Pierced a target which had Fully Broken Armour
 ]],
 }
