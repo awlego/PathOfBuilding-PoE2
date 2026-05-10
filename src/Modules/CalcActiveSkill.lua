@@ -695,6 +695,36 @@ function calcs.buildActiveSkillModList(env, activeSkill)
 		skillModList:NewMod("PvpDamageMultiplier", "MORE", level.PvPDamageMultiplier, activeEffect.grantedEffect.modSource)
 	end
 
+	-- Lineage support's "phys converted to types matching supported gem's tags"
+	-- mechanic (currently Hayoxi's Fulmination → Annihilation). Detect via the
+	-- display_annihilation_tag_conversion stat so this generalizes if more skills
+	-- adopt the pattern. Split 100% phys evenly across whichever element/chaos
+	-- tags the supported gem has.
+	if activeEffect.lineageSupportedGem and activeStatSet and activeStatSet.stats then
+		local hasTagConversion = false
+		for _, stat in ipairs(activeStatSet.stats) do
+			if stat == "display_annihilation_tag_conversion" then
+				hasTagConversion = true
+				break
+			end
+		end
+		if hasTagConversion then
+			local supportedTags = activeEffect.lineageSupportedGem.gemData and activeEffect.lineageSupportedGem.gemData.tags or { }
+			local elements = { }
+			if supportedTags.fire then t_insert(elements, "Fire") end
+			if supportedTags.cold then t_insert(elements, "Cold") end
+			if supportedTags.lightning then t_insert(elements, "Lightning") end
+			if supportedTags.chaos then t_insert(elements, "Chaos") end
+			if #elements > 0 then
+				local pct = 100 / #elements
+				local source = "Skill:"..activeGrantedEffect.id
+				for _, elem in ipairs(elements) do
+					skillModList:NewMod("PhysicalDamageConvertTo"..elem, "BASE", pct, source)
+				end
+			end
+		end
+	end
+
 	-- Add extra modifiers from other sources
 	activeSkill.extraSkillModList = { }
 	for _, value in ipairs(skillModList:List(activeSkill.skillCfg, "ExtraSkillMod")) do

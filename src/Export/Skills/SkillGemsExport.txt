@@ -5356,7 +5356,7 @@
 
 #skill SupportTriggeredAnnihilationPlayer
 #set SupportTriggeredAnnihilationPlayer
-#flags
+#flags spell area
 #mods
 #skillEnd
 

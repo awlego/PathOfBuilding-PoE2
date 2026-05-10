@@ -4604,6 +4604,8 @@ skills["SupportTriggeredAnnihilationPlayer"] = {
 			damageIncrementalEffectiveness = 0.0096000004559755,
 			statDescriptionScope = "annihilation",
 			baseFlags = {
+				spell = true,
+				area = true,
 			},
 			constantStats = {
 				{ "triggered_by_hayhoxis_binding_%", 100 },

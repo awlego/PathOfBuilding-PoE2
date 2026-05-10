@@ -1650,12 +1650,59 @@ function calcs.initEnv(build, mode, override, specEnv)
 						for index, grantedEffect in ipairs(grantedEffectList) do
 							if not grantedEffect.support and not grantedEffect.unsupported and (not grantedEffect.hasGlobalEffect or gemInstance["enableGlobal"..index]) then
 								slotHasActiveSkill = true
+								-- Lineage-style support gems (e.g. Hayoxi's Fulmination, Impending Doom)
+								-- have naturalMaxLevel = 1, so their additional granted skills (Annihilation,
+								-- Doom Blast) get locked to level 1 of their damage table. In game these
+								-- scale with the supported active skill's level, so pull it from the group.
+								-- applyGemMods runs below against the support gem's tags, which catches
+								-- shared keywords (spell, area, etc) but misses tags only the supported
+								-- gem has (e.g. duration, intelligence) — replicate those here.
+								local effectLevel = gemInstance.level
+								local lineageSupportedGem = nil
+								if gemInstance.gemData
+								   and gemInstance.gemData.grantedEffect
+								   and gemInstance.gemData.grantedEffect.support
+								   and gemInstance.gemData.naturalMaxLevel == 1
+								   and grantedEffect ~= gemInstance.gemData.grantedEffect
+								   and grantedEffect.levels and #grantedEffect.levels > 1 then
+									for _, otherGem in ipairs(group.gemList) do
+										if otherGem ~= gemInstance
+										   and otherGem.enabled
+										   and otherGem.gemData
+										   and otherGem.gemData.grantedEffect
+										   and not otherGem.gemData.grantedEffect.support then
+											lineageSupportedGem = otherGem
+											effectLevel = otherGem.level
+											local function gemMatches(gemData, value)
+												if value.keywordList then
+													for _, keyword in ipairs(value.keywordList) do
+														if not calcLib.gemIsType(gemData, keyword, true) then
+															return false
+														end
+													end
+													return true
+												end
+												return calcLib.gemIsType(gemData, value.keyword, true)
+											end
+											for _, mod in ipairs(propertyModList) do
+												local v = mod.value
+												if v and v.key == "level"
+												   and gemMatches(otherGem.gemData, v)
+												   and not gemMatches(gemInstance.gemData, v) then
+													effectLevel = effectLevel + v.value
+												end
+											end
+											break
+										end
+									end
+								end
 								local activeEffect = {
 									grantedEffect = grantedEffect,
-									level = gemInstance.level,
+									level = effectLevel,
 									quality = gemInstance.quality,
 									srcInstance = gemInstance,
 									gemData = gemInstance.gemData,
+									lineageSupportedGem = lineageSupportedGem,
 								}
 								if env.mode == "CALCS" then
 									activeEffect.statSetCalcs = { index = gemInstance.statSetCalcs and gemInstance.statSetCalcs[grantedEffect.id] or 1}
