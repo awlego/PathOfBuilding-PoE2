@@ -3445,6 +3445,27 @@ function calcs.offence(env, actor, activeSkill)
 				if env.mode_effective and skillModList:Flag(cfg, "BifurcateCrit") then
 					output.CritChance = (1 - (1 - output.CritChance / 100) ^ 2) * 100
 				end
+				if env.mode_effective and skillModList:Flag(cfg, "ForcedOutcome") then
+					-- Lucky crits: not considered a 'reroll' for Forced Outcome penalties, just a higher crit chance
+					-- Bifurcated crits: only considered a 'reroll' if both rolls fail to crit
+					-- So we can use the crit chance as already calculated above
+					local critChance = output.CritChance / 100
+					local nonCritChance = 1 - critChance
+
+					local critBonusMultiplier =
+						1 * critChance +                                  -- 100% crit damage bonus, critChance of the time
+						0.7 * nonCritChance * critChance +                -- 70% if we roll non-crit then a crit
+						0.4 * m_pow(nonCritChance, 2) * critChance +      -- 40% if we roll two non-crits then a crit
+						0.1 * m_pow(nonCritChance, 3) * critChance        -- 10% if we roll three non-crits then a crit
+
+					-- This gets rounded when used in damage logic, so round it ahead of time for an accurate breakdown
+					local lessCritBonus = round((1 - critBonusMultiplier) * -100.0, 0)
+					skillModList:NewMod("CritMultiplier", "MORE", lessCritBonus, "Tree:55135")
+
+					-- For the sake of any logic that depends on it, every hit is considered a crit
+					output.CritChance = 100
+					skillModList:NewMod("CritChance", "OVERRIDE", 100, "Tree:55135")
+				end
 				if breakdown and output.CritChance ~= baseCrit then
 					breakdown.CritChance = { }
 					local baseCritFromMainHandStr = baseCritFromMainHand and " from main weapon" or baseCritFromParentMainHand and " from parent main weapon" or ""
@@ -3480,6 +3501,10 @@ function calcs.offence(env, actor, activeSkill)
 						t_insert(breakdown.CritChance, "Critical Strike Bifurcates:")
 						t_insert(breakdown.CritChance, s_format("1 - (1 - %.4f) x (1 - %.4f)", preBifurcateCritChance / 100, preBifurcateCritChance / 100))
 						t_insert(breakdown.CritChance, s_format("= %.2f%%", output.CritChance))
+					end
+					if env.mode_effective and skillModList:Flag(cfg, "ForcedOutcome") then
+						t_insert(breakdown.CritChance, "Inevitable Critical Hits (Forced Outcome):")
+						t_insert(breakdown.CritChance, "= 100% ^8(override)")
 					end
 				end
 			end

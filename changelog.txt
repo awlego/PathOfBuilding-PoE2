@@ -11,6 +11,7 @@ VERSION[0.15.0][2026/01/14]
 * Add support for count of minions in your Presence (Dimencia)
 * Add Default Item Quality Value option into options (mateokladaric)
 * Add support for Bulwark and Primal Hunger Keystones (MrHB212)
+* Add support for Oracle's Forced Outcome (Inevitable Critical Hits)
 
 --- Fixed Crashes ---
 * Fix crash on importing build using the rare variant of The Adorned (Wires77)
