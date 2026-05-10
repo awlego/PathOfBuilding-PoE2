@@ -1661,9 +1661,10 @@ function calcs.initEnv(build, mode, override, specEnv)
 								-- have naturalMaxLevel = 1, so their additional granted skills (Annihilation,
 								-- Doom Blast) get locked to level 1 of their damage table. In game these
 								-- scale with the supported active skill's level, so pull it from the group.
-								-- applyGemMods runs below against the support gem's tags, which catches
-								-- shared keywords (spell, area, etc) but misses tags only the supported
-								-- gem has (e.g. duration, intelligence) — replicate those here.
+								-- applyGemMods's gemData swap below makes "+X to <tag> Skills" mods match
+								-- the supported gem's tags rather than the support's, so e.g. +1 to all
+								-- Chaos Skills doesn't bleed into Annihilation when the supported curse
+								-- isn't tagged chaos.
 								local effectLevel = gemInstance.level
 								local lineageSupportedGem = nil
 								if gemInstance.gemData
@@ -1680,25 +1681,6 @@ function calcs.initEnv(build, mode, override, specEnv)
 										   and not otherGem.gemData.grantedEffect.support then
 											lineageSupportedGem = otherGem
 											effectLevel = otherGem.level
-											local function gemMatches(gemData, value)
-												if value.keywordList then
-													for _, keyword in ipairs(value.keywordList) do
-														if not calcLib.gemIsType(gemData, keyword, true) then
-															return false
-														end
-													end
-													return true
-												end
-												return calcLib.gemIsType(gemData, value.keyword, true)
-											end
-											for _, mod in ipairs(propertyModList) do
-												local v = mod.value
-												if v and v.key == "level"
-												   and gemMatches(otherGem.gemData, v)
-												   and not gemMatches(gemInstance.gemData, v) then
-													effectLevel = effectLevel + v.value
-												end
-											end
 											break
 										end
 									end
@@ -1719,7 +1701,16 @@ function calcs.initEnv(build, mode, override, specEnv)
 								if gemInstance.gemData then
 									local playerItems = env.player.itemList
 									local socketedIn = playerItems[groupCfg.slotName] and playerItems[groupCfg.slotName].sockets and playerItems[groupCfg.slotName].sockets[gemIndex]
+									-- For lineage supports' additional granted skills, match gem-property
+									-- mods against the supported gem's tags so +X-to-<tag> follows the
+									-- supported skill, not the lineage support's own keyword set.
+									if lineageSupportedGem then
+										activeEffect.gemData = lineageSupportedGem.gemData
+									end
 									applyGemMods(activeEffect, socketedIn and getGemModList(env, groupCfg, socketedIn.color, gemIndex) or propertyModList)
+									if lineageSupportedGem then
+										activeEffect.gemData = gemInstance.gemData
+									end
 									if not processedSockets[gemInstance] then
 										processedSockets[gemInstance] = true
 										applySocketMods(env, gemInstance.gemData, groupCfg, gemIndex, playerItems[groupCfg.slotName] and playerItems[groupCfg.slotName].name)

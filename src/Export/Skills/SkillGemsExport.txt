@@ -5357,6 +5357,20 @@
 #skill SupportTriggeredAnnihilationPlayer
 #set SupportTriggeredAnnihilationPlayer
 #flags spell area
+statMap = {
+	-- Display-only stat; conversion is applied dynamically in CalcActiveSkill.lua
+	-- based on the supported curse's tags. Empty mapping silences the "Not
+	-- supported in PoB yet" tooltip line.
+	["display_annihilation_tag_conversion"] = { },
+	-- Each Annihilation trigger deals N hits; treat as a DPS multiplier so
+	-- per-hit damage stays as listed and total DPS reflects the full burst.
+	["annihilation_hit_intervals"] = {
+		skill("dpsMultiplier", nil),
+	},
+	-- "Hits N times over X seconds" tooltip attaches to the second stat;
+	-- empty mapping silences the red "Not supported in PoB yet" line.
+	["annihilation_blast_duration_ms"] = { },
+},
 #mods
 #skillEnd
 

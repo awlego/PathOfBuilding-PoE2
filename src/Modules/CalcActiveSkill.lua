@@ -644,11 +644,41 @@ function calcs.buildActiveSkillModList(env, activeSkill)
 		end
 	end
 
+	-- Lineage support's additional granted skill (e.g. Annihilation) doesn't
+	-- include the lineage support itself in its effectList — Hayoxi excludes
+	-- triggered skills, so it can't "support" Annihilation via the normal path
+	-- even though it's the gem that grants it. Without this adjustment,
+	-- Annihilation's SupportCount is one less than the curse's, which
+	-- silently blocks threshold-gated boosts like Uhtred's Augury (only fires
+	-- when SupportCount equals 1/2/3) from applying to Annihilation while
+	-- still applying to the curse. Add the missing +1 unless the lineage
+	-- support somehow ended up in our effectList already.
+	if activeEffect.lineageSupportedGem then
+		local lineageSupportInList = false
+		local lineageSupportEffect = activeEffect.gemData and activeEffect.gemData.grantedEffect
+		if lineageSupportEffect then
+			for _, eff in ipairs(activeSkill.effectList) do
+				if eff.grantedEffect == lineageSupportEffect then
+					lineageSupportInList = true
+					break
+				end
+			end
+		end
+		if not lineageSupportInList then
+			skillModList:NewMod("Multiplier:SupportCount", "BASE", 1, "Lineage Support")
+		end
+	end
+
 	-- Apply gem/quality modifiers from support gems
 	skillModList:NewMod("GemLevel", "BASE", activeSkill.activeEffect.srcInstance and activeSkill.activeEffect.srcInstance.level or activeSkill.activeEffect.level, "Max Level")
+	-- For a lineage support's additional granted skill (e.g. Hayoxi → Annihilation),
+	-- check the supported gem's tags so SupportedGemProperty boosts (Dialla's +1,
+	-- "+X to <skill> Skills", etc.) flow through, instead of being blocked by the
+	-- support gem's own support=true tag.
+	local supportedGemPropertyGemData = (activeEffect.lineageSupportedGem and activeEffect.lineageSupportedGem.gemData) or activeSkill.activeEffect.gemData
 	for _, supportProperty in ipairs(skillModList:Tabulate("LIST", activeSkill.skillCfg, "SupportedGemProperty")) do
 		local value = supportProperty.value
-		if value.keyword == "grants_active_skill" and activeSkill.activeEffect.gemData and not activeSkill.activeEffect.gemData.tags.support  then
+		if value.keyword == "grants_active_skill" and supportedGemPropertyGemData and not supportedGemPropertyGemData.tags.support  then
 			activeEffect[value.key] = activeEffect[value.key] + value.value
 			skillModList:NewMod("GemSupport".. value.key:gsub("^%l", string.upper), "BASE", value.value, supportProperty.mod.source, #supportProperty.mod > 0 and supportProperty.mod[1] or nil)
 		end

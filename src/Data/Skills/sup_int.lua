@@ -4603,6 +4603,23 @@ skills["SupportTriggeredAnnihilationPlayer"] = {
 			incrementalEffectiveness = 0.12999999523163,
 			damageIncrementalEffectiveness = 0.0096000004559755,
 			statDescriptionScope = "annihilation",
+			statMap = {
+				-- Display-only stat; conversion is applied dynamically in
+				-- CalcActiveSkill.lua based on the supported curse's tags.
+				-- Mapping it to an empty list keeps the gem tooltip from
+				-- flagging the conversion line as "Not supported in PoB yet".
+				["display_annihilation_tag_conversion"] = { },
+				-- Each Annihilation trigger deals N hits; treat as a DPS
+				-- multiplier so per-hit damage stays as listed and total
+				-- DPS reflects the full multi-hit burst.
+				["annihilation_hit_intervals"] = {
+					skill("dpsMultiplier", nil),
+				},
+				-- Tooltip "Hits N times over X seconds" attaches to the
+				-- second stat in the description; empty mapping silences
+				-- the red "Not supported in PoB yet" line.
+				["annihilation_blast_duration_ms"] = { },
+			},
 			baseFlags = {
 				spell = true,
 				area = true,
