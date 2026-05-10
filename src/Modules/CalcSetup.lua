@@ -1658,13 +1658,13 @@ function calcs.initEnv(build, mode, override, specEnv)
 							if not grantedEffect.support and not grantedEffect.unsupported and (not grantedEffect.hasGlobalEffect or gemInstance["enableGlobal"..index]) then
 								slotHasActiveSkill = true
 								-- Lineage-style support gems (e.g. Hayoxi's Fulmination, Impending Doom)
-								-- have naturalMaxLevel = 1, so their additional granted skills (Annihilation,
-								-- Doom Blast) get locked to level 1 of their damage table. In game these
-								-- scale with the supported active skill's level, so pull it from the group.
-								-- applyGemMods's gemData swap below makes "+X to <tag> Skills" mods match
-								-- the supported gem's tags rather than the support's, so e.g. +1 to all
-								-- Chaos Skills doesn't bleed into Annihilation when the supported curse
-								-- isn't tagged chaos.
+								-- have naturalMaxLevel = 1, so their additional granted skills
+								-- (Annihilation, Doom Blast) would lock to level 1 of their damage table.
+								-- In game these track the supported active skill's effective level — so
+								-- we stash the supported gem here and a second build pass mirrors the
+								-- parent's resolved level onto the child after the parent finishes
+								-- building. The level set here is just an initial best-effort; the
+								-- mirror in the activeSkillList build loop is the source of truth.
 								local effectLevel = gemInstance.level
 								local lineageSupportedGem = nil
 								if gemInstance.gemData
@@ -1701,16 +1701,7 @@ function calcs.initEnv(build, mode, override, specEnv)
 								if gemInstance.gemData then
 									local playerItems = env.player.itemList
 									local socketedIn = playerItems[groupCfg.slotName] and playerItems[groupCfg.slotName].sockets and playerItems[groupCfg.slotName].sockets[gemIndex]
-									-- For lineage supports' additional granted skills, match gem-property
-									-- mods against the supported gem's tags so +X-to-<tag> follows the
-									-- supported skill, not the lineage support's own keyword set.
-									if lineageSupportedGem then
-										activeEffect.gemData = lineageSupportedGem.gemData
-									end
 									applyGemMods(activeEffect, socketedIn and getGemModList(env, groupCfg, socketedIn.color, gemIndex) or propertyModList)
-									if lineageSupportedGem then
-										activeEffect.gemData = gemInstance.gemData
-									end
 									if not processedSockets[gemInstance] then
 										processedSockets[gemInstance] = true
 										applySocketMods(env, gemInstance.gemData, groupCfg, gemIndex, playerItems[groupCfg.slotName] and playerItems[groupCfg.slotName].name)
@@ -1882,9 +1873,29 @@ function calcs.initEnv(build, mode, override, specEnv)
 			t_insert(env.player.activeSkillList, env.player.mainSkill)
 		end
 
-		-- Build skill modifier lists
+		-- Build skill modifier lists. Lineage children (e.g. Hayoxi's Fulmination
+		-- → Annihilation) defer to a second pass so the supported gem's level is
+		-- already finalized — incorporating Dialla's +1, Uhtred's threshold boost,
+		-- "+X to <skill> Skills", etc. — when we mirror it onto the child. This
+		-- assumes one level of indirection: nested lineage (a lineage support's
+		-- additional skill that itself references another lineage child) would
+		-- need topological ordering, but PoE2 has no such case today.
 		for _, activeSkill in pairs(env.player.activeSkillList) do
-			calcs.buildActiveSkillModList(env, activeSkill)
+			if not activeSkill.activeEffect.lineageSupportedGem then
+				calcs.buildActiveSkillModList(env, activeSkill)
+			end
+		end
+		for _, activeSkill in pairs(env.player.activeSkillList) do
+			if activeSkill.activeEffect.lineageSupportedGem then
+				local supportedGem = activeSkill.activeEffect.lineageSupportedGem
+				for _, parent in pairs(env.player.activeSkillList) do
+					if parent.activeEffect.srcInstance == supportedGem then
+						activeSkill.activeEffect.level = parent.activeEffect.level
+						break
+					end
+				end
+				calcs.buildActiveSkillModList(env, activeSkill)
+			end
 		end
 	else
 		-- Wipe skillData and readd required data the rest of the data will be added by the rest of code this stops iterative calculations on skillData not being reset
