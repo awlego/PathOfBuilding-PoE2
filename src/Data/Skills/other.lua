@@ -6468,6 +6468,11 @@ skills["WyvernRendPlayer"] = {
 			label = "Lightning-Charged",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "rend",
+			statMap = {
+				["wyvern_devour_base_all_damage_%_to_gain_as_lightning"] = {
+					mod("SkillDamageGainAsLightning", "BASE", nil),
+				},
+			},
 			baseFlags = {
 				attack = true,
 				area = true,
@@ -6478,6 +6483,7 @@ skills["WyvernRendPlayer"] = {
 				{ "melee_conditional_step_distance", 10 },
 				{ "supplementary_stat_container_attack_speed_+%_final", -20 },
 				{ "skill_specific_stat_description_mode", 1 },
+				{ "wyvern_devour_base_all_damage_%_to_gain_as_lightning", 50 },
 			},
 			stats = {
 				"is_area_damage",
