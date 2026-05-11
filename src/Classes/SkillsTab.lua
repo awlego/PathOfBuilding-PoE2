@@ -10,6 +10,8 @@ local t_remove = table.remove
 local m_min = math.min
 local m_max = math.max
 
+local supportGemSolver = LoadModule("Modules/SupportGemSolver")
+
 local groupSlotDropList = {
 	{ label = "None" },
 	{ label = "Weapon 1", slotName = "Weapon 1" },
@@ -84,6 +86,11 @@ local SkillsTabClass = newClass("SkillsTab", "UndoHandler", "ControlHost", "Cont
 	self.showSupportGemTypes = "ALL"
 	self.defaultGemLevel = "normalMaximum"
 	self.defaultGemQuality = main.defaultGemQuality
+	self.solveSupportsMetricIndex = 1
+	self.solveSupportsStatusText = nil
+	self.solveSupportsCoroutine = nil
+	self.solveSupportsGroup = nil
+	self.solveSupportsSnapshot = nil
 
 	-- Set selector
 	self.controls.setSelect = new("DropDownControl", { "TOPLEFT", self, "TOPLEFT" }, { 76, 8, 210, 20 }, nil, function(index, value)
@@ -201,6 +208,39 @@ local SkillsTabClass = newClass("SkillsTab", "UndoHandler", "ControlHost", "Cont
 	self.controls.groupCount.shown = function()
 		return self.displayGroup.source ~= nil
 	end
+
+	-- Support gem solver: pick a metric and auto-fill empty / disabled support slots
+	-- with the combination that maximises it. Only available for user-managed
+	-- socket groups (source == nil); item-granted groups have fixed gem lists.
+	self.controls.solveSupportsLabel = new("LabelControl", { "LEFT", self.controls.includeInFullDPS, "RIGHT" }, { 16, 0, 0, 16 }, "^7Solve for:")
+	self.controls.solveSupportsLabel.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsMetric = new("DropDownControl", { "LEFT", self.controls.solveSupportsLabel, "RIGHT" }, { 4, 0, 130, 20 }, supportGemSolver.metricList, function(index, value)
+		self.solveSupportsMetricIndex = index
+	end)
+	self.controls.solveSupportsMetric.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsMetric.tooltipText = "Damage metric the solver will maximise.\nThe active skill for this socket group is whatever you've picked as Main Skill in the Calcs tab."
+	self.controls.solveSupports = new("ButtonControl", { "LEFT", self.controls.solveSupportsMetric, "RIGHT" }, { 6, 0, 130, 20 }, "Solve Supports", function()
+		self:SolveSupports()
+	end)
+	self.controls.solveSupports.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupports.enabled = function()
+		return self.displayGroup and self.solveSupportsCoroutine == nil
+	end
+	self.controls.solveSupports.tooltipText = "Greedy search across all compatible support gems.\nEnabled supports already in the group are kept; empty\nand disabled support slots get filled with the picks\nthat maximise the chosen metric. Ctrl+Z to undo."
+	self.controls.solveSupportsStatus = new("LabelControl", { "LEFT", self.controls.solveSupports, "RIGHT" }, { 8, 0, 0, 16 }, "")
+	self.controls.solveSupportsStatus.shown = function()
+		return self.solveSupportsStatusText ~= nil and self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsStatus.label = function()
+		return self.solveSupportsStatusText or ""
+	end
+
 	self.controls.sourceNote = new("LabelControl", { "TOPLEFT", self.controls.groupSlotLabel, "TOPLEFT" }, { 0, 30, 0, 16 })
 	self.controls.sourceNote.shown = function()
 		return self.displayGroup.source ~= nil
@@ -556,7 +596,113 @@ function SkillsTabClass:Draw(viewPort, inputEvents)
 
 	self:UpdateGemSlots()
 
+	self:DriveSupportSolver()
+
 	self:DrawControls(viewPort)
+end
+
+-- Kick off a support gem solver run for the currently-displayed socket group.
+-- Captures the group reference at click time so a mid-run group change doesn't
+-- redirect the solver's mutations onto a different group.
+function SkillsTabClass:SolveSupports()
+	if self.solveSupportsCoroutine then
+		return
+	end
+	if not self.displayGroup or self.displayGroup.source then
+		return
+	end
+	local group = self.displayGroup
+	local metricEntry = supportGemSolver.metricList[self.solveSupportsMetricIndex or 1]
+	self.solveSupportsGroup = group
+	self.solveSupportsStatusText = "^7Starting..."
+	-- Make sure the misc calculator and displaySkillListCalcs reflect current
+	-- state. If the build is flagged dirty (or has never been built), fold the
+	-- rebuild into this click instead of waiting for the next frame — the
+	-- solver needs a resolved active skill and a callable miscCalculator on
+	-- its very first iteration. Mirrors what Build:OnFrame does at line 1144.
+	if self.build.buildFlag or not (self.build.calcsTab.miscCalculator and self.build.calcsTab.miscCalculator[1]) then
+		wipeGlobalCache()
+		self.build.buildFlag = false
+		self.build.outputRevision = (self.build.outputRevision or 0) + 1
+		self.build.calcsTab:BuildOutput()
+		self.build:RefreshStatList()
+	end
+	self.solveSupportsCoroutine = coroutine.create(function()
+		return supportGemSolver.solve(self.build, group, {
+			metric = metricEntry.key,
+			useFullDPS = metricEntry.useFullDPS,
+			treatDisabledAsEmpty = true,
+			progressFn = function(state)
+				self.solveSupportsStatusText = string.format("^7Solving... %d evaluated, best %s: %s",
+					state.evaluated, metricEntry.label, formatNumSep(string.format("%.0f", state.bestScore or 0)))
+			end,
+		})
+	end)
+end
+
+-- Drive the active solver coroutine one step per frame. Mirrors the pattern
+-- used by CalcsTab:BuildPower for the power-builder coroutine.
+function SkillsTabClass:DriveSupportSolver()
+	if not self.solveSupportsCoroutine then
+		return
+	end
+	local ok, ret = coroutine.resume(self.solveSupportsCoroutine)
+	if not ok then
+		if launch.devMode then
+			error(ret)
+		end
+		self.solveSupportsStatusText = "^1Solver error: " .. tostring(ret)
+		self.solveSupportsCoroutine = nil
+		self.solveSupportsGroup = nil
+		return
+	end
+	if coroutine.status(self.solveSupportsCoroutine) ~= "dead" then
+		return
+	end
+	local result = ret
+	local group = self.solveSupportsGroup
+	self.solveSupportsCoroutine = nil
+	self.solveSupportsGroup = nil
+	if not result or not result.ok then
+		self.solveSupportsStatusText = "^1" .. ((result and result.error) or "Solver failed.")
+		return
+	end
+	-- Count filled slots and build a short summary
+	local filled = 0
+	for _ in pairs(result.assignments) do filled = filled + 1 end
+	local delta = result.bestScore - result.baseScore
+	local pct = (result.baseScore and result.baseScore > 0) and (delta / result.baseScore) * 100 or 0
+	self.solveSupportsStatusText = string.format("^7Filled %d slot(s): %s %+s (%+.1f%%) — %d evals",
+		filled,
+		supportGemSolver.metricList[self.solveSupportsMetricIndex or 1].label,
+		formatNumSep(string.format("%.0f", delta)),
+		pct,
+		result.evaluated)
+	-- Refresh resolved gem data so the UI shows the new gems correctly, then
+	-- snapshot for undo and trigger a full recalc.
+	if group then
+		self:ProcessSocketGroup(group)
+		-- Push the new gem fields into the slot controls. ProcessSocketGroup
+		-- updates the gemInstance tables, but the EditControl / GemSelectControl
+		-- widgets cache their displayed text and only refresh on :SetText().
+		-- Mirrors what SetDisplayGroup does (SkillsTab.lua:1249) on group swap.
+		if self.displayGroup == group then
+			for index, gemInstance in ipairs(group.gemList) do
+				local slot = self.gemSlots[index]
+				if slot then
+					slot.nameSpec:SetText(gemInstance.nameSpec or "")
+					slot.level:SetText(gemInstance.level)
+					slot.quality:SetText(gemInstance.quality)
+					slot.enabled.state = gemInstance.enabled
+					slot.enableGlobal1.state = gemInstance.enableGlobal1
+					slot.enableGlobal2.state = gemInstance.enableGlobal2
+					slot.count:SetText(gemInstance.count or 1)
+				end
+			end
+		end
+	end
+	self:AddUndoState()
+	self.build.buildFlag = true
 end
 
 function SkillsTabClass:CopySocketGroup(socketGroup)
