@@ -6484,6 +6484,7 @@ skills["WyvernRendPlayer"] = {
 				{ "supplementary_stat_container_attack_speed_+%_final", -20 },
 				{ "skill_specific_stat_description_mode", 1 },
 				{ "wyvern_devour_base_all_damage_%_to_gain_as_lightning", 50 },
+				{ "active_skill_area_of_effect_+%_final", 150 },
 			},
 			stats = {
 				"is_area_damage",
