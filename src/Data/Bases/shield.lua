@@ -231,7 +231,7 @@ itemBases["Fortress Tower Shield"] = {
 	tags = { armour = true, default = true, shield = true, str_armour = true, str_shield = true, },
 	implicit = "Grants Skill: Level (1-20) Raise Shield",
 	implicitModTypes = { },
-	armour = { BlockChance = 26, Armour = 167, MovementPenalty = 0.03, },
+	armour = { BlockChance = 26, Armour = 236, MovementPenalty = 0.03, },
 	req = { level = 70, str = 99, },
 }
 itemBases["Vaal Tower Shield"] = {

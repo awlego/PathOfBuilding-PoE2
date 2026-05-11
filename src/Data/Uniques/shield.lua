@@ -56,6 +56,18 @@ Accuracy Rating is Doubled
 {variant:1}Blocking Damage Poisons the Enemy as though dealing 100 Base Chaos Damage
 {variant:2,3}Blocking Damage Poisons the Enemy as though dealing 200 Base Chaos Damage
 ]],[[
+Nightfall
+Fortress Tower Shield
+Implicits: 1
+Grants Skill: Raise Shield
+Grants Skill: Soaring Midnight
++150 Strength Requirement
+(10-25)% increased Block chance
+(250-350)% increased Armour
++(25-40)% to Cold Resistance
+(15-25)% of Fire damage taken as Cold damage
+(10-15)% of Lightning damage taken as Cold damage
+]],[[
 Redblade Banner
 Heraldric Tower Shield
 Variant: Pre 0.3.0

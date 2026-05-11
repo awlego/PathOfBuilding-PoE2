@@ -5460,6 +5460,8 @@ local specialModList = {
 	["reserves (%d+)%% of life"] = function(num) return { mod("ExtraLifeReserved", "BASE", num) } end,
 	["(%d+)%% of cold damage taken as lightning"] = function(num) return { mod("ColdDamageTakenAsLightning", "BASE", num) } end,
 	["(%d+)%% of fire damage taken as lightning"] = function(num) return { mod("FireDamageTakenAsLightning", "BASE", num) } end,
+	["(%d+)%% of fire damage taken as cold damage"] = function(num) return { mod("FireDamageTakenAsCold", "BASE", num) } end,
+	["(%d+)%% of lightning damage taken as cold damage"] = function(num) return { mod("LightningDamageTakenAsCold", "BASE", num) } end,
 	["(%d+)%% of fire and lightning damage from hits taken as cold damage during effect"] = function(num) return { 
 		mod("FireDamageFromHitsTakenAsCold", "BASE", num, { type = "Condition", var = "UsingFlask" }), 
 		mod("LightningDamageFromHitsTakenAsCold", "BASE", num, { type = "Condition", var = "UsingFlask" }), 
