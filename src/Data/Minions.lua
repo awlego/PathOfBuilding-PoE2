@@ -688,6 +688,48 @@ minions["RavenousSwarm"] = {
 	},
 }
 
+-- Hidden minion backing Spiraling Conspiracy. damage/damageSpread/attackTime are
+-- placeholder values; in-game flock hits every 0.12s but the per-hit damage is unknown.
+-- SkillPhysicalDamageConvertToChaos = 70 on modList so the 70% phys->chaos conversion
+-- happens minion-side and respects minion damage scaling.
+minions["ConspiracyRavenFlock"] = {
+	name = "Conspiracy Raven Flock",
+	monsterTags = { "bird", "fast_movement", "is_unarmed", "physical_affinity", "Unarmed_onhit_audio", },
+	life = 1,
+	baseDamageIgnoresAttackSpeed = true,
+	fireResist = 0,
+	coldResist = 0,
+	lightningResist = 0,
+	chaosResist = 0,
+	damage = 0.6,
+	damageSpread = 0.2,
+	attackTime = 1,
+	attackRange = 24,
+	accuracy = 1,
+	baseMovementSpeed = 24,
+	spectreReservation = 60,
+	companionReservation = 30,
+	monsterCategory = "Beast",
+	spawnLocation = {
+	},
+	skillList = {
+		"ConspiracyFlockAura",
+	},
+	modList = {
+		mod("SkillPhysicalDamageConvertToChaos", "BASE", 70, 0, 0),
+		mod("CurseImmune", "FLAG", 1, 0, 0),
+		mod("FrenzyChargesMax", "OVERRIDE", 0, 0, 0),
+		mod("EnduranceChargesMax", "OVERRIDE", 0, 0, 0),
+		mod("PowerChargesMax", "OVERRIDE", 0, 0, 0),
+		mod("HiddenMonster", "FLAG", 1, 0, 0),
+		mod("Condition:CannotBeDamaged", "FLAG", 1, 0, 0),
+		mod("StunImmune", "FLAG", 1, 0, 0),
+		mod("KnockbackImmune", "FLAG", 1, 0, 0),
+		mod("FreezeImmune", "FLAG", 1, 0, 0),
+		mod("Life", "OVERRIDE", 1, 0, 0),
+	},
+}
+
 minions["LivingLightning"] = {
 	name = "Living Lightning",
 	monsterTags = { "construct", "extra_small_height", "ghost_armour", "is_unarmed", "melee", "physical_affinity", "very_fast_movement", },

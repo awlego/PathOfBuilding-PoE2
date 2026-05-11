@@ -78,6 +78,16 @@ Grants Skill: Level (1-20) Freezing Shards
 {variant:1}Enemies Frozen by you take 50% increased Damage
 {variant:2}Enemies Frozen by you take 100% increased Damage
 ]],[[
+The Raven's Flock
+Perching Staff
+Implicits: 1
+Grants Skill: Level 18 Spiraling Conspiracy
+(10-20)% increased Cast Speed
++(15-30) to Intelligence
+Minions deal (80-130)% increased Damage
+Minions have (8-15)% chance to inflict Gruelling Madness on Hit
+(25-40)% increased Spirit Reservation Efficiency of Skills
+]],[[
 The Whispering Ice
 Permafrost Staff
 League: Dawn of the Hunt

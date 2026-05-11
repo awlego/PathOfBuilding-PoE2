@@ -146,6 +146,15 @@ itemBases["Reflecting Staff"] = {
 	implicitModTypes = { },
 	req = { },
 }
+itemBases["Perching Staff"] = {
+	type = "Staff",
+	quality = 20,
+	socketLimit = 4,
+	tags = { default = true, staff = true, twohand = true, },
+	implicit = "Grants Skill: Level (1-20) Spiraling Conspiracy",
+	implicitModTypes = { },
+	req = { },
+}
 
 itemBases["Wrapped Quarterstaff"] = {
 	type = "Staff",
