@@ -1716,7 +1716,8 @@ function ItemsTabClass:UpdateRuneControls()
 			item.base.type == rune.slot or
 			item.base.weapon and rune.slot == "weapon" or
 			item.base.armour and rune.slot == "armour" or
-			(item.base.tags.wand or item.base.tags.staff) and rune.slot == "caster" then
+			(item.base.tags.wand or item.base.tags.staff) and rune.slot == "caster" or
+			item.base.tags.sceptre and rune.slot == "sceptre" then
 			table.insert(runes, rune)
 		end
 	end
