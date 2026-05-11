@@ -536,7 +536,7 @@ holding Shift will put it in the second.]])
 		end
 		drop.tooltipFunc = function(tooltip, mode, index, value)
 			tooltip:Clear()
-			if value.lines and value.lines[1] ~= "None" then
+			if value and value.lines and value.lines[1] ~= "None" then
 				tooltip:AddLine(14, "^7"..value.name)
 				for _, line in ipairs(value.lines) do
 					tooltip:AddLine(14, "^7"..line)
