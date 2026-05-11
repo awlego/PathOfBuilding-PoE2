@@ -415,7 +415,7 @@ return {
 		{ format = "" },
 		{ format = "{2:output:ExertedAttackMaxHitEffect}", { modName = "ExertIncrease", cfg = "skill" }, { modName = "ExertAttackIncrease", cfg = "skill" }, },
 	},
-	{ label = "Fist of War", bgCol = colorCodes.MAINHANDBG, haveOutput = "FistOfWarUptimeRatio",
+	{ label = "Ancestral Boost", bgCol = colorCodes.MAINHANDBG, haveOutput = "FistOfWarUptimeRatio",
 		{ format = "{2:output:AvgFistOfWarDamageEffect}", { breakdown = "AvgFistOfWarDamageEffect"}, },
 		{ format = "{2:output:AvgFistOfWarDamage}", { modName = "FistOfWarDamageMultiplier", cfg = "skill"}, },
 		{ format = "{0:output:FistOfWarUptimeRatio}%", { breakdown = "FistOfWarUptimeRatio" },  },

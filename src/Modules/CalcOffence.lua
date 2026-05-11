@@ -3314,34 +3314,125 @@ function calcs.offence(env, actor, activeSkill)
 			local ruthlessBlowStunEffect = (ruthlessBlowChance / 100) * ruthlessBlowStunMultiplier
 			skillModList:NewMod("EnemyHeavyStunBuildup", "MORE", ruthlessBlowStunEffect * 100, "Ruthless Blows")
 
+			-- Ancestral Boost (covers Fist of War for Slams, Ancestral Call for Strikes,
+			-- Crescendo III final strike, Ancestral Aid, "Every Second Slam/Strike" mods,
+			-- and the heavy-stun trigger config). Tree mods AncestralBoostedDamage /
+			-- AreaOfEffect / StunBuildup stack with the active source.
 			globalOutput.FistOfWarCooldown = skillModList:Sum("BASE", cfg, "FistOfWarCooldown") or 0
-			-- If Fist of War & Active Skill is a Slam Skill & NOT a Vaal Skill & NOT used by mirage or other
-			if globalOutput.FistOfWarCooldown ~= 0 and activeSkill.skillTypes[SkillType.Slam] and not activeSkill.skillTypes[SkillType.Vaal] and not activeSkill.skillTypes[SkillType.OtherThingUsesSkill] then
-				globalOutput.FistOfWarDamageMultiplier = skillModList:Sum("BASE", nil, "FistOfWarDamageMultiplier") / 100
-				globalOutput.FistOfWarUptimeRatio = m_min( (1 / globalOutput.Speed) / globalOutput.FistOfWarCooldown, 1) * 100
-				if globalBreakdown then
-					globalBreakdown.FistOfWarUptimeRatio = {
-						s_format("min( (1 / %.2f) ^8(second per attack)", globalOutput.Speed),
-						s_format("/ %.2f, 1) ^8(fist of war cooldown)", globalOutput.FistOfWarCooldown),
-						s_format("= %d%%", globalOutput.FistOfWarUptimeRatio),
-					}
+			local ancestralCallCooldown = skillModList:Sum("BASE", cfg, "AncestralCallCooldown") or 0
+			local isSlam = activeSkill.skillTypes[SkillType.Slam]
+			local isStrike = activeSkill.skillTypes[SkillType.MeleeSingleTarget]
+			local isVaalOrMirage = activeSkill.skillTypes[SkillType.Vaal] or activeSkill.skillTypes[SkillType.OtherThingUsesSkill]
+
+			local boostUptimeRatio = 0
+			local boostSourceMoreDmg = 0
+			local boostSourceMoreAoE = 0
+			local boostSourceLabel = nil
+			local boostSourceCooldown = 0
+			local function trySource(uptime, label, moreDmg, moreAoE, cd)
+				if uptime > boostUptimeRatio then
+					boostUptimeRatio = uptime
+					boostSourceLabel = label
+					boostSourceMoreDmg = moreDmg or 0
+					boostSourceMoreAoE = moreAoE or 0
+					boostSourceCooldown = cd or 0
 				end
-				globalOutput.AvgFistOfWarDamage = globalOutput.FistOfWarDamageMultiplier
-				globalOutput.AvgFistOfWarDamageEffect = 1 + globalOutput.FistOfWarDamageMultiplier * (globalOutput.FistOfWarUptimeRatio / 100)
+			end
+
+			if not isVaalOrMirage then
+				if isSlam and globalOutput.FistOfWarCooldown ~= 0 then
+					trySource(
+						m_min((1 / globalOutput.Speed) / globalOutput.FistOfWarCooldown, 1) * 100,
+						"Fist of War",
+						skillModList:Sum("BASE", nil, "FistOfWarDamageMultiplier") / 100,
+						skillModList:Sum("BASE", nil, "FistOfWarMOREAoE"),
+						globalOutput.FistOfWarCooldown
+					)
+				end
+				if isStrike and ancestralCallCooldown ~= 0 then
+					trySource(
+						m_min((1 / globalOutput.Speed) / ancestralCallCooldown, 1) * 100,
+						"Ancestral Call",
+						0, 0, ancestralCallCooldown
+					)
+				end
+				if isSlam and skillModList:Flag(nil, "Condition:EverySecondSlamAncestrallyBoosted") then
+					trySource(50, "Ancestral Empowerment", 0, 0)
+				end
+				if skillModList:Flag(nil, "Condition:Shapeshifted") then
+					if isSlam and skillModList:Flag(nil, "Condition:EverySecondSlamAncestrallyBoostedShapeshifted") then
+						trySource(50, "Every Second Slam (Shapeshifted)", 0, 0)
+					end
+					if isStrike and skillModList:Flag(nil, "Condition:EverySecondStrikeAncestrallyBoostedShapeshifted") then
+						trySource(50, "Every Second Strike (Shapeshifted)", 0, 0)
+					end
+				end
+				-- User-controlled toggles (Ancestral Aid, heavy stun trigger, Crescendo III).
+				-- These represent "the next attack is boosted" type triggers that PoB can't
+				-- accurately predict uptime for; treat as 100% when the user opts in.
+				if (isSlam or isStrike) and skillModList:Flag(nil, "Condition:AncestralBoostFromHeavyStun") and skillModList:Flag(nil, "Condition:AncestrallyBoostedFromHeavyStun") then
+					trySource(100, "Heavy Stun Trigger", 0, 0)
+				end
+				if isStrike and skillModList:Flag(nil, "Condition:AncestralAidActive") then
+					trySource(100, "Ancestral Aid", 0, 0)
+				end
+				if skillModList:Flag(nil, "Condition:CrescendoFinalStrikeBoosted") then
+					trySource(100, "Crescendo III Final Strike", 0, 0)
+				end
+			end
+
+			if boostUptimeRatio > 0 then
+				local ancestralBoostDamageInc = skillModList:Sum("INC", nil, "AncestralBoostedDamage") / 100
+				local ancestralBoostAoEInc = skillModList:Sum("INC", nil, "AncestralBoostedAreaOfEffect")
+				local ancestralBoostStunInc = skillModList:Sum("INC", nil, "AncestralBoostedStunBuildup")
+
+				-- During boost: damage *= (1 + sourceMore) * (1 + treeInc).
+				-- Express as "MORE during boost" for the averaging math.
+				local boostDamageFactor = (1 + boostSourceMoreDmg) * (1 + ancestralBoostDamageInc) - 1
+				local boostAoEFactor = ((1 + boostSourceMoreAoE / 100) * (1 + ancestralBoostAoEInc / 100) - 1) * 100
+
+				globalOutput.FistOfWarUptimeRatio = boostUptimeRatio
+				globalOutput.FistOfWarDamageMultiplier = boostDamageFactor
+				globalOutput.AvgFistOfWarDamage = boostDamageFactor
+				globalOutput.AvgFistOfWarDamageEffect = 1 + boostDamageFactor * (boostUptimeRatio / 100)
+				globalOutput.MaxFistOfWarDamageEffect = 1 + boostDamageFactor
+
 				if globalBreakdown then
+					if boostSourceCooldown > 0 then
+						globalBreakdown.FistOfWarUptimeRatio = {
+							s_format("min( (1 / %.2f) ^8(second per attack)", globalOutput.Speed),
+							s_format("/ %.2f, 1) ^8(%s cooldown)", boostSourceCooldown, boostSourceLabel),
+							s_format("= %d%%", boostUptimeRatio),
+						}
+					else
+						globalBreakdown.FistOfWarUptimeRatio = {
+							s_format("^8%s uptime", boostSourceLabel),
+							s_format("= %d%%", boostUptimeRatio),
+						}
+					end
 					globalBreakdown.AvgFistOfWarDamageEffect = {
-						s_format("1 + (%.2f ^8(fist of war damage multiplier)", globalOutput.FistOfWarDamageMultiplier),
-						s_format("x %.2f) ^8(fist of war uptime ratio)", globalOutput.FistOfWarUptimeRatio / 100),
+						s_format("1 + (%.2f ^8(ancestral boost damage multiplier)", boostDamageFactor),
+						s_format("x %.2f) ^8(boost uptime ratio)", boostUptimeRatio / 100),
 						s_format("= %.2f", globalOutput.AvgFistOfWarDamageEffect),
 					}
 				end
-				globalOutput.MaxFistOfWarDamageEffect = 1 + globalOutput.FistOfWarDamageMultiplier
+
 				if activeSkill.skillModList:Flag(nil, "Condition:WarcryMaxHit") then
 					output.FistOfWarDamageEffect = globalOutput.MaxFistOfWarDamageEffect
-					skillModList:NewMod("AreaOfEffect", "MORE", skillModList:Sum("BASE", nil, "FistOfWarMOREAoE"), "Max Fist of War Boosted AoE")
+					if boostAoEFactor ~= 0 then
+						skillModList:NewMod("AreaOfEffect", "MORE", boostAoEFactor, "Max " .. boostSourceLabel .. " Boosted AoE")
+					end
+					if ancestralBoostStunInc ~= 0 then
+						skillModList:NewMod("EnemyHeavyStunBuildup", "INC", ancestralBoostStunInc, "Max Ancestrally Boosted Stun Buildup")
+					end
 				else
 					output.FistOfWarDamageEffect = globalOutput.AvgFistOfWarDamageEffect
-					skillModList:NewMod("AreaOfEffect", "MORE", m_floor(skillModList:Sum("BASE", nil, "FistOfWarMOREAoE") / 100 * globalOutput.FistOfWarUptimeRatio), "Avg Fist Of War Boosted AoE")
+					if boostAoEFactor ~= 0 then
+						skillModList:NewMod("AreaOfEffect", "MORE", m_floor(boostAoEFactor / 100 * boostUptimeRatio), "Avg " .. boostSourceLabel .. " Boosted AoE")
+					end
+					if ancestralBoostStunInc ~= 0 then
+						skillModList:NewMod("EnemyHeavyStunBuildup", "INC", m_floor(ancestralBoostStunInc * boostUptimeRatio / 100), "Avg Ancestrally Boosted Stun Buildup")
+					end
 				end
 				calcAreaOfEffect(skillModList, skillCfg, skillData, skillFlags, globalOutput, globalBreakdown)
 				globalOutput.TheoreticalOffensiveWarcryEffect = globalOutput.TheoreticalOffensiveWarcryEffect * globalOutput.AvgFistOfWarDamageEffect
@@ -3710,7 +3801,7 @@ function calcs.offence(env, actor, activeSkill)
 							t_insert(breakdown[damageType], s_format("x %.2f ^8(multiplier from %d%% chance to deal triple damage)", 1 + output.TripleDamageEffect, output.TripleDamageChance))
 						end
 						if output.FistOfWarDamageEffect ~= 1 then
-							t_insert(breakdown[damageType], s_format("x %.2f ^8(fist of war effect modifier)", output.FistOfWarDamageEffect))
+							t_insert(breakdown[damageType], s_format("x %.2f ^8(ancestral boost effect modifier)", output.FistOfWarDamageEffect))
 						end
 						if globalOutput.OffensiveWarcryEffect ~= 1  and not activeSkill.skillModList:Flag(nil, "Condition:WarcryMaxHit") then
 							t_insert(breakdown[damageType], s_format("x %.2f ^8(aggregated warcry exerted effect modifier)", globalOutput.OffensiveWarcryEffect))

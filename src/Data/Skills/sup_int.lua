@@ -2615,6 +2615,11 @@ skills["SupportCrescendoPlayerThree"] = {
 			label = "Crescendo III",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "gem_stat_descriptions",
+			statMap = {
+				["final_strike_is_ancestrally_boosted"] = {
+					flag("Condition:SupportsCrescendoAncestralBoost"),
+				},
+			},
 			baseFlags = {
 			},
 			stats = {

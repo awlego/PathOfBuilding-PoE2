@@ -2328,7 +2328,6 @@ c["30% increased Accuracy Rating against Rare or Unique Enemies"]={{[1]={[1]={ac
 c["30% increased Accuracy Rating at Close Range"]={{[1]={[1]={type="Condition",var="AtCloseRange"},flags=0,keywordFlags=0,name="AccuracyVsEnemy",type="INC",value=30}},nil}
 c["30% increased Accuracy Rating while moving"]={{[1]={[1]={type="Condition",var="Moving"},flags=0,keywordFlags=0,name="Accuracy",type="INC",value=30}},nil}
 c["30% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=30}}," Archon Buff  "}
-c["30% increased Area of Effect of Ancestrally Boosted Attacks"]={{[1]={flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=30}},"  of Ancestrally Boosted Attacks "}
 c["30% increased Armour"]={{[1]={flags=0,keywordFlags=0,name="Armour",type="INC",value=30}},nil}
 c["30% increased Armour while Bleeding"]={{[1]={[1]={type="Condition",var="Bleeding"},flags=0,keywordFlags=0,name="Armour",type="INC",value=30}},nil}
 c["30% increased Armour while Surrounded"]={{[1]={[1]={type="Condition",var="Surrounded"},flags=0,keywordFlags=0,name="Armour",type="INC",value=30}},nil}
@@ -2566,8 +2565,6 @@ c["4% chance that if you would gain Rage on Hit, you instead gain up to your max
 c["4% increased Area of Effect"]={{[1]={flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=4}},nil}
 c["4% increased Area of Effect for Attacks"]={{[1]={flags=1,keywordFlags=0,name="AreaOfEffect",type="INC",value=4}},nil}
 c["4% increased Area of Effect for Attacks per Enemy you've Ignited in the last 8 seconds, up to 40%"]={{[1]={flags=1,keywordFlags=0,name="AreaOfEffect",type="INC",value=4}},"   per Enemy you've Ignited in the last 8 seconds, up to 40% "}
-c["4% increased Area of Effect of Ancestrally Boosted Attacks"]={{[1]={flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=4}},"  of Ancestrally Boosted Attacks "}
-c["4% increased Area of Effect of Ancestrally Boosted Attacks Ancestrally Boosted Attacks deal 8% increased Damage"]={{[1]={flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=4}},"  of Ancestrally Boosted Attacks Ancestrally Boosted Attacks deal 8% increased Damage "}
 c["4% increased Attack Damage per 75 Item Armour and Evasion Rating on Equipped Shield"]={{[1]={[1]={div=75,statList={[1]="ArmourOnWeapon 2",[2]="EvasionOnWeapon 2"},type="PerStat"},[2]={type="Condition",var="UsingShield"},flags=1,keywordFlags=0,name="Damage",type="INC",value=4}},nil}
 c["4% increased Attack Speed"]={{[1]={flags=1,keywordFlags=0,name="Speed",type="INC",value=4}},nil}
 c["4% increased Attack Speed while a Rare or Unique Enemy is in your Presence"]={{[1]={[1]={actor="enemy",type="ActorCondition",varList={[1]="NearbyRareOrUniqueEnemy",[2]="RareOrUnique"}},flags=1,keywordFlags=0,name="Speed",type="INC",value=4}},nil}
@@ -4343,10 +4340,6 @@ c["Alternating every 5 seconds: Take 40% less Damage from Hits"]={nil,"Alternati
 c["Always Hits"]={{[1]={[1]={type="Condition",var="{Hand}Attack"},flags=0,keywordFlags=0,name="CannotBeEvaded",type="FLAG",value=true}},nil}
 c["Always Poison on Hit with this weapon"]={{[1]={[1]={type="Condition",var="{Hand}Attack"},[2]={neg=true,skillType=167,type="SkillType"},flags=8192,keywordFlags=0,name="PoisonChance",type="OVERRIDE",value=100}},nil}
 c["Always deals Critical Hits against Heavy Stunned Enemies"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="HeavyStunned"},[2]={type="Condition",var="{Hand}Attack"},flags=0,keywordFlags=0,name="CritChance",type="OVERRIDE",value=100}},nil}
-c["Ancestrally Boosted Attacks deal 16% increased Damage"]={nil,"Ancestrally Boosted Attacks deal 16% increased Damage "}
-c["Ancestrally Boosted Attacks deal 30% increased Damage"]={nil,"Ancestrally Boosted Attacks deal 30% increased Damage "}
-c["Ancestrally Boosted Attacks deal 30% increased Damage On Heavy Stunning a Rare or Unique Enemy, your next Attack within 4 seconds will be Ancestrally Boosted"]={nil,"Ancestrally Boosted Attacks deal 30% increased Damage On Heavy Stunning a Rare or Unique Enemy, your next Attack within 4 seconds will be Ancestrally Boosted "}
-c["Ancestrally Boosted Attacks deal 8% increased Damage"]={nil,"Ancestrally Boosted Attacks deal 8% increased Damage "}
 c["Any number of Poisons from this Weapon can affect a target at the same time"]={{[1]={flags=0,keywordFlags=0,name="PoisonCanStack",type="FLAG",value=true},[2]={[1]={type="Condition",var="{Hand}Attack"},[2]={neg=true,skillType=167,type="SkillType"},flags=0,keywordFlags=0,name="PoisonStacks",type="OVERRIDE",value=math.huge}},nil}
 c["Apply 10 Critical Weakness to Enemies when Consuming a Mark on them"]={{[1]={flags=0,keywordFlags=0,name="ApplyCriticalWeakness",type="FLAG",value=true}},nil}
 c["Apply Debilitate to Enemies 3 Metres in front of you while your Shield is raised"]={nil,"Apply Debilitate to Enemies 3 Metres in front of you while your Shield is raised "}
@@ -4881,7 +4874,6 @@ c["Every Rage also grants you 1% increased Minion Attack Speed"]={nil,"you 1% in
 c["Every Rage also grants you 1% increased Minion Attack Speed Every Rage also grants you 1% increased Minion Damage"]={nil,"you 1% increased Minion Attack Speed Every Rage also grants you 1% increased Minion Damage "}
 c["Every Rage also grants you 1% increased Minion Damage"]={nil,"you 1% increased Minion Damage "}
 c["Every Third Slam skill that doesn't create Fissures which you use yourself causes 3 additional Aftershocks ahead and to each side of the initial area"]={nil,"Every Third Slam skill that doesn't create Fissures which you use yourself causes 3 additional Aftershocks ahead and to each side of the initial area "}
-c["Every second Slam Skill you use yourself is Ancestrally Boosted"]={nil,"Every second Slam Skill you use yourself is Ancestrally Boosted "}
 c["Every second, inflicts Critical Weakness on enemies in your Presence for 1 second"]={{[1]={flags=0,keywordFlags=0,name="ApplyCriticalWeakness",type="FLAG",value=true}},nil}
 c["Every second, inflicts Critical Weakness on enemies in your Presence for 15 seconds"]={{[1]={flags=0,keywordFlags=0,name="ApplyCriticalWeakness",type="FLAG",value=true}},nil}
 c["Every second, inflicts Critical Weakness on enemies in your Presence for 18 seconds"]={{[1]={flags=0,keywordFlags=0,name="ApplyCriticalWeakness",type="FLAG",value=true}},nil}
@@ -5678,7 +5670,6 @@ c["Offerings have 30% increased Maximum Life"]={nil,"Offerings have 30% increase
 c["Offerings have 30% increased Maximum Life Recover 3% of maximum Life when you create an Offering"]={nil,"Offerings have 30% increased Maximum Life Recover 3% of maximum Life when you create an Offering "}
 c["Offerings have 30% reduced Maximum Life"]={nil,"Offerings have 30% reduced Maximum Life "}
 c["On Freezing Enemies create Chilled Ground"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="OnChilledGround"},flags=0,keywordFlags=0,name="ChillBase",type="BASE",value=30}},nil}
-c["On Heavy Stunning a Rare or Unique Enemy, your next Attack within 4 seconds will be Ancestrally Boosted"]={nil,"On Heavy Stunning a Rare or Unique Enemy, your next Attack within 4 seconds will be Ancestrally Boosted "}
 c["On Hitting an Enemy while a Life Flask is at full Charges, 40% of its Charges are consumed"]={nil,"On Hitting an Enemy while a Life Flask is at full Charges, 40% of its Charges are consumed "}
 c["On Hitting an Enemy while a Life Flask is at full Charges, 40% of its Charges are consumed Gain 1% of damage as Physical damage for 3 seconds per Charge consumed this way"]={nil,"On Hitting an Enemy while a Life Flask is at full Charges, 40% of its Charges are consumed Gain 1% of damage as Physical damage for 3 seconds per Charge consumed this way "}
 c["On Hitting an enemy, gains maximum added Lightning damage equal to"]={nil,"On Hitting an enemy, gains maximum added Lightning damage equal to "}

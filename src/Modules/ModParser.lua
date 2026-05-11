@@ -2618,6 +2618,14 @@ local specialModList = {
 	-- Exerted Attacks
 	["exerted attacks deal (%d+)%% increased damage"] = function(num) return { mod("ExertIncrease", "INC", num, nil, ModFlag.Attack, 0) } end,
 	["exerted attacks have (%d+)%% chance to deal double damage"] = function(num) return { mod("ExertDoubleDamageChance", "BASE", num, nil, ModFlag.Attack, 0) } end,
+	-- Ancestrally Boosted Attacks
+	["ancestrally boosted attacks deal (%d+)%% increased damage"] = function(num) return { mod("AncestralBoostedDamage", "INC", num) } end,
+	["(%d+)%% increased area of effect of ancestrally boosted attacks"] = function(num) return { mod("AncestralBoostedAreaOfEffect", "INC", num) } end,
+	["ancestrally boosted attacks have (%d+)%% increased stun buildup"] = function(num) return { mod("AncestralBoostedStunBuildup", "INC", num) } end,
+	["every second slam skill you use yourself is ancestrally boosted"] = { flag("Condition:EverySecondSlamAncestrallyBoosted") },
+	["every second slam skill you use while shapeshifted is ancestrally boosted"] = { flag("Condition:EverySecondSlamAncestrallyBoostedShapeshifted") },
+	["every second strike skill you use while shapeshifted is ancestrally boosted"] = { flag("Condition:EverySecondStrikeAncestrallyBoostedShapeshifted") },
+	["on heavy stunning a rare or unique enemy, your next attack within (%d+) seconds will be ancestrally boosted"] = { flag("Condition:AncestralBoostFromHeavyStun") },
 	-- Leech Related
 	["life leech is instant"] = { mod("InstantLifeLeech", "BASE", 100), },
 	["mana leech is instant"] = { mod("InstantManaLeech", "BASE", 100), },

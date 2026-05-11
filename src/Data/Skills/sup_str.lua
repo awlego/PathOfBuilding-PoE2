@@ -117,6 +117,11 @@ skills["SupportAncestralAidPlayer"] = {
 			label = "Ancestral Aid",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "gem_stat_descriptions",
+			statMap = {
+				["strikes_are_ancestrally_boosted"] = {
+					flag("Condition:SupportsAncestralAid"),
+				},
+			},
 			baseFlags = {
 			},
 			constantStats = {
@@ -149,6 +154,12 @@ skills["SupportAncestralCallPlayer"] = {
 			label = "Ancestral Call I",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "gem_stat_descriptions",
+			statMap = {
+				["ancestral_call_spirit_strike_interval_ms"] = {
+					mod("AncestralCallCooldown", "BASE", nil),
+					div = 1000,
+				},
+			},
 			baseFlags = {
 			},
 			constantStats = {
@@ -181,6 +192,12 @@ skills["SupportAncestralCallPlayerTwo"] = {
 			label = "Ancestral Call II",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "gem_stat_descriptions",
+			statMap = {
+				["ancestral_call_spirit_strike_interval_ms"] = {
+					mod("AncestralCallCooldown", "BASE", nil),
+					div = 1000,
+				},
+			},
 			baseFlags = {
 			},
 			constantStats = {
