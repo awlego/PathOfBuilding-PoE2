@@ -84,7 +84,12 @@ end
 -- unrelated (disabled supports kept as-is when not treating them as empty).
 -- Also collects the lockedFamilies set and lockedGemIds set from pinned
 -- supports so candidate enumeration can pre-filter conflicts.
-function supportGemSolver.classify(socketGroup, treatDisabledAsEmpty)
+--
+-- pinAllSupports: if true, every existing support (enabled or disabled) is
+-- pinned and contributes to lockedFamilies/lockedGemIds; nothing in the
+-- existing gemList becomes a fillSlot. Used by count-mode preview, where
+-- fillSlots come from appended scratch slots instead.
+function supportGemSolver.classify(socketGroup, treatDisabledAsEmpty, pinAllSupports)
 	local fillSlots = { }
 	local lockedFamilies = { }
 	local lockedGemIds = { }
@@ -92,9 +97,11 @@ function supportGemSolver.classify(socketGroup, treatDisabledAsEmpty)
 		local ge = gem.gemData and gem.gemData.grantedEffect
 		if not ge then
 			-- Empty slot
-			t_insert(fillSlots, i)
+			if not pinAllSupports then
+				t_insert(fillSlots, i)
+			end
 		elseif ge.support then
-			if gem.enabled then
+			if gem.enabled or pinAllSupports then
 				if gem.gemId then
 					lockedGemIds[gem.gemId] = true
 				end
@@ -180,6 +187,11 @@ end
 --   metric                  -- one of supportGemSolver.metricList[*].key
 --   useFullDPS              -- pass to calcFunc (matches the chosen metric)
 --   treatDisabledAsEmpty    -- if true, disabled supports become fill targets
+--   targetCount             -- count-mode (preview). Appends N scratch slots,
+--                              pins all existing supports, runs greedy search,
+--                              then truncates gemList back to its original
+--                              length. Returned state carries `picks` instead
+--                              of in-place mutations.
 --   beamWidth               -- 1 = pure greedy (default); >1 = beam search
 --   progressFn(state)       -- optional callback after each evaluation
 --   yieldEvery              -- yield to coroutine every N evaluations (default 5)
@@ -188,6 +200,8 @@ function supportGemSolver.solve(build, socketGroup, options)
 	local metric = options.metric or "AverageDamage"
 	local useFullDPS = options.useFullDPS == true
 	local treatDisabledAsEmpty = options.treatDisabledAsEmpty ~= false
+	local targetCount = options.targetCount
+	local previewMode = type(targetCount) == "number" and targetCount > 0
 	local beamWidth = options.beamWidth or 1
 	local yieldEvery = options.yieldEvery or 5
 	local progressFn = options.progressFn
@@ -197,18 +211,52 @@ function supportGemSolver.solve(build, socketGroup, options)
 		return { ok = false, error = "No active skill found for this socket group. Run a build calc first." }
 	end
 
-	local fillSlots, lockedFamilies, lockedGemIds = supportGemSolver.classify(socketGroup, treatDisabledAsEmpty)
+	-- Preview mode pins every existing support (enabled+disabled) so we never
+	-- propose duplicates of what's already in the group, and appends `targetCount`
+	-- scratch slots that become the fill targets. The original gemList contents
+	-- are not touched; we truncate the appended slots before returning.
+	local originalLen = #socketGroup.gemList
+	local fillSlots, lockedFamilies, lockedGemIds = supportGemSolver.classify(socketGroup, treatDisabledAsEmpty, previewMode)
+	if previewMode then
+		fillSlots = { }
+		for i = 1, targetCount do
+			local scratchIdx = originalLen + i
+			-- color must be a valid escape string: the solver yields between
+			-- iterations and the SkillsTab Draw codepath copies gemList[i].color
+			-- into a GemSelectControl's inactiveCol, which then feeds
+			-- SetDrawColor (and crashes on nil). Mirrors what ProcessSocketGroup
+			-- sets on a fresh, unresolved gemInstance.
+			socketGroup.gemList[scratchIdx] = {
+				nameSpec = "",
+				enabled = true,
+				enableGlobal1 = true,
+				enableGlobal2 = false,
+				count = 1,
+				color = "^8",
+			}
+			t_insert(fillSlots, scratchIdx)
+		end
+	end
 	if #fillSlots == 0 then
 		return { ok = false, error = "No empty or disabled support slots to solve. Add slots or disable the supports you want replaced." }
 	end
 
 	local candidates = supportGemSolver.collectCandidates(build, activeSkill, lockedFamilies, lockedGemIds)
 	if #candidates == 0 then
+		-- Truncate any scratch slots we appended before returning.
+		if previewMode then
+			for i = #socketGroup.gemList, originalLen + 1, -1 do
+				socketGroup.gemList[i] = nil
+			end
+		end
 		return { ok = false, error = "No compatible support gems available for this active skill." }
 	end
 
 	-- Snapshot every fill slot for restore-on-cancel. We only snapshot the
-	-- fields the solver touches (gemList itself stays the same table).
+	-- fields the solver touches (gemList itself stays the same table). In
+	-- preview mode the fillSlots are scratch entries we just appended, so the
+	-- snapshot is effectively all-nil — it's still kept for symmetry with the
+	-- in-place codepath.
 	local snapshot = { }
 	for _, idx in ipairs(fillSlots) do
 		local g = socketGroup.gemList[idx]
@@ -253,6 +301,9 @@ function supportGemSolver.solve(build, socketGroup, options)
 		totalEstimate = #fillSlots * #candidates,
 		fillSlots = fillSlots,
 		assignments = { },  -- slotIndex -> { gemId, name, score }
+		picks = previewMode and { } or nil,  -- ordered list of picks for preview mode
+		previewMode = previewMode,
+		originalLen = originalLen,
 		snapshot = snapshot,
 		cancelled = false,
 	}
@@ -321,6 +372,16 @@ function supportGemSolver.solve(build, socketGroup, options)
 				name = bestCand.gemData.name,
 				score = bestScore,
 			}
+			if state.picks then
+				t_insert(state.picks, {
+					gemId = bestCand.gemId,
+					gemData = bestCand.gemData,
+					name = bestCand.gemData.name,
+					level = slotGem.level,
+					quality = slotGem.quality,
+					score = bestScore,
+				})
+			end
 			state.bestScore = bestScore
 		else
 			clearSlot(slotGem)
@@ -328,6 +389,16 @@ function supportGemSolver.solve(build, socketGroup, options)
 
 		if progressFn then
 			progressFn(state)
+		end
+	end
+
+	-- Preview mode never permanently alters the group: drop the scratch slots
+	-- we appended so the caller's gemList shape is exactly what it was on entry.
+	-- The captured `picks` carry the gemData/level/quality the caller needs to
+	-- materialise the result later (via Apply).
+	if previewMode then
+		for i = #socketGroup.gemList, originalLen + 1, -1 do
+			socketGroup.gemList[i] = nil
 		end
 	end
 
