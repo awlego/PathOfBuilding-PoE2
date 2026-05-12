@@ -102,6 +102,17 @@ Implicits: 1
 {variant:1}+2500 to Stun Threshold
 {variant:2}Cannot be Light Stunned
 ]],[[
+Eventide Petals
+Veridical Chain
+League: Runes of Aldur
+Implicits: 1
+Grants Skill: Level 18 Midnight Zenith
+{tags:defences}+(20-40) to maximum Runic Ward
+(20-40)% increased Critical Hit Chance
+{tags:attribute}+(15-30) to Intelligence
+(30-60)% increased Light Radius
+Ice Crystals have 2% increased maximum Life per 5% Cold Resistance you have
+]],[[
 Fireflower
 Solar Amulet
 Variant: Pre 0.2.0

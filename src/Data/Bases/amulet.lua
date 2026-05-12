@@ -114,3 +114,10 @@ itemBases["Distorted Amulet"] = {
 	implicitModTypes = { {  }, {  }, },
 	req = { },
 }
+itemBases["Veridical Chain"] = {
+	type = "Amulet",
+	tags = { amulet = true, default = true, },
+	implicit = "Grants Skill: Level (1-20) Midnight Zenith",
+	implicitModTypes = { {  }, },
+	req = { },
+}
