@@ -141,6 +141,9 @@ function calcLib.buildSkillInstanceStats(skillInstance, grantedEffect, statSet)
 			stats[stat[1]] = (stats[stat[1]] or 0) + math.modf(stat[2] * skillInstance.quality)
 		end
 	end
+	if not statSet or not statSet.levels then
+		return stats
+	end
 	local grantedEffectLevel = grantedEffect.levels[skillInstance.level] or { }
 	local statSetLevel = statSet.levels[skillInstance.level] or statSet.levels[1] or { }
 	local availableEffectiveness
