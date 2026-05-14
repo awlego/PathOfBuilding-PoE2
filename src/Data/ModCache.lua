@@ -4378,8 +4378,6 @@ c["Attacks Gain 20% of Physical Damage as extra Chaos Damage"]={{[1]={flags=1,ke
 c["Attacks Gain 5% of Damage as extra Chaos Damage"]={{[1]={flags=1,keywordFlags=0,name="DamageGainAsChaos",type="BASE",value=5}},nil}
 c["Attacks Gain 8% of Damage as Extra Cold Damage"]={{[1]={flags=1,keywordFlags=0,name="DamageGainAsCold",type="BASE",value=8}},nil}
 c["Attacks Gain 8% of Damage as Extra Fire Damage"]={{[1]={flags=1,keywordFlags=0,name="DamageGainAsFire",type="BASE",value=8}},nil}
-c["Attacks consume an Endurance Charge to Critically Hit"]={nil,"Attacks consume an Endurance Charge to Critically Hit "}
-c["Attacks consume an Endurance Charge to Critically Hit Take 100 Chaos damage per second per Endurance Charge"]={nil,"Attacks consume an Endurance Charge to Critically Hit Take 100 Chaos damage per second per Endurance Charge "}
 c["Attacks cost an additional 6% of your maximum Mana"]={{[1]={[1]={floor=true,percent=6,stat="Mana",type="PercentStat"},flags=0,keywordFlags=65536,name="ManaCostBase",type="BASE",value=1}},nil}
 c["Attacks gain increased Accuracy Rating equal to their Critical Hit Chance"]={nil,"increased Accuracy Rating equal to their Critical Hit Chance "}
 c["Attacks have +1% to Critical Hit Chance"]={{[1]={flags=1,keywordFlags=0,name="CritChance",type="BASE",value=1}},nil}

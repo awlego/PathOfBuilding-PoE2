@@ -3681,6 +3681,10 @@ local specialModList = {
 	["hits against you are always critical hits"] = { mod("EnemyModifier", "LIST", { mod = flag("AlwaysCrit")  }), mod("EnemyModifier", "LIST", { mod = flag("Condition:AlwaysCrit") }) },
 	["your hits are always critical hits"] = { mod("CritChance", "OVERRIDE", 100) },
 	["always deals critical hits against heavy stunned enemies"] = { mod("CritChance", "OVERRIDE", 100, { type = "ActorCondition", actor = "enemy", var = "HeavyStunned" }, { type = "Condition", var = "{Hand}Attack" } ) },
+	["attacks consume an endurance charge to critically hit"] = {
+		flag("Condition:HaveNebulochCrit"),
+		mod("CritChance", "OVERRIDE", 1, nil, ModFlag.Hit, { type = "Multiplier", var = "NebulochCritUptime", limit = 100 }, { type = "SkillType", skillType = SkillType.Attack }),
+	},
 	["hits have (%d+)%% increased critical hit chance against you"] = function(num) return { mod("EnemyCritChance", "INC", num) } end,
 	["hits have (%d+)%% reduced critical hit chance against you"] = function(num) return { mod("EnemyCritChance", "INC", -num) } end,
 	["stuns from critical hits have (%d+)%% increased duration"] = function(num) return { mod("EnemyStunDurationOnCrit", "INC", num) } end,

@@ -766,6 +766,9 @@ Huge sets the radius to 11.
 	{ var = "overrideEnduranceCharges", type = "count", label = "# of Endurance Charges (if not maximum):", ifOption = "useEnduranceCharges", apply = function(val, modList, enemyModList)
 		modList:NewMod("EnduranceCharges", "OVERRIDE", val, "Config", { type = "Condition", var = "Combat" })
 	end },
+	{ var = "nebulochCritUptime", type = "countAllowZero", label = "Nebuloch Crit Uptime %:", ifFlag = "Condition:HaveNebulochCrit", defaultPlaceholderState = 100, tooltip = "Nebuloch's \"Attacks consume an Endurance Charge to Critically Hit\".\nPercentage of Attacks for which an Endurance Charge is available to be consumed.\nDefaults to 100% (always available); set to 0 to disable. While active, replaces normal Crit Chance with this value for Attacks made with Nebuloch.", apply = function(val, modList, enemyModList)
+		modList:NewMod("Multiplier:NebulochCritUptime", "BASE", m_max(m_min(val, 100), 0), "Config")
+	end },
 	{ var = "useSiphoningCharges", type = "check", label = "Do you use Siphoning Charges?", ifMult = "SiphoningCharge", apply = function(val, modList, enemyModList)
 		modList:NewMod("UseSiphoningCharges", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
 	end },
