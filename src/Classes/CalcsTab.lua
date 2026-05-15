@@ -6,6 +6,8 @@
 local pairs = pairs
 local ipairs = ipairs
 local t_insert = table.insert
+local t_sort = table.sort
+local t_concat = table.concat
 local m_max = math.max
 local m_floor = math.floor
 
@@ -519,10 +521,56 @@ end
 
 -- Estimate the offensive and defensive power of all unallocated nodes
 function CalcsTabClass:PowerBuilder()
-	-- local timer_start = GetTime()
+	local profile_powerStart = GetTime()
+	local profile_calcFuncTime = 0
+	local profile_counts = { addSingle = 0, addPath = 0, removeSingle = 0, removePath = 0, cluster = 0, cacheHit = 0, pathHit = 0 }
+	-- Reset the phase-level (initEnv / perform) accumulators in Calcs.lua so the
+	-- summary below reflects only this PowerBuilder run.
+	self.calcs.resetProfile()
 	local useFullDPS = self.powerStat and self.powerStat.stat == "FullDPS"
-	local calcFunc, calcBase = self:GetMiscCalculator()
+	-- For non-FullDPS sweeps (the heavy hitters: Life, EHP, Offence/Defence) use
+	-- a dedicated calculator that reuses one env across calls and skips the
+	-- item/gem-requirements/skill rebuilds that initEnv otherwise does every
+	-- call. For FullDPS we still need the regular getMiscCalculator path since
+	-- skill state participates in the sweep.
+	local calcFunc, calcBase
+	if useFullDPS then
+		calcFunc, calcBase = self:GetMiscCalculator()
+	else
+		calcFunc, calcBase = self.calcs.getNodePowerCalculator(self.build)
+	end
+	local function timedCalcFunc(override, kind)
+		local t0 = GetTime()
+		local output = calcFunc(override, useFullDPS)
+		profile_calcFuncTime = profile_calcFuncTime + (GetTime() - t0)
+		profile_counts[kind] = profile_counts[kind] + 1
+		return output
+	end
 	local cache = { }
+	-- Cache for path-power (and depends-power) calls keyed by the canonical
+	-- mod content of the node set. Different paths through interchangeable
+	-- nodes (e.g. several small +life nodes sharing one modKey) collapse to a
+	-- single calcFunc call.
+	local pathCache = { }
+	local function pathCacheKey(nodeSet, isRemove)
+		local keys = {}
+		for n in pairs(nodeSet) do
+			if n.modKey and n.modKey ~= "" then
+				-- modKey already encapsulates mod content. The other fields are
+				-- the per-node properties initEnv reads when building allocNodes
+				-- counters and the WeaponSet conditional in buildModListForNode.
+				t_insert(keys, string.format("%s\30%s\30%s\30%s\30%s",
+					n.modKey,
+					n.type or "",
+					(n.type == "Mastery") and (n.name or "") or "",
+					n.applyToArmour and "A" or "",
+					tostring(n.allocMode or 0)))
+			end
+		end
+		t_sort(keys)
+		t_insert(keys, isRemove and "\31-" or "\31+")
+		return t_concat(keys, "\29")
+	end
 	local distanceMap = { }
 	local distanceList = { }
 	local newPowerMax = {
@@ -538,7 +586,7 @@ function CalcsTabClass:PowerBuilder()
 	if coroutine.running() then
 		coroutine.yield()
 	end
-	
+
 	local start = GetTime()
 	local nodeIndex = 0
 	local total = 0
@@ -573,7 +621,9 @@ function CalcsTabClass:PowerBuilder()
 		for nodeId, node in pairs(nodes) do
 			if not node.alloc and node.modKey ~= "" and not self.mainEnv.grantedPassives[nodeId] then
 				if not cache[node.modKey] then
-					cache[node.modKey] = calcFunc({ addNodes = { [node] = true } }, useFullDPS)
+					cache[node.modKey] = timedCalcFunc({ addNodes = { [node] = true } }, "addSingle")
+				else
+					profile_counts.cacheHit = profile_counts.cacheHit + 1
 				end
 				local output = cache[node.modKey]
 				if self.powerStat and self.powerStat.stat and not self.powerStat.ignoreForNodes then
@@ -586,7 +636,15 @@ function CalcsTabClass:PowerBuilder()
 							pathNodes[node] = true
 						end
 						if node.pathDist > 1 then
-							node.power.pathPower = self:CalculatePowerStat(self.powerStat, calcFunc({ addNodes = pathNodes }, useFullDPS), calcBase)
+							local pkey = pathCacheKey(pathNodes, false)
+							local pathOutput = pathCache[pkey]
+							if not pathOutput then
+								pathOutput = timedCalcFunc({ addNodes = pathNodes }, "addPath")
+								pathCache[pkey] = pathOutput
+							else
+								profile_counts.pathHit = profile_counts.pathHit + 1
+							end
+							node.power.pathPower = self:CalculatePowerStat(self.powerStat, pathOutput, calcBase)
 						end
 					end
 				elseif not self.powerStat or not self.powerStat.ignoreForNodes then
@@ -601,7 +659,9 @@ function CalcsTabClass:PowerBuilder()
 				end
 			elseif node.alloc and node.modKey ~= "" and not self.mainEnv.grantedPassives[nodeId] then
 				if not cache[node.modKey.."_remove"] then
-					cache[node.modKey.."_remove"] = calcFunc({ removeNodes = { [node] = true } }, useFullDPS)
+					cache[node.modKey.."_remove"] = timedCalcFunc({ removeNodes = { [node] = true } }, "removeSingle")
+				else
+					profile_counts.cacheHit = profile_counts.cacheHit + 1
 				end
 				local output = cache[node.modKey.."_remove"]
 				if self.powerStat and self.powerStat.stat and not self.powerStat.ignoreForNodes then
@@ -613,7 +673,15 @@ function CalcsTabClass:PowerBuilder()
 							pathNodes[node] = true
 						end
 						if #node.depends > 1 then
-							node.power.pathPower = self:CalculatePowerStat(self.powerStat, calcFunc({ removeNodes = pathNodes }, useFullDPS), calcBase)
+							local pkey = pathCacheKey(pathNodes, true)
+							local pathOutput = pathCache[pkey]
+							if not pathOutput then
+								pathOutput = timedCalcFunc({ removeNodes = pathNodes }, "removePath")
+								pathCache[pkey] = pathOutput
+							else
+								profile_counts.pathHit = profile_counts.pathHit + 1
+							end
+							node.power.pathPower = self:CalculatePowerStat(self.powerStat, pathOutput, calcBase)
 						end
 					end
 				end
@@ -638,7 +706,9 @@ function CalcsTabClass:PowerBuilder()
 		wipeTable(node.power)
 		if not node.alloc and node.modKey ~= "" and not self.mainEnv.grantedPassives[nodeId] then
 			if not cache[node.modKey] then
-				cache[node.modKey] = calcFunc({ addNodes = { [node] = true } }, useFullDPS)
+				cache[node.modKey] = timedCalcFunc({ addNodes = { [node] = true } }, "cluster")
+			else
+				profile_counts.cacheHit = profile_counts.cacheHit + 1
 			end
 			local output = cache[node.modKey]
 			if self.powerStat and self.powerStat.stat and not self.powerStat.ignoreForNodes then
@@ -656,7 +726,29 @@ function CalcsTabClass:PowerBuilder()
 	end
 	self.powerMax = newPowerMax
 	self.powerBuilderInitialized = true
-	-- ConPrintf("Power Build time: %d ms", GetTime() - timer_start)
+
+	local profile_totalTime = GetTime() - profile_powerStart
+	local profile_uniqueModKeys = 0
+	for _ in pairs(cache) do profile_uniqueModKeys = profile_uniqueModKeys + 1 end
+	local profile_uniquePathKeys = 0
+	for _ in pairs(pathCache) do profile_uniquePathKeys = profile_uniquePathKeys + 1 end
+	local profile_calcFuncCalls = profile_counts.addSingle + profile_counts.addPath + profile_counts.removeSingle + profile_counts.removePath + profile_counts.cluster
+	local profile_pct = profile_totalTime > 0 and m_floor(profile_calcFuncTime / profile_totalTime * 100) or 0
+	local phase = self.calcs.profile
+	local phase_initPct = profile_calcFuncTime > 0 and m_floor(phase.initEnvMs / profile_calcFuncTime * 100) or 0
+	local phase_performPct = profile_calcFuncTime > 0 and m_floor(phase.performMs / profile_calcFuncTime * 100) or 0
+	local phase_otherMs = profile_calcFuncTime - phase.initEnvMs - phase.performMs
+	ConPrintf("Power Report [%s]: total %d ms | calcFunc %d ms (%d%%) over %d calls | initEnv %d ms (%d%%) | perform %d ms (%d%%) | other %d ms | unique modKeys %d | unique pathKeys %d | cache hits %d | path hits %d | add-single %d, add-path %d, rem-single %d, rem-path %d, cluster %d",
+		self.powerStat and self.powerStat.label or "n/a",
+		profile_totalTime, profile_calcFuncTime, profile_pct, profile_calcFuncCalls,
+		phase.initEnvMs, phase_initPct,
+		phase.performMs, phase_performPct,
+		phase_otherMs,
+		profile_uniqueModKeys, profile_uniquePathKeys,
+		profile_counts.cacheHit, profile_counts.pathHit,
+		profile_counts.addSingle, profile_counts.addPath,
+		profile_counts.removeSingle, profile_counts.removePath,
+		profile_counts.cluster)
 end
 
 function CalcsTabClass:CalculatePowerStat(selection, original, modified)

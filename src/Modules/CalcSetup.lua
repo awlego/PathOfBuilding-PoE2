@@ -317,20 +317,25 @@ function calcs.buildModListForNodeList(env, nodeList, finishJewels, includeKeyst
 end
 
 function wipeEnv(env, accelerate)
-	-- Always wipe the below as we will be pushing in the modifiers,
+	-- Always reset the below as we will be pushing in the modifiers,
 	-- multipliers and conditions for player and enemy DBs via `parent`
 	-- extensions of those DBs later which allow us to do a table-pointer
 	-- link and save time on having to do a copyTable() function.
-	wipeTable(env.modDB.mods)
-	wipeTable(env.modDB.conditions)
-	wipeTable(env.modDB.multipliers)
-	wipeTable(env.enemyDB.mods)
-	wipeTable(env.enemyDB.conditions)
-	wipeTable(env.enemyDB.multipliers)
+	-- Replace the tables outright (rather than `wipeTable` which retains
+	-- capacity): after many calcFunc calls the wiped hashes had grown large
+	-- but mostly-empty, which slowed downstream iteration enough to wipe out
+	-- the savings from `accelerate.*`. Letting LuaJIT allocate small fresh
+	-- tables keeps hash probing tight.
+	env.modDB.mods = { }
+	env.modDB.conditions = { }
+	env.modDB.multipliers = { }
+	env.enemyDB.mods = { }
+	env.enemyDB.conditions = { }
+	env.enemyDB.multipliers = { }
 	if env.minion then
-		wipeTable(env.minion.modDB.mods)
-		wipeTable(env.minion.modDB.conditions)
-		wipeTable(env.minion.modDB.multipliers)
+		env.minion.modDB.mods = { }
+		env.minion.modDB.conditions = { }
+		env.minion.modDB.multipliers = { }
 	end
 
 	if accelerate.everything then
