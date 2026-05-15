@@ -3608,6 +3608,9 @@ local specialModList = {
 	["gain (%d+)%% of physical damage as extra damage of a random element while you are ignited"] = function(num) return { mod("PhysicalDamageGainAsRandom", "BASE", num, { type = "Condition", var = "Ignited" }) } end,
 	["(%d+)%% of physical damage from hits with this weapon is converted to a random element"] = function(num) return { mod("PhysicalDamageConvertToRandom", "BASE", num ) } end,
 	["(%d+)%% of physical damage converted to a random element"] = function(num) return { mod("PhysicalDamageConvertToRandom", "BASE", num ) } end,
+	["convert (%d+)%% of (%a+) damage with mace skills to (%a+) damage"] = function(num, _, fromType, toType) return {
+		mod(firstToUpper(fromType) .. "DamageConvertTo" .. firstToUpper(toType), "BASE", num, nil, ModFlag.Mace),
+	} end,
 	["nearby enemies convert (%d+)%% of their (%a+) damage to (%a+)"] = function(num, _, damageFrom, damageTo) return { mod("EnemyModifier", "LIST", { mod = mod((damageFrom:gsub("^%l", string.upper)).."DamageConvertTo"..(damageTo:gsub("^%l", string.upper)), "BASE", num ) }), } end,
 	["enemies ignited by you have (%d+)%% of (%a+) damage they deal converted to (%a+)"] = function(num, _, damageFrom, damageTo) return { mod("EnemyModifier", "LIST", { mod = mod((damageFrom:gsub("^%l", string.upper)).."DamageConvertTo"..(damageTo:gsub("^%l", string.upper)), "BASE", num, { type = "Condition", var = "Ignited" }) }), } end,
 	["enemies shocked by you have (%d+)%% of (%a+) damage they deal converted to (%a+)"] = function(num, _, damageFrom, damageTo) return { mod("EnemyModifier", "LIST", { mod = mod((damageFrom:gsub("^%l", string.upper)).."DamageConvertTo"..(damageTo:gsub("^%l", string.upper)), "BASE", num, { type = "Condition", var = "Shocked" }) }), } end,
@@ -5566,6 +5569,10 @@ local specialModList = {
 	["adds (%d+)%% of your maximum mana as fire damage to attacks with this weapon"] = function(num) return {
 		mod("FireMin", "BASE", 1, { type = "PercentStat", stat = "Mana" , percent = num }, { type = "Condition", var = "{Hand}Attack" }, { type = "SkillType", skillType = SkillType.Attack }),
 		mod("FireMax", "BASE", 1, { type = "PercentStat", stat = "Mana" , percent = num }, { type = "Condition", var = "{Hand}Attack" }, { type = "SkillType", skillType = SkillType.Attack }),
+	} end,
+	["attacks with this weapon have added (%a+) damage equal to (%d+)%% to (%d+)%% of maximum mana"] = function(_, dmgType, numMin, numMax) return {
+		mod(firstToUpper(dmgType) .. "Min", "BASE", 1, { type = "PercentStat", stat = "Mana", percent = tonumber(numMin) }, { type = "Condition", var = "{Hand}Attack" }, { type = "SkillType", skillType = SkillType.Attack }),
+		mod(firstToUpper(dmgType) .. "Max", "BASE", 1, { type = "PercentStat", stat = "Mana", percent = tonumber(numMax) }, { type = "Condition", var = "{Hand}Attack" }, { type = "SkillType", skillType = SkillType.Attack }),
 	} end,
 	["gain added chaos damage equal to (%d+)%% of ward"] = function(num) return {
 		mod("ChaosMin", "BASE", 1, { type = "PercentStat", stat = "Ward", percent = num }),

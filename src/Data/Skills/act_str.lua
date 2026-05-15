@@ -20870,3 +20870,45 @@ skills["WolfPackPlayer"] = {
 		},
 	}
 }
+-- TEMP: Return of the Ancients skill, replace on next export
+skills["StarbornOnslaughtPlayer"] = {
+	name = "Starborn Onslaught",
+	baseTypeName = "Starborn Onslaught",
+	fromItem = true,
+	color = 1,
+	description = "Build up Glory by Freezing or Chilling enemies. When you have maximum Glory you may jump backwards loosing your Mace with the force of a falling comet onto your target. The impact releases Fissures and causes stars to fall in the area for a brief period.",
+	skillTypes = { [SkillType.Attack] = true, [SkillType.Area] = true, [SkillType.Melee] = true, [SkillType.Slam] = true, [SkillType.Physical] = true, [SkillType.Cold] = true, [SkillType.Duration] = true, [SkillType.CreatesFissure] = true, [SkillType.AttackInPlace] = true, [SkillType.Limit] = true, },
+	weaponTypes = {
+		["Two Hand Mace"] = true,
+	},
+	castTime = 1,
+	qualityStats = {
+	},
+	levels = {
+		[18] = { baseMultiplier = 1.55, levelRequirement = 78, cost = { Mana = 35, }, },
+	},
+	statSets = {
+		[1] = {
+			label = "Starborn Onslaught",
+			incrementalEffectiveness = 0.092720001935959,
+			statDescriptionScope = "skill_stat_descriptions",
+			baseFlags = {
+				attack = true,
+				area = true,
+				melee = true,
+				duration = true,
+			},
+			constantStats = {
+				{ "active_skill_base_physical_damage_%_to_convert_to_cold", 70 },
+				{ "base_skill_effect_duration", 8000 },
+				{ "number_of_branching_fissures", 2 },
+			},
+			stats = {
+				"is_area_damage",
+			},
+			levels = {
+				[18] = { actorLevel = 83.611999511719, },
+			},
+		},
+	}
+}

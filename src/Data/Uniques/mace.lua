@@ -240,5 +240,18 @@ League: Dawn of the Hunt
 50% increased Attack Speed
 (15-25)% increased Light Radius
 Always Hits
+]],[[
+Twisted Empyrean
+Aberrant Sledge
+League: Return of the Ancients
+Implicits: 1
+Grants Skill: Level 18 Starborn Onslaught
+94% increased Physical Damage
+Adds 166 to 372 Cold Damage
++319 to maximum Mana
++4.43% to Critical Hit Chance
+10% of Damage is taken from Mana before Life
+Attacks with this Weapon have Added Cold Damage equal to 6% to 10% of maximum Mana
+Convert 100% of Fire Damage with Mace Skills to Cold Damage
 ]],
 }

@@ -503,3 +503,13 @@ itemBases["Tawhoan Greatclub"] = {
 	weapon = { PhysicalMin = 113, PhysicalMax = 153, CritChanceBase = 5, AttackRateBase = 1.1, Range = 13, },
 	req = { level = 78, str = 163, },
 }
+-- TEMP: Return of the Ancients base, replace on next export
+itemBases["Aberrant Sledge"] = {
+	type = "Two Hand Mace",
+	quality = 20,
+	socketLimit = 4,
+	tags = { default = true, mace = true, two_hand_weapon = true, twohand = true, weapon = true, },
+	implicitModTypes = { },
+	weapon = { PhysicalMin = 74, PhysicalMax = 154, CritChanceBase = 5, AttackRateBase = 1.2, Range = 13, },
+	req = { level = 78, str = 163, },
+}
