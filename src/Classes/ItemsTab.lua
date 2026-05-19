@@ -2687,16 +2687,47 @@ function ItemsTabClass:AddCustomModifierToDisplayItem()
 					return a.essence.tierLevel > b.essence.tierLevel
 				end
 			end)
+		elseif sourceId == "DESECRATED" then
+			for modId, mod in pairs(self.build.data.itemMods.Veiled) do
+				local isUnveiled = false
+				if mod.modTags then
+					for _, tag in ipairs(mod.modTags) do
+						if tag == "unveiled_mod" then
+							isUnveiled = true
+							break
+						end
+					end
+				end
+				if isUnveiled and self.displayItem:GetModSpawnWeight(mod) > 0 then
+					local affixLabel = (mod.affix and mod.affix ~= "") and mod.affix or modId
+					t_insert(modList, {
+						label = affixLabel .. "   ^8[" .. table.concat(mod, "/") .. "]" .. " (" .. (mod.type or "") .. ")",
+						mod = mod,
+						type = "desecrated",
+					})
+				end
+			end
+			table.sort(modList, function(a, b)
+				local affixA = a.mod.affix or ""
+				local affixB = b.mod.affix or ""
+				if affixA ~= affixB then return affixA < affixB end
+				if (a.mod.type or "") ~= (b.mod.type or "") then return (a.mod.type or "") < (b.mod.type or "") end
+				return (a.mod.group or "") < (b.mod.group or "")
+			end)
 		end
 	end
 	if not self.displayItem.crafted then
 		t_insert(sourceList, { label = "Prefix", sourceId = "PREFIX" })
 		t_insert(sourceList, { label = "Suffix", sourceId = "SUFFIX" })
 	end
-	buildMods("ESSENCE") 	-- This is technically a waste if there aren't any essence mods, 
+	buildMods("ESSENCE") 	-- This is technically a waste if there aren't any essence mods,
 									-- but it makes it so we don't have to maintain a list of applicable essence-able base types
 	if #modList > 0 then
 		t_insert(sourceList, { label = "Essence", sourceId = "ESSENCE" })
+	end
+	buildMods("DESECRATED")
+	if #modList > 0 then
+		t_insert(sourceList, { label = "Desecrated", sourceId = "DESECRATED" })
 	end
 	t_insert(sourceList, { label = "Custom", sourceId = "CUSTOM" })
 	buildMods(sourceList[1].sourceId)

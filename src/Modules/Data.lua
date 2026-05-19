@@ -655,6 +655,7 @@ data.itemMods = {
 	Jewel = LoadModule("Data/ModJewel"),
 	Corruption = LoadModule("Data/ModCorrupted"),
 	Runes = LoadModule("Data/ModRunes"),
+	Veiled = LoadModule("Data/ModVeiled"),
 	Exclusive = LoadModule("Data/ModItemExclusive")
 }
 
