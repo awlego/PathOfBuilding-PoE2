@@ -19034,4 +19034,27 @@ return {
 		Tier = 7,
 		naturalMaxLevel = 20,
 	},
+	-- TEMP: Runes of Aldur gem, replace on next export
+	["Metadata/Items/Gems/SkillGemCoilingBolts"] = {
+		name = "Coiling Bolts",
+		baseTypeName = "Coiling Bolts",
+		gameId = "Metadata/Items/Gems/SkillGemCoilingBolts",
+		variantId = "CoilingBolts",
+		grantedEffectId = "WeaponGrantedCoilingBoltsPlayer",
+		tags = {
+			intelligence = true,
+			grants_active_skill = true,
+			spell = true,
+			projectile = true,
+			chaos = true,
+			physical = true,
+		},
+		gemType = "Spell",
+		tagString = "Projectile, Chaos, Physical",
+		reqStr = 0,
+		reqDex = 0,
+		reqInt = 126,
+		Tier = 0,
+		naturalMaxLevel = 20,
+	},
 }

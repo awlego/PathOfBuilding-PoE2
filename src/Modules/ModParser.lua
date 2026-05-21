@@ -5475,6 +5475,11 @@ local specialModList = {
 	-- though they will only have 20% less Curse Effect of Curses triggered with Summon Doedre’s Effigy."
 	-- Legacy versions will still show that "Hexes from Socketed Skills ignore Curse limit", but will instead have an internal limit of 5 to match the current functionality.
 	["hexes from socketed skills ignore curse limit"] = function(num) return { mod("SocketedCursesHexLimitValue", "BASE", 5), flag("SocketedCursesAdditionalLimit", { type = "SocketedIn", slotName = "{SlotName}" }) } end,
+	["magnitudes of curses you inflict are zero"] = { mod("CurseEffect", "MORE", -100) },
+	["curses you inflict ignore curse limit"] = { mod("EnemyCurseLimit", "BASE", 100) },
+	["spell hits gain (%d+)%% of damage as extra (%a+) damage per curse on target"] = function(num, _, dmgType) return {
+		mod("DamageGainAs" .. firstToUpper(dmgType), "BASE", num, nil, ModFlag.Spell, { type = "Multiplier", var = "CurseOnEnemy" }),
+	} end,
 	["reserves (%d+)%% of life"] = function(num) return { mod("ExtraLifeReserved", "BASE", num) } end,
 	["(%d+)%% of cold damage taken as lightning"] = function(num) return { mod("ColdDamageTakenAsLightning", "BASE", num) } end,
 	["(%d+)%% of fire damage taken as lightning"] = function(num) return { mod("FireDamageTakenAsLightning", "BASE", num) } end,

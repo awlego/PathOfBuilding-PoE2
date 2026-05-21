@@ -119,3 +119,13 @@ itemBases["Dueling Wand"] = {
 	implicitModTypes = { },
 	req = { },
 }
+-- TEMP: Runes of Aldur base, replace on next export
+itemBases["Twisted Wand"] = {
+	type = "Wand",
+	quality = 20,
+	socketLimit = 3,
+	tags = { default = true, onehand = true, wand = true, },
+	implicit = "Grants Skill: Level (1-20) Coiling Bolts",
+	implicitModTypes = { },
+	req = { level = 72, int = 126, },
+}

@@ -64,6 +64,18 @@ Gain (10-15) Life per enemy killed
 25% chance to inflict Bleeding on Hit
 25% of Spell Mana Cost Converted to Life Cost
 ]],[[
+Liminal Coil
+Twisted Wand
+League: Runes of Aldur
+Implicits: 1
+Grants Skill: Level 17 Coiling Bolts
+71% increased Spell Damage
+11% increased Cast Speed
+Magnitudes of Curses you inflict are zero
+Curses you inflict ignore Curse limit
+Spell Hits Gain 27% of Damage as Extra Chaos Damage per Curse on target
+Spell Hits Gain 27% of Damage as Extra Physical Damage per Curse on target
+]],[[
 The Wicked Quill
 Withered Wand
 League: Dawn of the Hunt
