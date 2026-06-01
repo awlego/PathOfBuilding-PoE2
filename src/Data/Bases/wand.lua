@@ -119,7 +119,6 @@ itemBases["Dueling Wand"] = {
 	implicitModTypes = { },
 	req = { },
 }
--- TEMP: Runes of Aldur base, replace on next export
 itemBases["Twisted Wand"] = {
 	type = "Wand",
 	quality = 20,
@@ -127,5 +126,40 @@ itemBases["Twisted Wand"] = {
 	tags = { default = true, onehand = true, wand = true, },
 	implicit = "Grants Skill: Level (1-20) Coiling Bolts",
 	implicitModTypes = { },
-	req = { level = 72, int = 126, },
+	req = { },
+}
+itemBases["Runic Fork"] = {
+	type = "Wand",
+	quality = 20,
+	socketLimit = 3,
+	tags = { default = true, onehand = true, wand = true, },
+	implicitModTypes = { },
+	req = { },
+}
+itemBases["Runemastered Runic Fork"] = {
+	type = "Wand",
+	quality = 20,
+	socketLimit = 3,
+	tags = { default = true, onehand = true, runeforged = true, wand = true, },
+	implicit = "(30-50)% chance for Spell Skills to fire 2 additional Projectiles",
+	implicitModTypes = { { "caster" }, },
+	req = { },
+}
+itemBases["Runemastered Runic Fork"] = {
+	type = "Wand",
+	quality = 20,
+	socketLimit = 3,
+	tags = { default = true, onehand = true, runeforged = true, wand = true, },
+	implicit = "(30-50)% increased Mana Regeneration Rate",
+	implicitModTypes = { { "resource", "mana" }, },
+	req = { },
+}
+itemBases["Runemastered Runic Fork"] = {
+	type = "Wand",
+	quality = 20,
+	socketLimit = 3,
+	tags = { default = true, onehand = true, runeforged = true, wand = true, },
+	implicit = "+300 to maximum Runic Ward",
+	implicitModTypes = { { "runic_ward" }, },
+	req = { },
 }

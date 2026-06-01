@@ -5,11 +5,12 @@
 --
 local ipairs = ipairs
 local t_insert = table.insert
-local t_remove = table.remove
 local b_rshift = bit.rshift
 local band = bit.band
 local m_max = math.max
 local dkjson = require "dkjson"
+
+local tradeHelpers = LoadModule("Classes/TradeHelpers")
 
 local realmList = {
 	{ label = "PoE2", id = "PoE2", realmCode = "poe2", hostName = "https://www.pathofexile.com/", profileURL = "account/view-profile/" },
@@ -20,7 +21,10 @@ local ImportTabClass = newClass("ImportTab", "ControlHost", "Control", function(
 	self.Control()
 
 	self.build = build
-	self.api = new("PoEAPI", main.lastToken, main.lastRefreshToken, main.tokenExpiry)
+	if not main.api then
+		main.api = new("PoEAPI", main.lastToken, main.lastRefreshToken, main.tokenExpiry)
+	end
+
 
 	self.charImportMode = "AUTHENTICATION"
 	self.charImportStatus = colorCodes.WARNING.."Not authenticated"
@@ -31,17 +35,17 @@ local ImportTabClass = newClass("ImportTab", "ControlHost", "Control", function(
 
 	self.controls.logoutApiButton = new("ButtonControl", {"TOPLEFT",self.controls.charImportStatusLabel,"TOPRIGHT"}, {4, 0, 180, 16}, "^7Logout from Path of Exile API", function()
 		main.lastToken = nil
-		self.api.authToken = nil
+		main.api.authToken = nil
 		main.lastRefreshToken = nil
-		self.api.refreshToken = nil
+		main.api.refreshToken = nil
 		main.tokenExpiry = nil
-		self.api.tokenExpiry = nil
+		main.api.tokenExpiry = nil
 		main:SaveSettings()
 		self.charImportMode = "AUTHENTICATION"
 		self.charImportStatus = colorCodes.WARNING.."Not authenticated"
 	end)
 	self.controls.logoutApiButton.shown = function()
-		return (self.charImportMode == "SELECTCHAR" or self.charImportMode == "GETACCOUNTNAME") and self.api.authToken ~= nil
+		return (self.charImportMode == "SELECTCHAR" or self.charImportMode == "GETACCOUNTNAME") and main.api.authToken ~= nil
 	end
 	
 	self.controls.characterImportAnchor = new("Control", {"TOPLEFT",self.controls.sectionCharImport,"TOPLEFT"}, {6, 40, 200, 16})
@@ -49,16 +53,18 @@ local ImportTabClass = newClass("ImportTab", "ControlHost", "Control", function(
 
 	-- Stage: Authenticate
 	self.controls.authenticateButton = new("ButtonControl", {"TOPLEFT",self.controls.characterImportAnchor,"TOPLEFT"}, {0, 0, 200, 16}, "^7Authorize with Path of Exile", function()
-		self.api:FetchAuthToken(function()
-			if self.api.authToken then
+		main.api:FetchAuthToken(function(_, errCode)
+			if main.api.authToken then
 				self.charImportMode = "GETACCOUNTNAME"
 				self.charImportStatus = "Authenticated"
 
-				main.lastToken = self.api.authToken
-				main.lastRefreshToken = self.api.refreshToken
-				main.tokenExpiry = self.api.tokenExpiry
+				main.lastToken = main.api.authToken
+				main.lastRefreshToken = main.api.refreshToken
+				main.tokenExpiry = main.api.tokenExpiry
 				main:SaveSettings()
 				self:DownloadCharacterList()
+			elseif errCode and errCode ~= main.api.ERROR_NO_AUTH then
+				self.charImportStatus = colorCodes.NEGATIVE .. "Authentication failed: " .. errCode
 			else
 				self.charImportStatus = colorCodes.WARNING.."Not authenticated"
 			end
@@ -127,7 +133,7 @@ local ImportTabClass = newClass("ImportTab", "ControlHost", "Control", function(
 	end)
 	self.controls.enablePartyExportBuffs = new("CheckBoxControl", {"LEFT",self.controls.generateCode,"RIGHT"}, {100, 0, 18}, "Export Support", function(state)
 		self.build.partyTab.enableExportBuffs = state
-		self.build.buildFlag = true 
+		self.build.buildFlag = true
 	end, "This is for party play, to export support character, it enables the exporting of auras, curses and modifiers to the enemy", false)
 	self.controls.generateCodeOut = new("EditControl", {"TOPLEFT",self.controls.generateCodeLabel,"BOTTOMLEFT"}, {0, 8, 250, 20}, "", "Code", "%Z")
 	self.controls.generateCodeOut.enabled = function()
@@ -273,6 +279,15 @@ local ImportTabClass = newClass("ImportTab", "ControlHost", "Control", function(
 				self.build:Init(self.build.dbFileName, self.build.buildName, self.importCodeXML, false, self.importCodeSite and self.controls.importCodeIn.buf or nil)
 				self.build.viewMode = "TREE"
 			end)
+		elseif self.controls.importCodeMode.selIndex == 3 then
+			-- Import as comparison build
+			if self.build.compareTab then
+				if self.build.compareTab:ImportBuild(self.importCodeXML, "Imported comparison") then
+					self.build.viewMode = "COMPARE"
+				else
+					main:OpenMessagePopup("Import Error", "Failed to import build for comparison.")
+				end
+			end
 		else
 			self.build:Shutdown()
 			self.build:Init(false, "Imported build", self.importCodeXML, false, self.importCodeSite and self.controls.importCodeIn.buf or nil)
@@ -290,9 +305,9 @@ local ImportTabClass = newClass("ImportTab", "ControlHost", "Control", function(
 	self.controls.importCodeState.label = function()
 		return self.importCodeDetail or ""
 	end
-	self.controls.importCodeMode = new("DropDownControl", {"TOPLEFT",self.controls.importCodeIn,"BOTTOMLEFT"}, {0, 4, 160, 20}, { "Import to this build", "Import to a new build" })
+	self.controls.importCodeMode = new("DropDownControl", {"TOPLEFT",self.controls.importCodeIn,"BOTTOMLEFT"}, {0, 4, 200, 20}, { "Import to this build", "Import to a new build", "Import as comparison" })
 	self.controls.importCodeMode.enabled = function()
-		return self.build.dbFileName and self.importCodeValid
+		return (self.build.dbFileName or self.controls.importCodeMode.selIndex == 3) and self.importCodeValid
 	end
 	self.controls.importCodeGo = new("ButtonControl", {"LEFT",self.controls.importCodeMode,"RIGHT"}, {8, 0, 160, 20}, "Import", function()
 		if self.importCodeSite and not self.importCodeXML then
@@ -332,26 +347,30 @@ local ImportTabClass = newClass("ImportTab", "ControlHost", "Control", function(
 	end
 
 	-- validate the status of the api the first time
-	self.api:ValidateAuth(function(valid, updateSettings)
-		if valid then 
-			if self.charImportMode == "AUTHENTICATION" then
-				self.charImportMode = "GETACCOUNTNAME"
-				self.charImportStatus = "Authenticated"
-			end
-			if updateSettings then
-				self:SaveApiSettings()
-			end
-		else
-			self.charImportMode = "AUTHENTICATION"
-			self.charImportStatus = colorCodes.WARNING.."Not authenticated"
-		end
-	end)
+	self:RefreshAuthStatus()
 end)
 
+function ImportTabClass:RefreshAuthStatus()
+	main.api:ValidateAuth(function(valid, updateSettings)
+			if valid then
+				if self.charImportMode == "AUTHENTICATION" then
+					self.charImportMode = "GETACCOUNTNAME"
+					self.charImportStatus = "Authenticated"
+				end
+				if updateSettings then
+					self:SaveApiSettings()
+				end
+			else
+				self.charImportMode = "AUTHENTICATION"
+				self.charImportStatus = colorCodes.WARNING.."Not authenticated"
+			end
+		end)
+end
+
 function ImportTabClass:SaveApiSettings()
-	main.lastToken = self.api.authToken
-	main.lastRefreshToken = self.api.refreshToken
-	main.tokenExpiry = self.api.tokenExpiry
+	main.lastToken = main.api.authToken
+	main.lastRefreshToken = main.api.refreshToken
+	main.tokenExpiry = main.api.tokenExpiry
 	main:SaveSettings()
 end
 
@@ -388,7 +407,7 @@ function ImportTabClass:Save(xml)
 		xml.attrib.importLink = self.build.importLink
 	end
 	-- Gets rid of erroneous, potentially infinitely nested full base64 XML stored as an import link
-	xml.attrib.importLink = (xml.attrib.importLink and xml.attrib.importLink:len() < 100) and xml.attrib.importLink or nil 
+	xml.attrib.importLink = (xml.attrib.importLink and xml.attrib.importLink:len() < 100) and xml.attrib.importLink or nil
 end
 
 function ImportTabClass:Draw(viewPort, inputEvents)
@@ -420,16 +439,16 @@ function ImportTabClass:DownloadCharacterList()
 			-- normal league and ruthless league (Sanctum, Ruthless Sanctum)
 			return "Standard"
 		end
-	end	
+	end
 	
 	self.charImportMode = "DOWNLOADCHARLIST"
 	self.charImportStatus = "Retrieving character list..."
 	local realm = realmList[self.controls.accountRealm.selIndex]
-	self.api:DownloadCharacterList(realm.realmCode, function(body, errMsg, updateSettings)
+	main.api:DownloadCharacterList(realm.realmCode, function(body, errMsg, updateSettings)
 		if updateSettings then
 			self:SaveApiSettings()
 		end
-		if errMsg == self.api.ERROR_NO_AUTH then
+		if errMsg == main.api.ERROR_NO_AUTH then
 			self.charImportMode = "AUTHENTICATION"
 			self.charImportStatus = colorCodes.WARNING.."Not authenticated"
 			return
@@ -530,8 +549,10 @@ function ImportTabClass:BuildCharacterList(league)
 
 			classColor = colorCodes.DEFAULT
 			if charClass ~= "?" then
-				local tree = main:LoadTree(latestTreeVersion .. (char.league:match("Ruthless") and "_ruthless" or ""))
-				classColor = colorCodes[charClass:upper()] or colorCodes[tree.ascendNameMap[charClass].class.name:upper()] or "^7"
+				local tree = main:LoadTree(latestTreeVersion)
+				local ascendClass = tree and tree.ascendNameMap[charClass]
+				local baseClassName = ascendClass and ascendClass.class.name
+				classColor = colorCodes[charClass:upper()] or (baseClassName and colorCodes[baseClassName:upper()]) or "^7"
 			end
 
 			local detail
@@ -568,13 +589,13 @@ function ImportTabClass:DownloadCharacter(callback)
 	local realm = realmList[self.controls.accountRealm.selIndex]
 	local charSelect = self.controls.charSelect
 	local charData = charSelect.list[charSelect.selIndex].char
-	self.api:DownloadCharacter(realm.realmCode, charData.name, function(body, errMsg, updateSettings)
+	main.api:DownloadCharacter(realm.realmCode, charData.name, function(body, errMsg, updateSettings)
 		self.charImportMode = "SELECTCHAR"
 		if updateSettings then
 			self:SaveApiSettings()
 		end
 		if errMsg then
-			if errMsg == self.api.ERROR_NO_AUTH then
+			if errMsg == main.api.ERROR_NO_AUTH then
 				self.charImportMode = "AUTHENTICATION"
 				self.charImportStatus = colorCodes.WARNING.."Not authenticated"
 				return
@@ -626,39 +647,57 @@ end
 
 function ImportTabClass:ImportQuestRewardConfig(questStats)
 	local configTab = self.build.configTab
-	local statLines = {}
+
+	-- Reduce a stat line to a numberless key + value (e.g. "+30 to [Spirit|Spirit]" -> "+# to spirit", 30)
+	local function statKey(text)
+		text = escapeGGGString(text):lower():gsub("^%s+", ""):gsub("%s+$", "")
+		return tradeHelpers.modLineTemplate(text), tradeHelpers.modLineValue(text) or 0
+	end
+
+	local statTotals = {}
 	for _, stat in ipairs(questStats) do
-		t_insert(statLines, escapeGGGString(stat):lower())
+		local key, value = statKey(stat)
+		statTotals[key] = (statTotals[key] or 0) + value
+	end
+
+	-- Stats shared by 3+ quests can't be split greedily (two +30 Spirit quests make 40/70 ambiguous),
+	-- so resolve those by exact total then zero their totals.
+	local disambiguation = {
+		["+# to spirit"] = {
+			[30] = { "King In The Mists" },
+			[40] = { "Lythara" },
+			[60] = { "King In The Mists", "Ignagduk" },
+			[70] = { "King In The Mists", "Lythara" },
+			[100] = { "King In The Mists", "Ignagduk", "Lythara" },
+		},
+	}
+	local resolved = {}
+	for stat, byTotal in pairs(disambiguation) do
+		local taken = byTotal[statTotals[stat] or 0]
+		if taken then
+			for _, info in ipairs(taken) do resolved[info] = true end
+			statTotals[stat] = 0
+		end
 	end
 
 	local function splitLine(text)
 		local out = {}
-		for line in text:gmatch("[^\r\n]+") do
-			line = line:gsub("^%s+", ""):lower()
-			t_insert(out, line)
+		for line in tostring(text):gmatch("[^\r\n]+") do
+			local key, value = statKey(line)
+			t_insert(out, { key = key, value = value })
 		end
 		return out
 	end
 
-	-- Ensure all required lines exist, then remove them so they can't match again
+	-- True if the totals still hold every line of the reward; consume them so a later quest can't reclaim it
 	local function matchQuest(requiredLines)
-		local indices = {}
-		for _, needed in ipairs(requiredLines) do
-			local found
-			for idx, line in ipairs(statLines) do
-				if line == needed then
-					found = idx
-					break
-				end
-			end
-			if not found then
+		for _, line in ipairs(requiredLines) do
+			if (statTotals[line.key] or 0) < line.value then
 				return false
 			end
-			t_insert(indices, found)
 		end
-		table.sort(indices, function(a, b) return a > b end)
-		for _, idx in ipairs(indices) do
-			t_remove(statLines, idx)
+		for _, line in ipairs(requiredLines) do
+			statTotals[line.key] = statTotals[line.key] - line.value
 		end
 		return true
 	end
@@ -668,7 +707,7 @@ function ImportTabClass:ImportQuestRewardConfig(questStats)
 		if quest.useConfig == true then
 			local var = "quest" .. quest.Description .. quest.Area .. quest.Info
 			if quest.Stat then
-				local matches = matchQuest(splitLine(quest.Stat))
+				local matches = resolved[quest.Info] or matchQuest(splitLine(quest.Stat))
 				if configTab.input[var] ~= matches then
 					configTab.input[var] = matches
 					updated = true
@@ -726,7 +765,7 @@ function ImportTabClass:ImportPassiveTreeAndJewels(charData)
 		end
 	end
 
-	self.build.spec:ImportFromNodeList(charData.class, nil, nil, charPassiveData.alternate_ascendancy or 0, hashes, weaponSets, {}, charPassiveData.mastery_effects or {}, latestTreeVersion .. (charData.league:match("Ruthless") and "_ruthless" or ""))
+	self.build.spec:ImportFromNodeList(charData.class, nil, nil, charPassiveData.alternate_ascendancy or 0, hashes, weaponSets, {}, charPassiveData.mastery_effects or {}, latestTreeVersion)
 
 	-- workaround to update the ui to last option
 	self.build.treeTab.controls.versionSelect.selIndex = #self.build.treeTab.treeVersions
@@ -755,7 +794,7 @@ function ImportTabClass:ImportPassiveTreeAndJewels(charData)
 	self.build.spec:AddUndoState()
 	self:ImportQuestRewardConfig(charPassiveData.quest_stats)
 	if not self.lastLeague then
-		self.lastLeague = charSelectLeague:GetSelValueByKey("league")
+		self.lastLeague = charSelectLeague and charSelectLeague:GetSelValueByKey("league")
 	end
 	self.build.characterLevel = charData.level
 	self.build.characterLevelAutoMode = false
@@ -765,7 +804,7 @@ function ImportTabClass:ImportPassiveTreeAndJewels(charData)
 	local resistancePenaltyIndex = 7
 	if self.build.Act then -- Estimate resistance penalty setting based on act progression estimate
 		if type(self.build.Act) == "string" and self.build.Act == "Endgame" then resistancePenaltyIndex = 7
-		elseif type(self.build.Act) == "number" then 
+		elseif type(self.build.Act) == "number" then
 			if self.build.Act > 6 then resistancePenaltyIndex = 7
 			elseif self.build.Act < 1 then resistancePenaltyIndex = 1
 			else resistancePenaltyIndex = self.build.Act end
@@ -843,6 +882,7 @@ function ImportTabClass:ImportItemsAndSkills(charData)
 		if gemId then
 			local gemInstance = { level = 20, quality = 0, enabled = true, enableGlobal1 = true, enableGlobal2 = true, count = 1,  gemId = gemId }
 			gemInstance.support = skillData.support
+			gemInstance.corrupted = skillData.corrupted
 
 			local spectreList = data.spectres
 			if typeLine:sub(1, 8) == "Spectre:" then
@@ -898,8 +938,10 @@ function ImportTabClass:ImportItemsAndSkills(charData)
 					else
 						gemInstance.level = tonumber(property.values[1][1]:match("%d+"))
 					end
-					if skillData.properties[_ + 2] and skillData.properties[_ + 2].values[1][1]:match("(%d+) Level[s]? from Corruption") then
-						gemInstance.level = gemInstance.level + tonumber(skillData.properties[_ + 2].values[1][1]:match("(%d+) Level[s]? from Corruption"))
+					if skillData.properties[_ + 2] and skillData.properties[_ + 2].values[1][1]:match("(-?%d+) Level[s]? from Corruption") then
+						gemInstance.corruptLevel = tonumber(skillData.properties[_ + 2].values[1][1]:match("(-?%d+) Level[s]? from Corruption"))
+					else
+						gemInstance.corruptLevel = 0
 					end
 				elseif escapeGGGString(property.name) == "Quality" then
 					gemInstance.quality = tonumber(property.values[1][1]:match("%d+"))
@@ -981,7 +1023,7 @@ function ImportTabClass:ImportItemsAndSkills(charData)
 	return charData -- For the wrapper
 end
 
-local rarityMap = { [0] = "NORMAL", "MAGIC", "RARE", "UNIQUE", [9] = "RELIC", [10] = "RELIC" }
+local rarityMap = { [0] = "NORMAL", "MAGIC", "RARE", "UNIQUE", [9] = "RELIC", [10] = "RELIC", [13] = "RARE" }
 local slotMap = { ["Weapon"] = "Weapon 1", ["Offhand"] = "Weapon 2", ["Weapon2"] = "Weapon 1 Swap", ["Offhand2"] = "Weapon 2 Swap", ["Helm"] = "Helmet", ["BodyArmour"] = "Body Armour", ["Gloves"] = "Gloves", ["Boots"] = "Boots", ["Amulet"] = "Amulet", ["Ring"] = "Ring 1", ["Ring2"] = "Ring 2", ["Ring3"] = "Ring 3", ["Belt"] = "Belt", ["IncursionArmLeft"] = "Arm 2", ["IncursionArmRight"] = "Arm 1", ["IncursionLegLeft"] = "Leg 2", ["IncursionLegRight"] = "Leg 1" }
 
 function ImportTabClass:ImportItem(itemData, slotName)
@@ -1109,9 +1151,14 @@ function ImportTabClass:ImportItem(itemData, slotName)
 	if itemData.sockets and itemData.sockets[1] then
 		item.sockets = { }
 		item.itemSocketCount = 0
+		item.jewelSocketCount = 0
 		for i, socket in pairs(itemData.sockets) do
-			item.sockets[i] = { }
-			item.itemSocketCount = item.itemSocketCount + 1
+			if socket.type == "jewel" then
+				item.jewelSocketCount = item.jewelSocketCount + 1
+			else
+				item.sockets[i] = { }
+				item.itemSocketCount = item.itemSocketCount + 1
+			end
 		end
 	end
 
@@ -1263,7 +1310,11 @@ end
 function ImportTabClass:ImportSocketedItems(item, socketedItems, slotName)
 	-- Build socket group list
 	for _, socketedItem in ipairs(socketedItems) do
-		t_insert(item.runes, socketedItem.baseType)
+		if isValueInTable({ "Diamond", "Emerald", "Ruby", "Sapphire" }, socketedItem.baseType) then
+			self:ImportItem(socketedItem, slotName .. " Jewel Socket "..socketedItem.socket + 1)
+		else
+			t_insert(item.runes, socketedItem.baseType)
+		end
 	end
 end
 
