@@ -60,13 +60,12 @@ Nightfall
 Fortress Tower Shield
 Implicits: 1
 Grants Skill: Raise Shield
-Grants Skill: Soaring Midnight
+Grants Skill: Level 16 Soaring Midnight
 +150 Strength Requirement
-(10-25)% increased Block chance
-(250-350)% increased Armour
-+(25-40)% to Cold Resistance
-(15-25)% of Fire damage taken as Cold damage
-(10-15)% of Lightning damage taken as Cold damage
+(10-20)% increased Block chance
+(150-200)% increased Armour
+(10-20)% of Fire damage taken as Cold damage
+(10-20)% of Lightning damage taken as Cold damage
 ]],[[
 Redblade Banner
 Heraldric Tower Shield
