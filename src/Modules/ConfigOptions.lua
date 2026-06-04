@@ -435,6 +435,13 @@ local configSettings = {
 	{ var = "hoaOverkill", type = "count", label = "Overkill damage:", tooltip = "Herald of Ash's base ^xB97123Burning ^7damage is equal to 25% of Overkill damage.", ifSkill = "Herald of Ash", apply = function(val, modList, enemyModList)
 		modList:NewMod("SkillData", "LIST", { key = "hoaOverkill", value = val }, "Config", { type = "SkillName", skillName = "Herald of Ash" })
 	end },
+	{ label = "Hollow Form:", ifSkill = "Hollow Form" },
+	{ var = "hollowFormPowerChargesConsumed", type = "count", label = "# of ^xFFFF77Power Charges^7 consumed per cast:", ifSkill = "Hollow Form", tooltip = "Each consumed ^xFFFF77Power Charge^7 creates additional Images (2 by default from Hollow Form).\nThe supported skill's damage is scaled to represent the total Images per channel:\n  total = 1 + (charges + extra) * bonus_per_charge * (1 + consumed_charge_effect%)\nAutomatically picks up:\n  - Heightened Charges (chance to double the effect of consuming a charge)\n  - Quarterstaff Skills count as consuming an additional ^xFFFF77Power Charge^7\nDoes not model the quality-based chance to skip consuming a charge.", apply = function(val, modList, enemyModList, build)
+		-- The actual QuantityMultiplier is applied in CalcPerform.applyHollowFormImages, after
+		-- all support gems are merged into the Hollow Form skill's modList. Reading
+		-- Multiplier:ConsumedPowerChargeEffect (Heightened Charges) here would use stale
+		-- activeSkillList state from the previous calc, which doesn't update on gem toggles.
+	end },
 	{ label = "Ice Nova:", ifSkill = "Ice Nova of Frostbolts" },
 	{ var = "iceNovaCastOnFrostbolt", type = "check", label = "Cast on Frostbolt?", ifSkill = "Ice Nova of Frostbolts", apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:CastOnFrostbolt", "FLAG", true, "Config", { type = "SkillName", skillName = "Ice Nova of Frostbolts" })

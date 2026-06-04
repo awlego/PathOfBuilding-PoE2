@@ -3234,6 +3234,34 @@ function calcs.perform(env, skipEHP)
 		calcs.buildDefenceEstimations(env, env.player)
 	end
 
+	-- Hollow Form: scale supported (cloned) skill DPS by total images created per channel.
+	-- Done here, after all support gems are merged into Hollow Form's skillModList, so
+	-- Heightened Charges' ConsumedPowerChargeEffect and Quarterstaff's
+	-- ExtraConsumablePowerCharges are picked up live and update on gem toggles.
+	local hollowFormCharges = env.build.configTab.input["hollowFormPowerChargesConsumed"] or 0
+	if hollowFormCharges > 0 then
+		local hollowFormSkill
+		for _, activeSkill in ipairs(env.player.activeSkillList) do
+			if activeSkill.activeEffect and activeSkill.activeEffect.grantedEffect and activeSkill.activeEffect.grantedEffect.name == "Hollow Form" then
+				hollowFormSkill = activeSkill
+				break
+			end
+		end
+		if hollowFormSkill then
+			local bonusImagesPerCharge = hollowFormSkill.skillModList:Sum("BASE", hollowFormSkill.skillCfg, "Multiplier:HollowFormBonusImagesPerCharge")
+			if bonusImagesPerCharge <= 0 then bonusImagesPerCharge = 2 end
+			local extraCharges = hollowFormSkill.skillModList:Sum("BASE", hollowFormSkill.skillCfg, "Multiplier:ExtraConsumablePowerCharges")
+			local chargeEffectScale = hollowFormSkill.skillModList:Sum("BASE", hollowFormSkill.skillCfg, "Multiplier:ConsumedPowerChargeEffect")
+			local effectiveCharges = hollowFormCharges + extraCharges
+			local totalImages = 1 + effectiveCharges * bonusImagesPerCharge * (1 + chargeEffectScale / 100)
+			for _, activeSkill in ipairs(env.player.activeSkillList) do
+				if activeSkill.skillTypes[SkillType.SupportedByHollowForm] then
+					activeSkill.skillModList:NewMod("QuantityMultiplier", "BASE", totalImages, "Hollow Form Power Charges")
+				end
+			end
+		end
+	end
+
 	-- TURNING OFF CALC TRIGGERS AND MIRAGES FOR TIME BEING
 	--calcs.triggers(env, env.player)
 	--if not calcs.mirages(env) then

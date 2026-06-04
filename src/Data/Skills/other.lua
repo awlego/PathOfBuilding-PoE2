@@ -7983,6 +7983,11 @@ skills["MetaHollowFormPlayer"] = {
 			label = "Hollow Form",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "hollow_form",
+			statMap = {
+				["mantra_of_illusions_bonus_illusions_when_consuming_power_charge"] = {
+					mod("Multiplier:HollowFormBonusImagesPerCharge", "BASE", nil),
+				},
+			},
 			baseFlags = {
 			},
 			constantStats = {
