@@ -6,6 +6,7 @@
 
 local m_min = math.min
 local m_max = math.max
+local m_floor = math.floor
 local s_format = string.format
 
 
@@ -561,6 +562,19 @@ local configSettings = {
 	{ var = "animateWeaponLingeringBlade", type = "check", label = "Are you animating Lingering Blades?", ifSkill = "Animate Weapon", tooltip = "Enables additional damage given to Lingering Blades\nThe exact weapon is unknown but should be similar to Glass Shank", apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:AnimatingLingeringBlades", "FLAG", true, "Config")
 	end },
+	{ label = "Rend:", ifSkill = "Rend" },
+	{ var = "rendLightningChargedBuffActive", type = "check", label = "Lightning-Charged Buff active?", ifSkill = "Rend", tooltip = "Active for 10 seconds after consuming a Power Charge with Rend.\nGrants 50% of Damage Gained as Lightning (+0.5% per quality).\n\nTo also see the larger area / slower attack speed of the empowered form, switch the stat set to 'Lightning-Charged' on the Calcs tab.", apply = function(val, modList, enemyModList, build)
+		local qualityBonus = 0
+		if build and build.calcsTab and build.calcsTab.mainEnv and build.calcsTab.mainEnv.player and build.calcsTab.mainEnv.player.activeSkillList then
+			for _, activeSkill in ipairs(build.calcsTab.mainEnv.player.activeSkillList) do
+				if activeSkill.activeEffect and activeSkill.activeEffect.grantedEffect and activeSkill.activeEffect.grantedEffect.name == "Rend" then
+					local quality = activeSkill.activeEffect.quality or 0
+					qualityBonus = m_max(qualityBonus, m_floor(0.5 * quality))
+				end
+			end
+		end
+		modList:NewMod("DamageGainAsLightning", "BASE", 50 + qualityBonus, "Config")
+	end },
 	{ label = "Rising Tempest:", ifSkill = "Rising Tempest" },
 	{ var = "risingTempestLightning", type = "check", label = "Lightning Skill used Recently:", ifSkill = "Rising Tempest", apply = function(val, modList, enemyModList)
 		modList:NewMod("Multiplier:DifferentElementalSkillUsedRecently", "BASE", 1, "Config")
@@ -656,6 +670,11 @@ local configSettings = {
 	{ label = "Thirst for Blood:", ifSkill = "Thirst for Blood" },
 	{ var = "nearbyBleedingEnemies", type = "count", label = "# of Nearby Bleeding Enemies:", ifSkill = "Thirst for Blood", apply = function(val, modList, enemyModList)
 		modList:NewMod("Multiplier:NearbyBleedingEnemies", "BASE", val, "Config" )
+	end },
+	{ label = "Thrill of the Kill II:", ifSkill = "Thrill of the Kill II" },
+	{ var = "thrillOfTheKillIIBuffActive", type = "check", label = "Recently Culled a Shocked Enemy?", ifSkill = "Thrill of the Kill II", tooltip = "While the buff is active (8 seconds after Culling a Shocked enemy with a Supported Skill):\n  Attacks Gain 25% of Damage as Lightning Damage\n  +40% increased chance to Shock", apply = function(val, modList, enemyModList)
+		modList:NewMod("DamageGainAsLightning", "BASE", 25, "Config", ModFlag.Attack)
+		modList:NewMod("EnemyShockChance", "INC", 40, "Config")
 	end },
 	{ label = "Tornado Shot:", ifSkill = "Tornado Shot" },
 	{ var = "tornadoShotSecondaryHitChance", type = "count", label = "% chance for second proj to hit:", tooltip = "Override to the percent chance for the secondary projectiles to hit, default of 60% or 80% with helm enchant. (20% per secondary projectile)", ifSkill = "Tornado Shot", apply = function(val, modList, enemyModList)
