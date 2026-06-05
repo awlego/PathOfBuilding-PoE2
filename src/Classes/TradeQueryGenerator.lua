@@ -626,6 +626,292 @@ function TradeQueryGeneratorClass:GeneratePassiveNodeWeights(nodesToTest)
 	end
 end
 
+-- =============================================================================
+-- Time-Lost Jewel Solver
+-- Brute-forces the best prefix + suffix combinations the user could roll on a
+-- Time-Lost jewel placed in the chosen socket. The solver runs as a coroutine
+-- in the same OnFrame loop as the Megalomaniac/trade-search flows, but instead
+-- of producing a trade-site query it ranks item-side affix combinations and
+-- presents them in a results panel. Per-row actions can derive a trade query
+-- from the chosen combo or copy a craftable item to the clipboard.
+-- =============================================================================
+
+local timeLostBases = {
+	"Time-Lost Ruby",
+	"Time-Lost Emerald",
+	"Time-Lost Sapphire",
+	"Time-Lost Diamond",
+}
+
+local timeLostRadiusLabels = { "Small", "Medium", "Large" }
+
+local timeLostSolverModes = {
+	{ key = "ComboTopK", label = "Solo + Top-K combos" },
+	{ key = "SoloOnly", label = "Solo only" },
+	{ key = "FullCartesian", label = "Full Cartesian" },
+}
+
+-- Build a concrete affix line by substituting (min-max) ranges with the
+-- mid-roll value derived from main.defaultItemAffixQuality. Mods with no
+-- range (e.g. "Upgrades Radius to Medium") pass through unchanged.
+-- Exposed on the class so it can be unit-tested without driving the full
+-- solver coroutine.
+function TradeQueryGeneratorClass.BuildTimeLostAffixLine(modEntry)
+	local text = modEntry.mod.text or modEntry.mod[1]
+	if not text then return nil end
+	local quality = main.defaultItemAffixQuality or 0.5
+	local line = text:gsub("%((%-?[%d%.]+)%-(%-?[%d%.]+)%)", function(lo, hi)
+		local lo_n, hi_n = tonumber(lo), tonumber(hi)
+		if not lo_n or not hi_n then return nil end
+		local v = lo_n + (hi_n - lo_n) * quality
+		-- Match the rounding behaviour of GenerateModWeights so single-affix
+		-- and combo scores compare on the same numeric basis.
+		v = math.ceil(v)
+		return tostring(v)
+	end)
+	return line
+end
+local buildTimeLostAffixLine = TradeQueryGeneratorClass.BuildTimeLostAffixLine
+
+-- Build a synthetic "Stat Tester" Time-Lost item of the given base and radius.
+-- Re-creating the item (rather than mutating jewelRadiusIndex in place) keeps
+-- ParseRaw side-effects consistent with the user-paste flow.
+function TradeQueryGeneratorClass.BuildTimeLostTestItem(baseName, radiusLabel)
+	local raw = ("Rarity: RARE\nStat Tester\n%s\nRadius: %s\nImplicits: 0"):format(baseName, radiusLabel or "Small")
+	return new("Item", raw)
+end
+local buildTimeLostTestItem = TradeQueryGeneratorClass.BuildTimeLostTestItem
+
+-- Enumerate all (prefix, suffix, radius-upgrade) affixes that can spawn on the
+-- given base. Radius-upgrade prefixes are split off so the solver can sweep
+-- them as an outer dimension instead of pairing them with scoring prefixes.
+function TradeQueryGeneratorClass:EnumerateTimeLostAffixes(testItem)
+	local prefixes, suffixes, radiusUpgrades = { }, { }, { }
+	if not testItem.affixes then
+		return prefixes, suffixes, radiusUpgrades
+	end
+	for modId, mod in pairs(testItem.affixes) do
+		if testItem:GetModSpawnWeight(mod) > 0 then
+			local entry = { modId = modId, mod = mod, group = mod.group }
+			if mod.group == "JewelRadiusLargerRadius" then
+				t_insert(radiusUpgrades, entry)
+			elseif mod.type == "Prefix" then
+				t_insert(prefixes, entry)
+			elseif mod.type == "Suffix" then
+				t_insert(suffixes, entry)
+			end
+		end
+	end
+	return prefixes, suffixes, radiusUpgrades
+end
+
+-- Score a single affix at the current context's socket against the build's
+-- base output. Mirrors GenerateModWeights' inner loop but reads from item-side
+-- ModJewel entries instead of trade-side mod data.
+function TradeQueryGeneratorClass:ScoreTimeLostEntries(entries, testItem)
+	local start = GetTime()
+	local ctx = self.calcContext
+	local hideNegative = not ctx.options.timeLostIncludeNegative
+	local kept = { }
+	for _, entry in ipairs(entries) do
+		local line = buildTimeLostAffixLine(entry)
+		if line then
+			testItem.explicitModLines[1] = { line = line, custom = true }
+			testItem.explicitModLines[2] = nil
+			testItem:BuildAndParseRaw()
+
+			local output = ctx.calcFunc({ repSlotName = ctx.slot.slotName, repItem = testItem })
+			local diff = TradeQueryGeneratorClass.WeightedRatioOutputs(ctx.baseOutput, output, ctx.options.statWeights) * 1000 - (ctx.baseStatValue or 0)
+			entry.soloDiff = diff
+			entry.line = line
+			if (not hideNegative) or diff > 0.01 then
+				t_insert(kept, entry)
+			end
+
+			local now = GetTime()
+			if now - start > 50 then
+				coroutine.yield()
+				start = now
+			end
+		end
+	end
+	return kept
+end
+
+-- Collapse mutually-exclusive entries (same group, same role) down to the
+-- single best-scoring representative so the combo sweep doesn't pair two
+-- tier-ladder variants of the same mod.
+function TradeQueryGeneratorClass.DedupeTimeLostByGroup(entries)
+	local byGroup = { }
+	local result = { }
+	for _, entry in ipairs(entries) do
+		local key = entry.group or entry.modId
+		local existing = byGroup[key]
+		if not existing or (entry.soloDiff or 0) > (existing.soloDiff or 0) then
+			byGroup[key] = entry
+		end
+	end
+	for _, entry in pairs(byGroup) do
+		t_insert(result, entry)
+	end
+	return result
+end
+local dedupeByGroup = TradeQueryGeneratorClass.DedupeTimeLostByGroup
+
+-- Build the candidate "configurations" for one affix role (prefix or suffix).
+-- A Time-Lost jewel can hold up to 2 prefixes and 2 suffixes; we enumerate
+-- both singletons and (legal, distinct-group) pairs ranked by solo sum, then
+-- keep the top K of each. Pair scoring uses solo-sum as a proxy because
+-- within-role synergies on Time-Lost are typically additive (two "X Passives
+-- also grant Y" mods don't multiply each other), while cross-role pairings
+-- (P amplifies S) are re-scored explicitly in the cross-pair phase.
+function TradeQueryGeneratorClass.BuildTimeLostRoleConfigs(entries, maxAffixes, K)
+	table.sort(entries, function(a, b) return (a.soloDiff or 0) > (b.soloDiff or 0) end)
+	local configs = { }
+	local topN = math.min(K, #entries)
+	for i = 1, topN do
+		t_insert(configs, { entries = { entries[i] }, soloSum = entries[i].soloDiff or 0 })
+	end
+	if maxAffixes >= 2 then
+		local pairs_ = { }
+		for i = 1, topN do
+			for j = i + 1, topN do
+				local a, b = entries[i], entries[j]
+				if a.group ~= b.group then
+					t_insert(pairs_, { entries = { a, b }, soloSum = (a.soloDiff or 0) + (b.soloDiff or 0) })
+				end
+			end
+		end
+		table.sort(pairs_, function(p, q) return p.soloSum > q.soloSum end)
+		for i = 1, math.min(K, #pairs_) do
+			t_insert(configs, pairs_[i])
+		end
+	end
+	table.sort(configs, function(p, q) return p.soloSum > q.soloSum end)
+	local kept = { }
+	for i = 1, math.min(K, #configs) do
+		kept[i] = configs[i]
+	end
+	return kept
+end
+local buildTimeLostRoleConfigs = TradeQueryGeneratorClass.BuildTimeLostRoleConfigs
+
+-- Re-score full 4-affix combos (up to 2P + 2S) by writing every line into the
+-- test item. This is the step that surfaces Effect-of-Small x Small-also-grants
+-- synergies, which solo scoring necessarily misses.
+function TradeQueryGeneratorClass:RunTimeLostComboSweep(prefixConfigs, suffixConfigs, testItem, baseName, radiusLabel, outCombos)
+	local start = GetTime()
+	local ctx = self.calcContext
+
+	for _, pConfig in ipairs(prefixConfigs) do
+		for _, sConfig in ipairs(suffixConfigs) do
+			local lines = { }
+			for _, e in ipairs(pConfig.entries) do
+				t_insert(lines, { line = e.line, custom = true })
+			end
+			for _, e in ipairs(sConfig.entries) do
+				t_insert(lines, { line = e.line, custom = true })
+			end
+			testItem.explicitModLines = lines
+			testItem:BuildAndParseRaw()
+
+			local output = ctx.calcFunc({ repSlotName = ctx.slot.slotName, repItem = testItem })
+			local diff = TradeQueryGeneratorClass.WeightedRatioOutputs(ctx.baseOutput, output, ctx.options.statWeights) * 1000 - (ctx.baseStatValue or 0)
+			t_insert(outCombos, {
+				base = baseName,
+				radiusLabel = radiusLabel,
+				prefixes = pConfig.entries,
+				suffixes = sConfig.entries,
+				diff = diff,
+				synergy = diff - (pConfig.soloSum + sConfig.soloSum),
+			})
+
+			local now = GetTime()
+			if now - start > 50 then
+				coroutine.yield()
+				start = now
+			end
+		end
+	end
+end
+
+-- Top-level solver coroutine body. Sweeps the chosen bases x radius variants,
+-- scoring affixes solo and then re-scoring full 4-affix combinations (up to
+-- 2 prefixes + 2 suffixes; the radius-upgrade dimension consumes a prefix
+-- slot when active).
+function TradeQueryGeneratorClass:RunTimeLostSolver()
+	local ctx = self.calcContext
+	local options = ctx.options
+	local mode = options.timeLostMode or "ComboTopK"
+	local K
+	if mode == "FullCartesian" then
+		K = 50
+	else
+		K = options.timeLostK or 25
+	end
+
+	local bases
+	if options.timeLostBase and options.timeLostBase ~= "All" then
+		bases = { options.timeLostBase }
+	else
+		bases = timeLostBases
+	end
+
+	local radii = { "Small" }
+	if options.timeLostIncludeRadiusUpgrades then
+		t_insert(radii, "Medium")
+		t_insert(radii, "Large")
+	end
+
+	local allResults = { }
+
+	for _, baseName in ipairs(bases) do
+		for _, radiusLabel in ipairs(radii) do
+			-- Medium/Large radii are produced by a radius-upgrade prefix
+			-- (Greater/Grand) consuming one of the two prefix slots, leaving
+			-- only one slot for a scoring prefix. Small leaves both slots free.
+			local maxPrefixes = (radiusLabel == "Small") and 2 or 1
+			local maxSuffixes = 2
+
+			local testItem = buildTimeLostTestItem(baseName, radiusLabel)
+			ctx.testItem = testItem
+
+			local prefixes, suffixes = self:EnumerateTimeLostAffixes(testItem)
+			prefixes = self:ScoreTimeLostEntries(prefixes, testItem)
+			suffixes = self:ScoreTimeLostEntries(suffixes, testItem)
+			prefixes = dedupeByGroup(prefixes)
+			suffixes = dedupeByGroup(suffixes)
+
+			if mode == "SoloOnly" then
+				for _, p in ipairs(prefixes) do
+					t_insert(allResults, {
+						base = baseName, radiusLabel = radiusLabel,
+						prefixes = { p }, suffixes = { }, diff = p.soloDiff or 0,
+					})
+				end
+				for _, s in ipairs(suffixes) do
+					t_insert(allResults, {
+						base = baseName, radiusLabel = radiusLabel,
+						prefixes = { }, suffixes = { s }, diff = s.soloDiff or 0,
+					})
+				end
+			else
+				local prefixConfigs = buildTimeLostRoleConfigs(prefixes, maxPrefixes, K)
+				local suffixConfigs = buildTimeLostRoleConfigs(suffixes, maxSuffixes, K)
+				self:RunTimeLostComboSweep(prefixConfigs, suffixConfigs, testItem, baseName, radiusLabel, allResults)
+			end
+		end
+	end
+
+	table.sort(allResults, function(a, b) return (a.diff or 0) > (b.diff or 0) end)
+	-- Cap at 50 rows for the results panel.
+	local capped = { }
+	for i = 1, math.min(50, #allResults) do
+		capped[i] = allResults[i]
+	end
+	ctx.timeLostResults = capped
+end
+
 function TradeQueryGeneratorClass:OnFrame()
 	if self.calcContext.co == nil then
 		return
@@ -637,7 +923,11 @@ function TradeQueryGeneratorClass:OnFrame()
 	end
 	if coroutine.status(self.calcContext.co) == "dead" then
 		self.calcContext.co = nil
-		self:FinishQuery()
+		if self.calcContext.options and self.calcContext.options.timeLostSolver then
+			self:FinishTimeLostSolver()
+		else
+			self:FinishQuery()
+		end
 	end
 end
 
@@ -672,7 +962,10 @@ function TradeQueryGeneratorClass:StartQuery(slot, options)
 	local itemCategoryQueryStr
 	local itemCategory
 	local special = { }
-	if options.special then
+	if options.timeLostSolver then
+		-- The solver doesn't drive a trade-site query, so itemCategoryQueryStr /
+		-- itemCategory aren't needed; it owns its own base/affix enumeration.
+	elseif options.special then
 		if options.special.itemName == "Megalomaniac" then
 			special = {
 				queryFilters = {},
@@ -696,7 +989,7 @@ function TradeQueryGeneratorClass:StartQuery(slot, options)
 
 	-- Create a temp item for the slot with no mods
 	local itemRawStr = "Rarity: RARE\nStat Tester\n" .. testItemType
-	if options.jewelType == "Radius" then
+	if options.jewelType == "Radius" or options.timeLostSolver then
 		itemRawStr = [[Rarity: RARE
 Stat Tester
 Time-Lost Sapphire
@@ -728,11 +1021,16 @@ Implicits: 0]]
 	}
 
 	-- OnFrame will pick this up and begin the work
-	self.calcContext.co = coroutine.create(self.ExecuteQuery)
+	if options.timeLostSolver then
+		self.calcContext.co = coroutine.create(self.RunTimeLostSolver)
+	else
+		self.calcContext.co = coroutine.create(self.ExecuteQuery)
+	end
 
 	-- Open progress tracking blocker popup
 	local controls = { }
-	controls.progressText = new("LabelControl", {"TOP",nil,"TOP"}, {0, 30, 0, 16}, string.format("Calculating Mod Weights..."))
+	local progressLabel = options.timeLostSolver and "Solving Time-Lost affixes..." or "Calculating Mod Weights..."
+	controls.progressText = new("LabelControl", {"TOP",nil,"TOP"}, {0, 30, 0, 16}, progressLabel)
 	self.calcContext.popup = main:OpenPopup(280, 65, "Please Wait", controls)
 end
 
@@ -767,6 +1065,184 @@ function TradeQueryGeneratorClass:ExecuteQuery()
 	if self.calcContext.options.includeRunes then
 		self:GenerateModWeights(self.modData["Rune"])
 	end
+end
+
+local function entryLine(entry)
+	if not entry then return nil end
+	return entry.line or (entry.mod and (entry.mod.text or entry.mod[1]))
+end
+
+local function describeEntries(list)
+	if not list or #list == 0 then return "(none)" end
+	local parts = { }
+	for _, e in ipairs(list) do
+		t_insert(parts, entryLine(e) or "(unknown)")
+	end
+	return table.concat(parts, "  ^8+^7  ")
+end
+
+-- A radius-upgrade prefix (Greater/Grand) consumes one prefix slot and is
+-- implied by the row's radius label. Reflect that in display so the user can
+-- tell why only one scoring prefix is shown.
+local function radiusPrefixHint(row)
+	if row.radiusLabel == "Medium" then return "^8Greater^7 (radius)" end
+	if row.radiusLabel == "Large" then return "^8Grand^7 (radius)" end
+	return nil
+end
+
+-- Construct a synthetic "pasteable" Time-Lost item from a result row. Used by
+-- the Copy Item action so the user can paste straight into their Items tab.
+local function buildTimeLostItemRaw(row)
+	local lines = {
+		"Rarity: RARE",
+		"Crafted Time-Lost Jewel",
+		row.base,
+		"Radius: " .. (row.radiusLabel or "Small"),
+		"Implicits: 0",
+	}
+	if row.radiusLabel == "Medium" then
+		t_insert(lines, "Upgrades Radius to Medium")
+	elseif row.radiusLabel == "Large" then
+		t_insert(lines, "Upgrades Radius to Large")
+	end
+	for _, e in ipairs(row.prefixes or { }) do
+		if e.line then t_insert(lines, e.line) end
+	end
+	for _, e in ipairs(row.suffixes or { }) do
+		if e.line then t_insert(lines, e.line) end
+	end
+	return table.concat(lines, "\n")
+end
+
+-- Open the ranked-results panel after RunTimeLostSolver finishes. Each row
+-- offers an optional Build Trade Query action (derive a trade-site search
+-- pinned to the chosen prefix+suffix) and a Copy Item action.
+function TradeQueryGeneratorClass:FinishTimeLostSolver()
+	main:ClosePopup()
+	local results = self.calcContext.timeLostResults or { }
+	if #results == 0 then
+		main:OpenMessagePopup("Time-Lost Solver", "No mods produced a measurable improvement for the chosen socket and stat weights.")
+		return
+	end
+
+	local rowItems = { }
+	for i, row in ipairs(results) do
+		local prefixStr = describeEntries(row.prefixes)
+		local suffixStr = describeEntries(row.suffixes)
+		rowItems[i] = {
+			label = s_format("^7%s  ^8|  ^7%s  ^8|  ^7+%.2f  ^8|  P: ^7%s  ^8/  S: ^7%s",
+				row.base or "?", row.radiusLabel or "?", row.diff or 0, prefixStr, suffixStr),
+			tooltip = row,
+			row = row,
+		}
+	end
+
+	local controls = { }
+	local popupWidth, popupHeight = 820, 540
+	controls.heading = new("LabelControl", {"TOP", nil, "TOP"}, {0, 10, 0, 18},
+		"^7Time-Lost Jewel Solver  ^8(top " .. #results .. " combinations)")
+
+	controls.list = new("ListControl", {"TOPLEFT", nil, "TOPLEFT"}, {15, 35, popupWidth - 30, popupHeight - 100}, 22, "VERTICAL", false, rowItems)
+	controls.list.colList = { { x = 0 } }
+	controls.list.showRowSeparators = true
+	function controls.list:GetRowValue(column, index, value)
+		return value.label
+	end
+	function controls.list:AddValueTooltip(tooltip, index, value)
+		local row = value.row
+		tooltip:Clear()
+		tooltip:AddLine(16, s_format("^7Base: ^x7F7F7F%s", row.base or "?"))
+		tooltip:AddLine(16, s_format("^7Radius: ^x7F7F7F%s", row.radiusLabel or "?"))
+		tooltip:AddLine(16, s_format("^7Δ Stat: ^x7F7F7F+%.2f", row.diff or 0))
+		if row.synergy and math.abs(row.synergy) > 0.01 then
+			tooltip:AddLine(16, s_format("^7Synergy: ^x7F7F7F%+.2f vs additive", row.synergy))
+		end
+		tooltip:AddSeparator(10)
+		tooltip:AddLine(16, "^7Prefixes:")
+		local rHint = radiusPrefixHint(row)
+		if rHint then
+			tooltip:AddLine(16, "  " .. rHint)
+		end
+		if row.prefixes and #row.prefixes > 0 then
+			for _, e in ipairs(row.prefixes) do
+				tooltip:AddLine(16, "^x7F7F7F  " .. (entryLine(e) or "(unknown)"))
+			end
+		elseif not rHint then
+			tooltip:AddLine(16, "^x7F7F7F  (none)")
+		end
+		tooltip:AddLine(16, "^7Suffixes:")
+		if row.suffixes and #row.suffixes > 0 then
+			for _, e in ipairs(row.suffixes) do
+				tooltip:AddLine(16, "^x7F7F7F  " .. (entryLine(e) or "(unknown)"))
+			end
+		else
+			tooltip:AddLine(16, "^x7F7F7F  (none)")
+		end
+	end
+
+	controls.copyItem = new("ButtonControl", {"BOTTOMLEFT", nil, "BOTTOMLEFT"}, {15, -10, 120, 20}, "Copy Item",
+		function()
+			local sel = controls.list.selValue
+			if not sel then return end
+			Copy(buildTimeLostItemRaw(sel.row))
+		end)
+	controls.tradeQuery = new("ButtonControl", {"LEFT", controls.copyItem, "RIGHT"}, {10, 0, 160, 20}, "Build Trade Query",
+		function()
+			local sel = controls.list.selValue
+			if not sel then return end
+			self:BuildTradeQueryFromTimeLostRow(sel.row)
+		end)
+	controls.close = new("ButtonControl", {"BOTTOMRIGHT", nil, "BOTTOMRIGHT"}, {-15, -10, 80, 20}, "Close",
+		function() main:ClosePopup() end)
+
+	main:OpenPopup(popupWidth, popupHeight, "Time-Lost Jewel Solver", controls)
+end
+
+-- Convert a solver result row into a trade-site query keyed on the prefix and
+-- suffix's trade hashes. Hands the URL back via the existing requester callback
+-- so the trade pane can render the search link or run an authenticated search.
+function TradeQueryGeneratorClass:BuildTradeQueryFromTimeLostRow(row)
+	if not self.requesterCallback then return end
+	local statFilters = { }
+	local seen = { }
+	local function addHashes(entry)
+		if not entry or not entry.mod or not entry.mod.tradeHashes then return end
+		for tradeHash, _ in pairs(entry.mod.tradeHashes) do
+			if not seen[tradeHash] then
+				seen[tradeHash] = true
+				t_insert(statFilters, { id = "explicit.stat_" .. tostring(tradeHash), value = { min = 1 } })
+			end
+		end
+	end
+	for _, e in ipairs(row.prefixes or { }) do addHashes(e) end
+	for _, e in ipairs(row.suffixes or { }) do addHashes(e) end
+	if #statFilters == 0 then
+		main:OpenMessagePopup("Time-Lost Solver", "No trade hashes available for this combination.")
+		return
+	end
+
+	local selectedTradeType = (self.tradeTypes or { })[self.tradeTypeIndex or 1] or "any"
+	local queryTable = {
+		query = {
+			filters = {
+				type_filters = {
+					filters = {
+						category = { option = "jewel.radius" },
+						rarity = { option = "nonunique" },
+					}
+				}
+			},
+			type = row.base,
+			status = { option = selectedTradeType },
+			stats = {
+				{ type = "and", filters = statFilters }
+			}
+		},
+		sort = { price = "asc" },
+		engine = "new",
+	}
+	local queryJson = dkjson.encode(queryTable)
+	self.requesterCallback(self.requesterContext, queryJson, nil)
 end
 
 function TradeQueryGeneratorClass:FinishQuery()
@@ -1008,6 +1484,60 @@ Remove: anoints are completely ignored, and removed from items.]]
 		controls.jewelType.selIndex = self.lastJewelType or 1
 		controls.jewelTypeLabel = new("LabelControl", {"RIGHT",controls.jewelType,"LEFT"}, {-5, 0, 0, 16}, "Jewel Type:")
 		updateLastAnchor(controls.jewelType)
+
+		-- Time-Lost solver controls: only meaningful when jewelType = Radius,
+		-- gated behind a Search Mode dropdown so the popup defaults to the
+		-- existing trade-query flow.
+		controls.searchMode = new("DropDownControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 160, 18}, { "Trade Query", "Solve Affixes" }, function(index, value) end,
+			"Trade Query: build a weighted trade-site search.\nSolve Affixes: brute-force the best prefix/suffix combinations the user could roll on a Time-Lost jewel placed in this socket.")
+		controls.searchMode.selIndex = self.lastTimeLostSearchMode or 1
+		controls.searchMode.shown = function() return controls.jewelType.selIndex == 2 end
+		controls.searchModeLabel = new("LabelControl", {"RIGHT",controls.searchMode,"LEFT"}, {-5, 0, 0, 16}, "Search Mode:")
+		controls.searchModeLabel.shown = function() return controls.searchMode:IsShown() end
+		updateLastAnchor(controls.searchMode)
+
+		local function inSolverMode()
+			return controls.jewelType.selIndex == 2 and controls.searchMode.selIndex == 2
+		end
+
+		controls.solverBase = new("DropDownControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 180, 18},
+			{ "All", "Time-Lost Ruby", "Time-Lost Emerald", "Time-Lost Sapphire", "Time-Lost Diamond" },
+			function(index, value) end,
+			"Restricts the solver to a specific Time-Lost base, or sweeps all four when 'All' is selected.")
+		controls.solverBase.selIndex = self.lastTimeLostBaseIdx or 1
+		controls.solverBase.shown = inSolverMode
+		controls.solverBaseLabel = new("LabelControl", {"RIGHT",controls.solverBase,"LEFT"}, {-5, 0, 0, 16}, "Base:")
+		controls.solverBaseLabel.shown = inSolverMode
+		updateLastAnchor(controls.solverBase)
+
+		controls.solverMode = new("DropDownControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 180, 18},
+			{ "Solo + Top-K combos", "Solo only", "Full Cartesian" },
+			function(index, value) end,
+			"Solo + Top-K combos: score affixes individually, then brute-force pairs of the top K prefixes x top K suffixes. Catches synergies cheaply.\nSolo only: rank prefixes and suffixes independently. Fastest, but misses synergies.\nFull Cartesian: evaluate every legal prefix x suffix pair. Slowest, most thorough.")
+		controls.solverMode.selIndex = self.lastTimeLostModeIdx or 1
+		controls.solverMode.shown = inSolverMode
+		controls.solverModeLabel = new("LabelControl", {"RIGHT",controls.solverMode,"LEFT"}, {-5, 0, 0, 16}, "Mode:")
+		controls.solverModeLabel.shown = inSolverMode
+		updateLastAnchor(controls.solverMode)
+
+		controls.solverK = new("EditControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 70, 18}, nil, nil, "%D")
+		controls.solverK.buf = tostring(self.lastTimeLostK or 25)
+		controls.solverK.shown = function() return inSolverMode() and controls.solverMode.selIndex == 1 end
+		controls.solverKLabel = new("LabelControl", {"RIGHT",controls.solverK,"LEFT"}, {-5, 0, 0, 16}, "Top-K:")
+		controls.solverKLabel.shown = function() return controls.solverK:IsShown() end
+		updateLastAnchor(controls.solverK)
+
+		controls.solverRadii = new("CheckBoxControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Include Medium/Large radius prefixes:", function(state) end,
+			"When on, the solver evaluates each base at Small/Medium/Large radius and surfaces the best combination per radius tier.")
+		controls.solverRadii.state = (self.lastTimeLostIncludeRadii == nil or self.lastTimeLostIncludeRadii == true)
+		controls.solverRadii.shown = inSolverMode
+		updateLastAnchor(controls.solverRadii)
+
+		controls.solverHideNeg = new("CheckBoxControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Hide negative-effect mods:", function(state) end,
+			"Drops affixes whose effect on the build is zero or negative (e.g. 'Notable Passive Skills in Radius grant nothing'). Recommended.")
+		controls.solverHideNeg.state = (self.lastTimeLostHideNeg == nil or self.lastTimeLostHideNeg == true)
+		controls.solverHideNeg.shown = inSolverMode
+		updateLastAnchor(controls.solverHideNeg)
 	end
 
 	-- Add max price limit selection dropbox
@@ -1086,6 +1616,23 @@ Remove: anoints are completely ignored, and removed from items.]]
 		if controls.jewelType then
 			self.lastJewelType = controls.jewelType.selIndex
 			options.jewelType = controls.jewelType:GetSelValue()
+		end
+		if controls.searchMode and controls.jewelType and controls.jewelType.selIndex == 2 and controls.searchMode.selIndex == 2 then
+			self.lastTimeLostSearchMode = controls.searchMode.selIndex
+			self.lastTimeLostBaseIdx = controls.solverBase.selIndex
+			self.lastTimeLostModeIdx = controls.solverMode.selIndex
+			self.lastTimeLostK = tonumber(controls.solverK.buf) or 25
+			self.lastTimeLostIncludeRadii = controls.solverRadii.state
+			self.lastTimeLostHideNeg = controls.solverHideNeg.state
+
+			options.timeLostSolver = true
+			options.timeLostBase = controls.solverBase:GetSelValue()
+			options.timeLostMode = timeLostSolverModes[controls.solverMode.selIndex].key
+			options.timeLostK = math.max(1, tonumber(controls.solverK.buf) or 25)
+			options.timeLostIncludeRadiusUpgrades = controls.solverRadii.state
+			options.timeLostIncludeNegative = not controls.solverHideNeg.state
+		elseif controls.searchMode then
+			self.lastTimeLostSearchMode = controls.searchMode.selIndex
 		end
 		if controls.maxPrice.buf then
 			options.maxPrice = tonumber(controls.maxPrice.buf)
