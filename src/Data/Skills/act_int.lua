@@ -3826,6 +3826,10 @@ skills["CometPlayer"] = {
 			incrementalEffectiveness = 0.12999999523163,
 			damageIncrementalEffectiveness = 0.0096000004559755,
 			statDescriptionScope = "comet",
+			statMap = {
+				["base_skill_show_average_damage_instead_of_dps"] = {
+				},
+			},
 			baseFlags = {
 				area = true,
 				spell = true,
@@ -3896,6 +3900,10 @@ skills["CometPlayer"] = {
 			incrementalEffectiveness = 0.12999999523163,
 			damageIncrementalEffectiveness = 0.0096000004559755,
 			statDescriptionScope = "comet",
+			statMap = {
+				["base_skill_show_average_damage_instead_of_dps"] = {
+				},
+			},
 			baseFlags = {
 				area = true,
 				spell = true,
@@ -6976,6 +6984,13 @@ skills["EyeOfWinterPlayer"] = {
 			incrementalEffectiveness = 0.12999999523163,
 			damageIncrementalEffectiveness = 0.0074000000022352,
 			statDescriptionScope = "eye_of_winter_new",
+			statMap = {
+				["eye_of_winter_damage_%_to_gain_as_element_per_ground_effect_type"] = {
+					mod("SkillDamageGainAsCold", "BASE", nil, 0, 0, { type = "Condition", var = "EyeOfWinterCold"}),
+					mod("SkillDamageGainAsFire", "BASE", nil, 0, 0, { type = "Condition", var = "EyeOfWinterFire"}),
+					mod("SkillDamageGainAsLightning", "BASE", nil, 0, 0, { type = "Condition", var = "EyeOfWinterLightning"}),
+				},
+			},
 			baseFlags = {
 				spell = true,
 				projectile = true,
@@ -8244,6 +8259,8 @@ skills["FlameWallPlayer"] = {
 			damageIncrementalEffectiveness = 0.0096000004559755,
 			statDescriptionScope = "flame_wall",
 			baseFlags = {
+				spell = true,
+				area = true,
 			},
 			constantStats = {
 				{ "number_of_allowed_firewalls", 3 },

@@ -282,6 +282,9 @@ end
 ---@return number
 local function calcCrossbowReloadTime(weaponData, boltSkill)
 	local baseReloadTime = weaponData.ReloadTime
+	if not baseReloadTime then
+		return
+	end
 
 	local reloadTimeMulti = calcLib.mod(boltSkill.skillModList, boltSkill.skillCfg, "ReloadSpeed", "Speed" )
 	return baseReloadTime / reloadTimeMulti
@@ -355,6 +358,11 @@ local function calcWarcryCastTime(skillModList, skillCfg, skillData, actor)
 	return warcryCastTime
 end
 
+--- Calculates effect of buff/debuff expiration rate on actors
+local function calcBuffExpirationMult(actorDB, cfg)
+	return 1 / m_max(data.misc.BuffExpirationSlowCap, calcLib.mod(actorDB, cfg, "BuffExpireFaster"))
+end
+
 function calcSkillDuration(skillModList, skillCfg, skillData, env, enemyDB)
 	local durationMod = calcLib.mod(skillModList, skillCfg, "Duration", "PrimaryDuration", "DamagingAilmentDuration", skillData.mineDurationAppliesToSkill and "MineDuration" or nil)
 	durationMod = m_max(durationMod, 0)
@@ -362,7 +370,7 @@ function calcSkillDuration(skillModList, skillCfg, skillData, env, enemyDB)
 	local duration = durationBase * durationMod
 	local debuffDurationMult = 1
 	if env.mode_effective then
-		debuffDurationMult = 1 / m_max(data.misc.BuffExpirationSlowCap, calcLib.mod(enemyDB, skillCfg, "BuffExpireFaster"))
+		debuffDurationMult = calcBuffExpirationMult(enemyDB, skillCfg)
 	end
 	if skillData.debuff then
 		duration = duration * debuffDurationMult
@@ -2382,6 +2390,12 @@ function calcs.offence(env, actor, activeSkill)
 					source.CritChance = skillData.CritChance
 				end
 			end
+			if source.FacebreakerItemDamage and activeSkill.activeEffect.grantedEffect.weaponTypes and activeSkill.activeEffect.grantedEffect.weaponTypes["One Hand Mace"] then
+				for _, damageType in ipairs(dmgTypeList) do
+					source[damageType.."Min"] = source["Facebreaker"..damageType.."Min"] or 0
+					source[damageType.."Max"] = source["Facebreaker"..damageType.."Max"] or 0
+				end
+			end
 			if critOverride and source.type and source.type ~= "None" then
 				source.CritChance = critOverride
 			end
@@ -2861,7 +2875,7 @@ function calcs.offence(env, actor, activeSkill)
 				output.Speed = m_min(output.Speed, data.misc.ServerTickRate * output.Repeats)
 			end
 			-- Crossbows: Adjust attack speed values for Crossbow skills that need to reload
-			if skillData.reloadTime then
+			if skillData.reloadTime and skillData.reloadTime > 0 then
 				output.FiringRate = output.Speed
 				output.BoltCount = skillData.boltCount
 				output.EffectiveBoltCount = output.BoltCount
@@ -2907,7 +2921,7 @@ function calcs.offence(env, actor, activeSkill)
 				-- Crossbows: adjust breakdown to account for effect of reload time, bolt count, etc.
 				-- note: if we are ever allowed to dual wield crossbows, this will need to be adjusted
 				-- TODO: properly reflect effects of "SkillAttackTime" mods in the breakdown. (This is also not currently done in the standard breakdown.Speed calculation)
-				if output.ReloadTime then
+				if output.ReloadTime and source.ReloadTime then
 					globalBreakdown.FiringRate = { }
 					breakdown.multiChain(globalBreakdown.FiringRate, {
 						base = { "%.2f ^8(base)", 1 / baseTime },
@@ -3200,9 +3214,7 @@ function calcs.offence(env, actor, activeSkill)
 						globalOutput.InfernalCryDuration = calcSkillDuration(value.skillModList, value.skillCfg, value.skillData, env, enemyDB)
 						globalOutput.InfernalCryCooldown = calcSkillCooldown(value.skillModList, value.skillCfg, value.skillData)
 						globalOutput.InfernalCryCastTime = calcWarcryCastTime(value.skillModList, value.skillCfg, value.skillData, actor)
-						local powerCap = value.skillModList:Sum("BASE", nil, "WarcryPowerCap")
-						local powerPer = value.skillModList:Sum("BASE", nil, "WarcryPowerPer")
-						globalOutput.InfernalEmpoweredCount = powerPer > 0 and m_floor(m_min(warcryPower, powerCap) / powerPer) or 0
+						globalOutput.InfernalEmpoweredCount = env.modDB:Sum("BASE", nil, "NumInfernalEmpowers") or 0
 						local baseUptimeRatio = m_min((globalOutput.InfernalEmpoweredCount / globalOutput.Speed) / (globalOutput.InfernalCryCooldown + globalOutput.InfernalCryCastTime), 1) * 100
 						local storedUses = value.skillData.storedUses or 0 + value.skillModList:Sum("BASE", value.skillCfg, "AdditionalCooldownUses")
 						globalOutput.InfernalCryUptimeRatio = m_min(100, baseUptimeRatio * storedUses)
@@ -5350,7 +5362,7 @@ function calcs.offence(env, actor, activeSkill)
 			output["ChillChanceOnCrit"] = 0
 			skillFlags["inflictChill"] = false
 		end
-		-- TODO: Freeze and Electrocute are unhandled, should use similar system as Stun
+		
 		output["FreezeChanceOnHit"] = 0
 		output["FreezeChanceOnCrit"] = 0
 		skillFlags["inflictFreeze"] = false
@@ -6117,6 +6129,70 @@ function calcs.offence(env, actor, activeSkill)
 	end
 	if skillFlags.monsterExplode then
 		output.CombinedAvgToMonsterLife = output.CombinedAvg / monsterLife * 100
+	end
+	-- Parry Stats
+	-- NOTE: This section is mainly for skill-specific breakdowns. Actual application of damage modifier is handled in `CalcPerform`
+	local parryDebuffMagnitudeMod = calcLib.mod(skillModList, skillCfg, "ParryDebuffMagnitude")
+	if skillData.parryDebuffBaseMagnitude and parryDebuffMagnitudeMod and parryDebuffMagnitudeMod ~= 1 then
+		output.ParryDebuffMagnitudeMod = parryDebuffMagnitudeMod
+		if breakdown then
+			local inc = skillModList:Sum("INC", skillCfg, "ParryDebuffMagnitude")
+			local more = skillModList:More(skillCfg, "ParryDebuffMagnitude") * calcLib.mod(skillModList, skillCfg, "DebuffEffect")
+			breakdown.ParryDebuffMagnitudeMod = {
+				s_format("Modifiers to Parry Debuff Magnitude:"),
+				s_format(""),
+				s_format("x %.2f ^8(increased magnitude)", 1 + inc / 100),
+				s_format("x %.2f ^8(more magnitude)", more + 1),
+				s_format("= %.2f", parryDebuffMagnitudeMod),
+				s_format(""),
+				s_format("Resulting Parry Debuff Magnitude:"),
+				s_format("%.2f%% more damage taken ^8(base magnitude)", skillData.parryDebuffBaseMagnitude),
+				s_format("x %.2f", parryDebuffMagnitudeMod),
+				s_format("= %.2f%% more damage taken", skillData.parryDebuffBaseMagnitude * parryDebuffMagnitudeMod),
+				s_format("^8Note: Only the highest Parry Debuff magnitude will be counted"),
+			}
+		end
+	end
+	if skillData.parryDebuffDuration and skillData.parryDebuffDuration > 0 then
+		local expirationMult = calcBuffExpirationMult(enemyDB, skillCfg)
+		--skillModList:NewMod("ParryDebuffDuration", "BASE", skillData.parryDebuffDuration, "Base value from skill")
+		output.ParryDebuffDuration = skillData.parryDebuffDuration * calcLib.mod(skillModList, skillCfg, "ParryDebuffDuration") * (expirationMult or 0)
+		if breakdown then
+			breakdown.ParryDebuffDuration = {
+				s_format("Duration of parry debuff on enemy:\n"),
+				s_format(""),
+				s_format("%.2fs ^8(base duration)", skillData.parryDebuffDuration),
+				s_format("x %.2f ^8(modifier)", calcLib.mod(skillModList, skillCfg, "ParryDebuffDuration")),
+			}
+			if expirationMult and expirationMult ~= 1 then
+				t_insert(breakdown.ParryDebuffDuration, s_format("x %.2f ^8(buff expiration multiplier)", expirationMult))
+			end
+			t_insert(breakdown.ParryDebuffDuration, s_format("= %.2fs", output.ParryDebuffDuration))
+		end
+	end
+	if skillData.parryRangeNonProj or skillData.parryRangeProj then
+		output.ParryRangeNonProj = (skillData.parryRangeNonProj or 0) * calcLib.mod(skillModList, skillCfg, "ParryRangeNonProj")
+		output.ParryRangeProj = (skillData.parryRangeProj or 0) * calcLib.mod(skillModList, skillCfg, "ParryRangeProj")
+		if breakdown then
+			if output.ParryRangeNonProj > 0 then
+				breakdown.ParryRangeNonProj = { 
+					s_format("Max Parry distance vs. non-projectiles:"),
+					s_format(""),
+					s_format("%.1f m ^8(base parry range for non-projectiles)", skillData.parryRangeNonProj),
+					s_format("x %.1f ^8(modifier)", calcLib.mod(skillModList, skillCfg, "ParryRangeNonProj")),
+					s_format("= %.1f m", output.ParryRangeNonProj),
+				}
+			end
+			if output.ParryRangeProj > 0 then
+				breakdown.ParryRangeProj = {
+					s_format("Max Parry distance vs. projectiles:\n"),
+					s_format(""),
+					s_format("%.1f m ^8(base parry range for projectiles)", skillData.parryRangeProj),
+					s_format("x %.1f ^8(modifier)", calcLib.mod(skillModList, skillCfg, "ParryRangeProj")),
+					s_format("= %.1f m", output.ParryRangeProj),
+				}
+			end
+		end
 	end
 	if skillFlags.impale then
 		local mainHandImpaleDPS, offHandImpaleDPS
