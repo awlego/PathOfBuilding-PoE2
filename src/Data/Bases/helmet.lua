@@ -1928,6 +1928,17 @@ itemBases["Cryptic Crown"] = {
 	armour = { Armour = 206, EnergyShield = 57, },
 	req = { level = 80, str = 63, int = 63, },
 }
+-- TEMP: Vestige of Darkness base, replace on next export
+itemBases["Tenebrous Crown"] = {
+	type = "Helmet",
+	subType = "Armour/Energy Shield",
+	quality = 20,
+	socketLimit = 3,
+	tags = { armour = true, default = true, helmet = true, str_int_armour = true, },
+	implicitModTypes = { },
+	armour = { Armour = 179, EnergyShield = 50, },
+	req = { level = 65, str = 59, int = 59, },
+}
 itemBases["Runeforged Iron Crown"] = {
 	type = "Helmet",
 	subType = "Armour/Energy Shield",

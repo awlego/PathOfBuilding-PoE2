@@ -441,6 +441,14 @@ Martyr Crown
 +(10-20) to all Attributes
 40% reduced Light Radius
 You have no Elemental Resistances
+]],[[
+Vestige of Darkness
+Tenebrous Crown
+(150-200)% increased Armour and Energy Shield
++(20-30) to Strength and Intelligence
+Physical damage from Hits Contributes to Chill Magnitude and Freeze Buildup
+Enemies in your Presence are Blinded
+The Bodach haunts your Presence
 ]],
 -- Helmet: Evasion/Energy Shield
 [[

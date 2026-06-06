@@ -434,3 +434,15 @@ itemBases["Dreaming Quarterstaff"] = {
 	weapon = { PhysicalMin = 99, PhysicalMax = 133, CritChanceBase = 0, AttackRateBase = 1.5, Range = 14, },
 	req = { level = 78, dex = 127, int = 50, },
 }
+-- TEMP: Duality base, replace on next export
+itemBases["Warding Quarterstaff"] = {
+	type = "Staff",
+	subType = "Warstaff",
+	quality = 20,
+	socketLimit = 4,
+	tags = { default = true, two_hand_weapon = true, twohand = true, warstaff = true, weapon = true, },
+	implicit = "+(30-50) to maximum Runic Ward",
+	implicitModTypes = { { "runic_ward" }, },
+	weapon = { PhysicalMin = 51, PhysicalMax = 85, CritChanceBase = 10, AttackRateBase = 1.4, Range = 14, },
+	req = { level = 65, dex = 127, int = 50, },
+}
