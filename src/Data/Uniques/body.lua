@@ -785,6 +785,19 @@ Armour is increased by Uncapped Fire Resistance
 Energy Shield is increased by Uncapped Cold Resistance
 Evasion Rating is increased by Uncapped Lightning Resistance
 ]],[[
+Forgotten Warden
+Primal Markings
+Implicits: 3
+18% increased Armour, Evasion and Energy Shield
+Gain additional Ailment Threshold equal to 15% of maximum Energy Shield
+Gain additional Stun Threshold equal to 15% of maximum Energy Shield
+Grants Skill: Level (1-20) Spirit Vessel
++(70-100) to Deflection Rating per 50 missing Energy Shield
+(200-300)% increased Evasion and Energy Shield
++(20-30) to Dexterity
+Companions have (30-50)% increased maximum Life
+(10-15)% of Damage from Deflected Hits is taken from Damageable Companion's Life before you
+]],[[
 Tabula Rasa
 Garment
 League: Dawn of the Hunt

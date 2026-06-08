@@ -3086,6 +3086,17 @@ itemBases["Assassin Garb"] = {
 	armour = { Evasion = 248, EnergyShield = 76, MovementPenalty = 0.03, },
 	req = { level = 73, dex = 67, int = 67, },
 }
+-- TEMP: Forgotten Warden base, replace on next export
+itemBases["Primal Markings"] = {
+	type = "Body Armour",
+	subType = "Evasion/Energy Shield",
+	quality = 20,
+	socketLimit = 4,
+	tags = { armour = true, body_armour = true, default = true, dex_int_armour = true, },
+	implicitModTypes = { },
+	armour = { Evasion = 268, EnergyShield = 82, MovementPenalty = 0.03, },
+	req = { level = 84, dex = 67, int = 67, },
+}
 itemBases["Ascetic Garb"] = {
 	type = "Body Armour",
 	subType = "Evasion/Energy Shield",
