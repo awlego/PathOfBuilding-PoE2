@@ -446,3 +446,17 @@ itemBases["Warding Quarterstaff"] = {
 	weapon = { PhysicalMin = 51, PhysicalMax = 85, CritChanceBase = 10, AttackRateBase = 1.4, Range = 14, },
 	req = { level = 65, dex = 127, int = 50, },
 }
+-- TEMP: Runemastered Duality base, replace on next export
+-- poe2db lists 3 Runemastered variants under this one name (Speed APS 1.6 / Critical 15% crit / Damage 85-141 phys),
+-- indistinguishable on import. Modelling the Damage variant, which matches the known in-game roll.
+itemBases["Runemastered Warding Quarterstaff"] = {
+	type = "Staff",
+	subType = "Warstaff",
+	quality = 20,
+	socketLimit = 4,
+	tags = { default = true, two_hand_weapon = true, twohand = true, warstaff = true, weapon = true, },
+	implicit = "+(30-50) to maximum Runic Ward",
+	implicitModTypes = { { "runic_ward" }, },
+	weapon = { PhysicalMin = 85, PhysicalMax = 141, CritChanceBase = 10, AttackRateBase = 1.4, Range = 14, },
+	req = { level = 65, dex = 127, int = 50, },
+}
