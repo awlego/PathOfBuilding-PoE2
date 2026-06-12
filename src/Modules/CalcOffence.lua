@@ -2725,6 +2725,8 @@ function calcs.offence(env, actor, activeSkill)
 			output.Time = 1 / skillData.triggerRate
 			output.TriggerTime = output.Time
 			output.Speed = skillData.triggerRate
+			output.TriggerRateCap = skillData.triggerRate
+			output.SkillTriggerRate = skillData.triggerRate
 			skillData.showAverage = false
 		else
 			local baseTime

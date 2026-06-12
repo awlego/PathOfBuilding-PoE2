@@ -233,6 +233,33 @@ describe("TestSkills", function()
 		assert.True(math.abs(build.calcsTab.mainOutput.FullDPS - fullDPS * 0.5) < fullDPS * 0.001)
 	end)
 
+	it("Annihilation from Hayoxi's Fulmination contributes to Full DPS", function()
+		build.skillsTab:PasteSocketGroup("Despair 20/0  1\nHayoxi's Fulmination 1/0  1")
+		build.skillsTab.socketGroupList[1].includeInFullDPS = true
+		runCallback("OnFrame")
+
+		local row
+		for _, entry in ipairs(build.calcsTab.mainOutput.SkillDPS or {}) do
+			if entry.name == "Annihilation" then
+				row = entry
+			end
+		end
+		assert.truthy(row)
+		assert.True(row.dps > 0)
+		assert.are.equals("Hayoxi's Fulmination", row.trigger)
+		assert.True(math.abs(build.calcsTab.mainOutput.FullDPS - row.dps) < 0.01)
+
+		-- Eruption cadence: 2 zone slots, each erupting 7s after creation
+		local annihilation
+		for _, skill in ipairs(build.skillsTab.socketGroupList[1].displaySkillList) do
+			if skill.activeEffect.grantedEffect.name == "Annihilation" then
+				annihilation = skill
+			end
+		end
+		assert.truthy(annihilation)
+		assert.True(math.abs(annihilation.skillData.triggerRate - 2 / 7) < 1e-9)
+	end)
+
 	it("Test mana cost efficiency with support gems", function()
 		-- Test interaction between cost efficiency and cost multipliers
 		build.skillsTab:PasteSocketGroup("Contagion 6/0  1\nMagnified Area I 1/0  1")

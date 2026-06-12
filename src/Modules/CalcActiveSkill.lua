@@ -808,6 +808,48 @@ function calcs.buildActiveSkillModList(env, activeSkill)
 		end
 	end
 
+	-- Lineage triggered-skill cadence (currently Hayoxi's Fulmination →
+	-- Annihilation): the supported curse creates cursed zones (limit N), and
+	-- each zone erupts as Annihilation once, a fixed delay after creation.
+	-- Zones bank in parallel, so with the curse recast whenever a zone slot
+	-- frees up, sustained eruptions cap at maxZones / delay (2 / 7s = one every
+	-- 3.5s), additionally gated by the curse's Hayoxi-granted cooldown. PoE2 PoB
+	-- has no live trigger-rate machinery (calcs.triggers is disabled for the
+	-- player), so feed the cadence straight into skillData.triggerRate, which
+	-- the cast speed calc consumes; combined with dpsMultiplier (hits per
+	-- eruption) this also lets the skill contribute to Full DPS.
+	if activeEffect.lineageSupportedGem then
+		local support = activeEffect.gemData and activeEffect.gemData.grantedEffect
+		local supportStatSet = support and support.statSets and support.statSets[1]
+		if supportStatSet and supportStatSet.constantStats then
+			local maxZones, delay = 1, nil
+			for _, stat in ipairs(supportStatSet.constantStats) do
+				if stat[1] == "maximum_curse_zones_allowed" then
+					maxZones = m_max(stat[2], 1)
+				elseif stat[1] == "trigger_from_hayhoxis_binding_after_x_ms" then
+					delay = stat[2] / 1000
+				end
+			end
+			if delay and delay > 0 then
+				local supportCooldown = support.levels[1] and support.levels[1].cooldown
+				local rate = maxZones / delay
+				if supportCooldown and supportCooldown > 0 then
+					rate = m_min(rate, 1 / supportCooldown)
+				end
+				-- Registered as SkillData mods (not direct skillData writes) so the
+				-- accelerated env rebuild in CalcSetup, which wipes skillData and
+				-- restores it from these lists, keeps them — Full DPS re-inits the
+				-- env that way between skills.
+				skillModList:NewMod("SkillData", "LIST", { key = "triggered", value = true }, activeGrantedEffect.modSource)
+				skillModList:NewMod("SkillData", "LIST", { key = "triggerRate", value = rate }, activeGrantedEffect.modSource)
+				activeSkill.skillData.triggered = true
+				activeSkill.skillData.triggerRate = rate
+				activeSkill.infoMessage = "Triggered by " .. support.name
+				activeSkill.infoTrigger = support.name
+			end
+		end
+	end
+
 	-- Add extra modifiers from other sources
 	activeSkill.extraSkillModList = { }
 	for _, value in ipairs(skillModList:List(activeSkill.skillCfg, "ExtraSkillMod")) do
