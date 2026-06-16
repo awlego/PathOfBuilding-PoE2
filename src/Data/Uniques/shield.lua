@@ -58,12 +58,13 @@ Accuracy Rating is Doubled
 ]],[[
 Nightfall
 Fortress Tower Shield
+League: Runes of Aldur
 Implicits: 1
 Grants Skill: Raise Shield
-Grants Skill: Level 16 Soaring Midnight
 +150 Strength Requirement
 (10-20)% increased Block chance
-(150-200)% increased Armour
+(350-450)% increased Armour
++(30-40)% to Cold Resistance
 (10-20)% of Fire damage taken as Cold damage
 (10-20)% of Lightning damage taken as Cold damage
 ]],[[
@@ -301,6 +302,17 @@ Grants Skill: Raise Shield
 Lose 1% of maximum Life on Kill
 Lose 1% of maximum Mana on Kill
 (30-50)% increased Skill Effect Duration
+]],[[
+Eyes of the Runefather
+Venerable Defender
+League: Runes of Aldur
+Implicits: 1
+Grants Skill: Raise Shield
+(300-400)% increased Armour and Evasion
++(40-50)% to Cold Resistance
+Off-hand Hits inflict Runefather's Challenge
+Inflicts Runefather's Challenge on enemies 6 metres in front of you when raised, no more than once every 2 seconds
+Gain 1 Runefather's Boast per Power of targets affected by Runefather's Challenge you kill
 ]],[[
 Feathered Fortress
 Crescent Targe

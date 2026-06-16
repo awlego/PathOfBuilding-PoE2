@@ -6501,6 +6501,23 @@ statMap = {
 #mods
 #skillEnd
 
+#skill MetaMirageDeadeyePlayer
+#set MetaMirageDeadeyePlayer
+#flags
+#mods
+#skillEnd
+
+#skill SupportMirageDeadeyePlayer
+#set SupportMirageDeadeyePlayer
+#mods
+#skillEnd
+
+#skill MirageDeadeyeSpawnPlayer
+#set MirageDeadeyeSpawnPlayer
+#flags
+#mods
+#skillEnd
+
 #skill SummonMistRavenPlayer
 #set SummonMistRavenPlayer
 #flags
@@ -7247,23 +7264,6 @@ statMap = {
 
 #skill HazardousHoldoutPlayer
 #set HazardousHoldoutPlayer
-#flags
-#mods
-#skillEnd
-
-#skill MetaMirageDeadeyePlayer
-#set MetaMirageDeadeyePlayer
-#flags
-#mods
-#skillEnd
-
-#skill SupportMirageDeadeyePlayer
-#set SupportMirageDeadeyePlayer
-#mods
-#skillEnd
-
-#skill MirageDeadeyeSpawnPlayer
-#set MirageDeadeyeSpawnPlayer
 #flags
 #mods
 #skillEnd
