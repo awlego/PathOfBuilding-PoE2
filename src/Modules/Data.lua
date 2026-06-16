@@ -920,6 +920,15 @@ for skillId, grantedEffect in pairs(data.skills) do
 	end
 end
 
+-- Skills whose stat sets are simultaneous components of a single use (each
+-- cast produces every set's hit at once) rather than alternate modes.
+-- Full DPS includes every stat set of these skills, not just the selected one.
+for _, skillId in ipairs({ "CoilingBoltsPlayer" }) do
+	if data.skills[skillId] then
+		data.skills[skillId].statSetsSimultaneous = true
+	end
+end
+
 -- Load gems
 data.gems = LoadModule("Data/Gems")
 data.assets = LoadModule("Data/Assets")

@@ -108,12 +108,12 @@ Eventide Petals
 Veridical Chain
 League: Runes of Aldur
 Implicits: 1
-Grants Skill: Level 18 Midnight Zenith
-{tags:defences}+(20-40) to maximum Runic Ward
-(20-40)% increased Critical Hit Chance
-{tags:attribute}+(15-30) to Intelligence
-(30-60)% increased Light Radius
-Ice Crystals have 2% increased maximum Life per 5% Cold Resistance you have
+Grants Skill: Level 6 Midnight Zenith
+{tags:defences}+(30-40) to maximum Runic Ward
+(30-50)% increased Critical Hit Chance
+{tags:attribute}+(25-35) to Intelligence
+(30-50)% increased Light Radius
+Ice Crystals have (-3-3)% reduced maximum Life per 5% Cold Resistance you have
 ]],[[
 Fireflower
 Solar Amulet

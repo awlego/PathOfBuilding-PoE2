@@ -260,6 +260,26 @@ describe("TestSkills", function()
 		assert.True(math.abs(annihilation.skillData.triggerRate - 2 / 7) < 1e-9)
 	end)
 
+	it("Coiling Bolts contributes both its Physical and Chaos bolts to Full DPS", function()
+		build.skillsTab:PasteSocketGroup("Coiling Bolts 20/0  1")
+		build.skillsTab.socketGroupList[1].includeInFullDPS = true
+		runCallback("OnFrame")
+
+		-- The skill fires a Physical and a Chaos projectile simultaneously, so
+		-- Full DPS lists one entry per stat set rather than just the selected one
+		local rows = { }
+		for _, entry in ipairs(build.calcsTab.mainOutput.SkillDPS or {}) do
+			if entry.name == "Coiling Bolts" then
+				rows[entry.skillPart] = entry.dps
+			end
+		end
+		assert.truthy(rows["Physical"])
+		assert.truthy(rows["Chaos"])
+		assert.True(rows["Physical"] > 0)
+		assert.True(rows["Chaos"] > 0)
+		assert.True(math.abs(build.calcsTab.mainOutput.FullDPS - (rows["Physical"] + rows["Chaos"])) < 0.01)
+	end)
+
 	it("Test mana cost efficiency with support gems", function()
 		-- Test interaction between cost efficiency and cost multipliers
 		build.skillsTab:PasteSocketGroup("Contagion 6/0  1\nMagnified Area I 1/0  1")

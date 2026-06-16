@@ -891,6 +891,7 @@ function TradeQueryGeneratorClass:RunTimeLostSolver()
 	if options.timeLostIncludeRadiusUpgrades then
 		t_insert(radii, "Medium")
 		t_insert(radii, "Large")
+		t_insert(radii, "Very Large")
 	end
 
 	local allResults = { }
@@ -1111,12 +1112,13 @@ local function describeEntries(list)
 	return table.concat(parts, "  ^8+^7  ")
 end
 
--- A radius-upgrade prefix (Greater/Grand) consumes one prefix slot and is
--- implied by the row's radius label. Reflect that in display so the user can
--- tell why only one scoring prefix is shown.
+-- A radius-upgrade prefix (Greater/Grand/crafted Very Large) consumes one
+-- prefix slot and is implied by the row's radius label. Reflect that in
+-- display so the user can tell why only one scoring prefix is shown.
 local function radiusPrefixHint(row)
 	if row.radiusLabel == "Medium" then return "^8Greater^7 (radius)" end
 	if row.radiusLabel == "Large" then return "^8Grand^7 (radius)" end
+	if row.radiusLabel == "Very Large" then return "^8Crafted^7 (Very Large radius)" end
 	return nil
 end
 
@@ -1134,6 +1136,8 @@ local function buildTimeLostItemRaw(row)
 		t_insert(lines, "Upgrades Radius to Medium")
 	elseif row.radiusLabel == "Large" then
 		t_insert(lines, "Upgrades Radius to Large")
+	elseif row.radiusLabel == "Very Large" then
+		t_insert(lines, "Upgrades Radius to Very Large")
 	end
 	for _, e in ipairs(row.prefixes or { }) do
 		if e.line then t_insert(lines, e.line) end
@@ -1557,8 +1561,8 @@ Remove: anoints are completely ignored, and removed from items.]]
 		controls.solverKLabel.shown = function() return controls.solverK:IsShown() end
 		updateLastAnchor(controls.solverK)
 
-		controls.solverRadii = new("CheckBoxControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Include Medium/Large radius prefixes:", function(state) end,
-			"When on, the solver evaluates each base at Small/Medium/Large radius and surfaces the best combination per radius tier.")
+		controls.solverRadii = new("CheckBoxControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Include radius upgrades (Medium/Large/Very Large):", function(state) end,
+			"When on, the solver evaluates each base at Small/Medium/Large/Very Large radius and surfaces the best combination per radius tier. Very Large rows require the crafted/desecrated radius-upgrade prefix.")
 		controls.solverRadii.state = (self.lastTimeLostIncludeRadii == nil or self.lastTimeLostIncludeRadii == true)
 		controls.solverRadii.shown = inSolverMode
 		updateLastAnchor(controls.solverRadii)

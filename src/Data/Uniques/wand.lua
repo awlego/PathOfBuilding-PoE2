@@ -68,13 +68,13 @@ Liminal Coil
 Twisted Wand
 League: Runes of Aldur
 Implicits: 1
-Grants Skill: Level 17 Coiling Bolts
-71% increased Spell Damage
-11% increased Cast Speed
+Grants Skill: Level (1-20) Coiling Bolts
+(71-113)% increased Spell Damage
+(7-13)% increased Cast Speed
 Magnitudes of Curses you inflict are zero
 Curses you inflict ignore Curse limit
-Spell Hits Gain 27% of Damage as Extra Chaos Damage per Curse on target
-Spell Hits Gain 27% of Damage as Extra Physical Damage per Curse on target
+Spell Hits Gain (23-31)% of Damage as Extra Chaos Damage per Curse on target
+Spell Hits Gain (23-31)% of Damage as Extra Physical Damage per Curse on target
 ]],[[
 The Wicked Quill
 Withered Wand
