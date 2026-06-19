@@ -1523,8 +1523,14 @@ Huge sets the radius to 11.
 		modList:NewMod("Condition:UsedWarcryInPast8Seconds", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
 		modList:NewMod("Condition:UsedSkillRecently", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
 	end },
-	{ var = "multiplierWarcryUsedRecently", type = "count", label = "# of Warcries Used Recently:", defaultPlaceholderState = 1, ifOption = "conditionUsedWarcryRecently", apply = function(val, modList, enemyModList)
+	{ var = "multiplierWarcryUsedRecently", type = "count", label = "# of Warcries Used Recently:", defaultPlaceholderState = 1, ifOption = "conditionUsedWarcryRecently", apply = function(val, modList, enemyModList, build)
+		-- Skip the static number when the cast-rate estimate is driving the multiplier
+		-- instead. Use the passed build (not a global, which is nil outside headless).
+		if build and build.configTab and build.configTab.input.warcryCountFromCastRate then return end
 		modList:NewMod("Multiplier:WarcryUsedRecently", "BASE", m_min(val, 100), "Config", { type = "Condition", var = "Combat" }, { type = "Condition", var = "UsedWarcryRecently" } )
+	end },
+	{ var = "warcryCountFromCastRate", type = "check", label = "Derive warcry count from cast rate?", ifOption = "conditionUsedWarcryRecently", tooltip = "Estimates the number above from how fast your Warcries cycle (cast time + cooldown)\nover the last 4 seconds, so Warcry Speed, Skill Speed and Cooldown Recovery\n(including the Enraged Warcry cooldown bypass) raise it automatically.\nOverrides the number entered above.", apply = function(val, modList, enemyModList)
+		modList:NewMod("WarcryCountFromCastRate", "FLAG", true, "Config")
 	end },
 	{ var = "conditionUsedWarcryInPast8Seconds", type = "check", label = "Used a Warcry in the past 8 seconds?", ifCond = "UsedWarcryInPast8Seconds", apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:UsedWarcryInPast8Seconds", "FLAG", true, "Config", { type = "Condition", var = "Combat" })

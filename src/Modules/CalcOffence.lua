@@ -1816,6 +1816,36 @@ function calcs.offence(env, actor, activeSkill)
 		output.WarcryCastTime = calcWarcryCastTime(skillModList, skillCfg, skillData, actor)
 	end
 
+	-- Optionally derive "# of Warcries Used Recently" (the WarcryUsedRecently
+	-- multiplier) from how fast your Warcries actually cycle, instead of a static
+	-- typed number. A Warcry can be re-used every (cast time + cooldown) seconds, so
+	-- Warcry Speed, Skill Speed and Cooldown Recovery -- including the Enraged Warcry
+	-- cooldown bypass -- all raise the estimated count. "Recently" is the last 4
+	-- seconds (the game's window for this multiplier). Mirrors the cross-skill warcry
+	-- iteration used further down for exert uptimes. Runs before the damage passes
+	-- (~line 2555) so the INC-damage-per-warcry mod picks the multiplier up. Gated by
+	-- a config flag so there is zero cost unless the user opts into the estimate.
+	if env.modDB:Flag(nil, "WarcryCountFromCastRate") then
+		local window = 4 -- seconds that count as "recently" for the multiplier
+		local totalUses = 0
+		for _, warcry in ipairs(actor.activeSkillList) do
+			if warcry.skillTypes[SkillType.Warcry] then
+				local castTime = calcWarcryCastTime(warcry.skillModList, warcry.skillCfg, warcry.skillData, actor)
+				local cooldown = calcSkillCooldown(warcry.skillModList, warcry.skillCfg, warcry.skillData)
+				local interval = castTime + cooldown
+				totalUses = totalUses + (interval > 0 and m_max(m_floor(window / interval), 1) or 100)
+			end
+		end
+		output.WarcryUsedRecentlyEstimate = m_min(totalUses, 100)
+		skillModList:NewMod("Multiplier:WarcryUsedRecently", "BASE", output.WarcryUsedRecentlyEstimate, "Cast Rate Estimate", { type = "Condition", var = "Combat" }, { type = "Condition", var = "UsedWarcryRecently" })
+		if breakdown then
+			breakdown.WarcryUsedRecentlyEstimate = {
+				s_format("Estimated from Warcry cast cadence over the last %ds:", window),
+				s_format("= %d ^8(sum of floor(%ds / (cast time + cooldown)) per Warcry, min 1 each, capped at 100)", output.WarcryUsedRecentlyEstimate, window),
+			}
+		end
+	end
+
 	if skillFlags.corpse then
 		output.CorpseLevel = skillModList:Sum("BASE", skillCfg, "CorpseLevel")
 		output.BaseCorpseLife = env.data.monsterLifeTable[output.CorpseLevel or 1] * (env.data.monsterVarietyLifeMult[skillData.corpseMonsterVariety] or 1) * (env.data.mapLevelLifeMult[env.enemyLevel] or 1)
