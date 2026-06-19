@@ -607,6 +607,18 @@ return {
 ["channelled_skill_do_not_go_on_cooldown_on_finishing_channel"] = {
 	flag("CooldownDoesNotLimitSkillSpeed"),
 },
+-- Enraged Warcry support: spend Rage to bypass a Warcry's Cooldown (instead of an
+-- Endurance Charge). The stat value is the Rage spent per bypass (20 for rank I,
+-- 15 for rank II). Bypassing the Cooldown lets the Warcry be re-cast the moment its
+-- buff would lapse, so we model it as a Cooldown override of 0 -> calcSkillCooldown
+-- returns 0 -> warcry uptime min(duration / 0, 1) caps at 100% (same path as the
+-- "ignore warcry cooldowns" mod). The Rage number drives a flat Rage cost so the
+-- sustain trade-off is surfaced in the cost section. The two mods need different
+-- values from the one stat, so the Cooldown override is a group with a fixed value.
+["warcry_bypass_cooldown_spending_X_rage_instead_of_endurance_charge"] = {
+	{ mod("CooldownRecovery", "OVERRIDE", 0, 0, 0, { type = "SkillType", skillType = SkillType.Warcry }), value = 0 },
+	mod("RageCostBase", "BASE", nil),
+},
 ["totem_skill_cast_speed_+%"] = {
 	mod("Speed", "INC", nil, ModFlag.Cast, KeywordFlag.Totem),
 },
