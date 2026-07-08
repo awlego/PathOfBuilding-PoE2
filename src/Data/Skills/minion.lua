@@ -14,6 +14,8 @@ skills["MeleeAtAnimationSpeed"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { levelRequirement = 0, },
 	},
@@ -48,6 +50,8 @@ skills["MinionMelee"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { levelRequirement = 0, },
 	},
@@ -79,6 +83,8 @@ skills["MinionMeleeStep"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.MirageArcherCanUse] = true, [SkillType.Projectile] = true, [SkillType.MeleeSingleTarget] = true, [SkillType.Melee] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -114,6 +120,8 @@ skills["MinionMeleeBow"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.MirageArcherCanUse] = true, [SkillType.Projectile] = true, [SkillType.MeleeSingleTarget] = true, [SkillType.Melee] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -152,7 +160,10 @@ skills["GasShotSkeletonSniperMinion"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.Area] = true, [SkillType.ProjectileNumber] = true, [SkillType.ProjectileSpeed] = true, [SkillType.Rain] = true, [SkillType.DamageOverTime] = true, [SkillType.Cooldown] = true, [SkillType.Duration] = true, [SkillType.GroundTargetedProjectile] = true, [SkillType.CreatesGroundEffect] = true, [SkillType.MirageArcherCanUse] = true, },
 	castTime = 1,
 	qualityStats = {
-		{ "dummy_stat_display_nothing", 0.001 },
+		{ "dummy_stat_display_nothing", 0.001, {  } },
+	},
+	altQualityStats = {
+		{ "active_skill_fire_damage_+%_final", 2.5, {  } },
 	},
 	levels = {
 		[1] = { attackSpeedMultiplier = 20, baseMultiplier = 0.8, cooldown = 6, levelRequirement = 0, storedUses = 1, },
@@ -260,6 +271,8 @@ skills["BoneshatterBruteMinion"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { attackSpeedMultiplier = 20, baseMultiplier = 1.8, cooldown = 4, levelRequirement = 0, storedUses = 1, },
 	},
@@ -316,6 +329,8 @@ skills["ShatteringRoarSkeletalBruteMinion"] = {
 	skillTypes = { [SkillType.Warcry] = true, [SkillType.Area] = true, [SkillType.Duration] = true, [SkillType.Cold] = true, [SkillType.Damage] = true, [SkillType.Cooldown] = true, [SkillType.UsableWhileMoving] = true, [SkillType.Nova] = true, [SkillType.Minion] = true, [SkillType.AttackInPlace] = true, [SkillType.SkillConsumesFreeze] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 8, critChance = 12, levelRequirement = 0, storedUses = 1, },
@@ -400,6 +415,8 @@ skills["ArcSkeletonMageMinion"] = {
 	castTime = 1.25,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { critChance = 9, levelRequirement = 0, },
 	},
@@ -445,6 +462,8 @@ skills["DeathStormSkeletonStormMageMinion"] = {
 	skillTypes = { [SkillType.Spell] = true, [SkillType.Lightning] = true, [SkillType.Area] = true, [SkillType.Cooldown] = true, [SkillType.CreatesGroundEffect] = true, },
 	castTime = 2,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 5, critChance = 10, levelRequirement = 0, storedUses = 1, },
@@ -493,6 +512,8 @@ skills["FrostBoltSkeletonMageMinion"] = {
 	skillTypes = { [SkillType.Projectile] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.Spell] = true, [SkillType.Damage] = true, [SkillType.Multicastable] = true, [SkillType.Cold] = true, [SkillType.Unleashable] = true, [SkillType.Area] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1.25,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { critChance = 11, levelRequirement = 0, },
@@ -576,6 +597,8 @@ skills["IceArmourSkeletonMageMinion"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { cooldown = 12, levelRequirement = 0, storedUses = 1, },
 	},
@@ -653,6 +676,8 @@ skills["HealSkeletonClericMinion"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { levelRequirement = 0, },
 	},
@@ -724,6 +749,8 @@ skills["FireBombSkeletonMinion"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { levelRequirement = 0, },
 	},
@@ -793,7 +820,9 @@ skills["DestructiveLinkSkeletonBombadierMinion"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.Cooldown] = true, [SkillType.Area] = true, [SkillType.Fire] = true, [SkillType.Damage] = true, },
 	castTime = 1,
 	qualityStats = {
-		{ "arsonist_destructive_link_%_of_life_as_fire_damage", 0.2 },
+		{ "arsonist_destructive_link_%_of_life_as_fire_damage", 0.2, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { baseMultiplier = 3, cooldown = 3, levelRequirement = 0, storedUses = 1, },
@@ -915,6 +944,8 @@ skills["EnrageSkeletonReaverMinion"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { cooldown = 4, levelRequirement = 0, storedUses = 1, },
 	},
@@ -952,6 +983,8 @@ skills["GAAncestralJadeHulkLeapImpact"] = {
 	skillTypes = { [SkillType.Triggerable] = true, [SkillType.Attack] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { baseMultiplier = 1.5, levelRequirement = 0, },
@@ -993,6 +1026,8 @@ skills["TCAncestralLeagueKaruiHulk"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { cooldown = 7, levelRequirement = 0, storedUses = 1, },
 	},
@@ -1025,6 +1060,8 @@ skills["MPSAncestralTotemSpiritSoulCasterProjectile"] = {
 	skillTypes = { [SkillType.Spell] = true, [SkillType.Projectile] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.Triggerable] = true, [SkillType.Damage] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1.5,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { critChance = 6, levelRequirement = 0, },
@@ -1103,6 +1140,8 @@ skills["GAAnimateWeaponMaceSlam"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { attackSpeedMultiplier = -50, baseMultiplier = 1.8, cooldown = 6, levelRequirement = 0, storedUses = 1, },
 	},
@@ -1132,6 +1171,8 @@ skills["DTTAnimateWeaponSpearDashStabImpact"] = {
 	skillTypes = { [SkillType.Triggerable] = true, [SkillType.Attack] = true, [SkillType.AttackInPlace] = true, [SkillType.Melee] = true, [SkillType.MeleeSingleTarget] = true, [SkillType.Area] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { baseMultiplier = 1.8, levelRequirement = 0, },
@@ -1164,6 +1205,8 @@ skills["GAAnimateWeaponQuarterstaffSweep"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { baseMultiplier = 0.9, cooldown = 6, levelRequirement = 0, storedUses = 1, },
 	},
@@ -1193,6 +1236,8 @@ skills["RavenousSwarmAttack"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.Area] = true, [SkillType.Melee] = true, [SkillType.Chaos] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -1294,6 +1339,99 @@ skills["RavenousSwarmAttack"] = {
 		},
 	}
 }
+skills["LivingLightningZap"] = {
+	name = "Zap",
+	hidden = true,
+	icon = "",
+	description = "Teleport to a target, dealing Lightning Attack Damage.",
+	skillTypes = { [SkillType.Attack] = true, [SkillType.Lightning] = true, [SkillType.Chains] = true, [SkillType.Melee] = true, [SkillType.CannotTerrainChain] = true, [SkillType.AttackInPlace] = true, },
+	castTime = 1,
+	qualityStats = {
+	},
+	altQualityStats = {
+	},
+	levels = {
+		[1] = { cooldown = 0.25, critChance = 9, levelRequirement = 0, storedUses = 1, },
+	},
+	statSets = {
+		[1] = {
+			label = "Zap",
+			incrementalEffectiveness = 0.054999999701977,
+			statDescriptionScope = "skill_stat_descriptions",
+			statMap = {
+				["living_lightning_damage_+%_final_per_additional_hit"] = {
+					mod("Damage", "MORE", nil),
+					div = 3/2, --Average over 3 hits
+				},
+			},
+			baseFlags = {
+				attack = true,
+				melee = true,
+				chaining = true,
+			},
+			baseMods = {
+				skill("timeOverride", 0.001, { type = "Multiplier", var = "LivingLightningAttackTime" }),
+			},
+			stats = {
+			},
+			levels = {
+				[1] = { actorLevel = 1, },
+			},
+		},
+	}
+}
+skills["DeathFromAboveDaemonMinion"] = {
+	name = "Death From Above",
+	hidden = true,
+	icon = "Art/2DArt/SkillIcons/TacticianDeathFromAboveSkillIcon.dds",
+	description = "Fires a flare at a target location, attaching to an enemy if it lands on one, then launches a series of arrow volleys centred around the flare.",
+	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.Rain] = true, [SkillType.Area] = true, [SkillType.Projectile] = true, [SkillType.ProjectilesNumberModifiersNotApplied] = true, [SkillType.AttackInPlace] = true, },
+	castTime = 1,
+	qualityStats = {
+	},
+	altQualityStats = {
+	},
+	levels = {
+		[1] = { baseMultiplier = 7.63, cooldown = 10, levelRequirement = 0, storedUses = 1, },
+	},
+	statSets = {
+		[1] = {
+			label = "Death From Above",
+			incrementalEffectiveness = 0.054999999701977,
+			statDescriptionScope = "death_from_above",
+			statMap = {
+				["death_from_above_number_of_volleys"] = {
+					skill("dpsMultiplier", nil),
+				},
+			},
+			baseFlags = {
+				attack = true,
+				projectile = true,
+				area = true,
+			},
+			constantStats = {
+				{ "death_from_above_volley_delay_ms", 750 },
+				{ "death_from_above_number_of_volleys", 6 },
+				{ "explosion_delay_ms", 250 },
+				{ "active_skill_base_area_of_effect_radius", 140 },
+				{ "active_skill_base_secondary_area_of_effect_radius", 140 },
+			},
+			stats = {
+				"is_commandable_skill",
+				"base_is_projectile",
+				"is_area_damage",
+				"skill_cannot_be_frozen",
+				"skill_cannot_be_electrocuted",
+				"skill_cannot_be_knocked_back",
+				"skill_cannot_be_stunned",
+				"base_modifiers_to_projectile_count_do_not_apply",
+			},
+			levels = {
+				[1] = { actorLevel = 1, },
+			},
+		},
+	}
+}
 skills["HyenaCompanionMelee"] = {
 	name = "Basic Attack",
 	hidden = true,
@@ -1301,6 +1439,8 @@ skills["HyenaCompanionMelee"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.MirageArcherCanUse] = true, [SkillType.Projectile] = true, [SkillType.MeleeSingleTarget] = true, [SkillType.Melee] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -1336,6 +1476,8 @@ skills["MeleeAtAnimationSpeedWolfCompanion"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.MirageArcherCanUse] = true, [SkillType.Projectile] = true, [SkillType.MeleeSingleTarget] = true, [SkillType.Melee] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -1381,6 +1523,8 @@ skills["WolfLeapAttackMinion"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { attackSpeedMultiplier = 25, cooldown = 7, levelRequirement = 0, storedUses = 1, },
 	},
@@ -1415,6 +1559,8 @@ skills["CorpseBeetleExplode"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Physical] = true, [SkillType.Damage] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { critChance = 15, levelRequirement = 0, },
@@ -1463,7 +1609,9 @@ skills["WaterBubbleWaterDjinn"] = {
 	skillTypes = { [SkillType.Duration] = true, [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Cooldown] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 2,
 	qualityStats = {
-		{ "water_djinn_water_bubble_absorb_damage_%_enemy_outside_bubble", 0.5 },
+		{ "water_djinn_water_bubble_absorb_damage_%_enemy_outside_bubble", 0.5, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 15, levelRequirement = 0, storedUses = 1, },
@@ -1510,8 +1658,10 @@ skills["ChilledGroundBurstWaterDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Cold] = true, [SkillType.Damage] = true, [SkillType.Cooldown] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1.2,
 	qualityStats = {
-		{ "active_skill_hit_damage_freeze_multiplier_+%_final", 2 },
-		{ "active_skill_chill_as_though_damage_+%_final", 2 },
+		{ "active_skill_hit_damage_freeze_multiplier_+%_final", 2, {  } },
+		{ "active_skill_chill_as_though_damage_+%_final", 2, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 5, critChance = 12, levelRequirement = 0, storedUses = 1, },
@@ -1558,7 +1708,9 @@ skills["ESRechargeForceRestartWaterDjinn"] = {
 	skillTypes = { [SkillType.Spell] = true, [SkillType.Cooldown] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 2.1,
 	qualityStats = {
-		{ "djinn_granted_energy_shield_recharge_rate_+%", 1 },
+		{ "djinn_granted_energy_shield_recharge_rate_+%", 1, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 12, levelRequirement = 0, storedUses = 1, },
@@ -1595,7 +1747,9 @@ skills["ChilledGroundOasisConvertWaterDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Duration] = true, [SkillType.Buff] = true, [SkillType.Cooldown] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1.8,
 	qualityStats = {
-		{ "oasis_x_charges_for_life_and_mana_flasks_per_minute", 0.6 },
+		{ "oasis_x_charges_for_life_and_mana_flasks_per_minute", 0.6, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 8, levelRequirement = 0, storedUses = 1, },
@@ -1636,7 +1790,9 @@ skills["PassiveTriggeredManaWaveWaterDjinn"] = {
 	skillTypes = { [SkillType.Spell] = true, [SkillType.Area] = true, [SkillType.Buff] = true, [SkillType.Duration] = true, [SkillType.Triggerable] = true, [SkillType.Triggered] = true, [SkillType.InbuiltTrigger] = true, [SkillType.NoAttackOrCastTime] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 0,
 	qualityStats = {
-		{ "water_djinn_mana_wave_mana_regeneration_rate_+%", 1 },
+		{ "water_djinn_mana_wave_mana_regeneration_rate_+%", 1, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -1674,7 +1830,9 @@ skills["LivingBombFireDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Fire] = true, [SkillType.DetonatesAfterTime] = true, [SkillType.Limit] = true, },
 	castTime = 0.6,
 	qualityStats = {
-		{ "active_skill_damage_+%_final_vs_burning_enemies", 1 },
+		{ "active_skill_damage_+%_final_vs_burning_enemies", 1, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { critChance = 7, levelRequirement = 0, },
@@ -1723,7 +1881,9 @@ skills["FireRuneFireDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Hazard] = true, [SkillType.Cooldown] = true, [SkillType.Duration] = true, [SkillType.Spell] = true, [SkillType.Damage] = true, [SkillType.Fire] = true, [SkillType.Projectile] = true, [SkillType.SingleMainProjectile] = true, [SkillType.CannotChain] = true, [SkillType.CannotTerrainChain] = true, [SkillType.Limit] = true, },
 	castTime = 1,
 	qualityStats = {
-		{ "base_skill_effect_duration", 100 },
+		{ "base_skill_effect_duration", 100, { 1, 2 } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 8, critChance = 7, levelRequirement = 0, storedUses = 1, },
@@ -1848,7 +2008,9 @@ skills["MeteorFireDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Damage] = true, [SkillType.Fire] = true, [SkillType.Cooldown] = true, [SkillType.Cascadable] = true, [SkillType.Detonator] = true, },
 	castTime = 2.3,
 	qualityStats = {
-		{ "active_skill_base_area_of_effect_radius", 0.2 },
+		{ "active_skill_base_area_of_effect_radius", 0.2, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 12, critChance = 7, levelRequirement = 0, storedUses = 1, },
@@ -1927,7 +2089,9 @@ skills["MassFusilladeFireDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Projectile] = true, [SkillType.Spell] = true, [SkillType.Fire] = true, [SkillType.Damage] = true, [SkillType.Cooldown] = true, },
 	castTime = 2.3,
 	qualityStats = {
-		{ "base_number_of_projectiles", 0.2 },
+		{ "base_number_of_projectiles", 0.2, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 7, critChance = 7, levelRequirement = 0, storedUses = 1, },
@@ -2013,7 +2177,9 @@ skills["FlameSliceFireDjinn"] = {
 	skillTypes = { [SkillType.Melee] = true, [SkillType.Attack] = true, [SkillType.Area] = true, [SkillType.Fire] = true, [SkillType.Cooldown] = true, [SkillType.MeleeSingleTarget] = true, },
 	castTime = 1,
 	qualityStats = {
-		{ "melee_range_+", 0.2 },
+		{ "melee_range_+", 0.2, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { baseMultiplier = 4.5, cooldown = 4, levelRequirement = 0, storedUses = 1, },
@@ -2053,7 +2219,9 @@ skills["KnifeThrowSandDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Physical] = true, [SkillType.Damage] = true, [SkillType.Cooldown] = true, [SkillType.Projectile] = true, [SkillType.CannotChain] = true, [SkillType.GroundTargetedProjectile] = true, },
 	castTime = 0.8,
 	qualityStats = {
-		{ "djinn_knife_throw_number_of_knives_created", 0.1 },
+		{ "djinn_knife_throw_number_of_knives_created", 0.1, { 0 } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 5, critChance = 15, levelRequirement = 0, storedUses = 2, },
@@ -2139,7 +2307,9 @@ skills["ExplosiveTeleportSandDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Physical] = true, [SkillType.Damage] = true, [SkillType.Cooldown] = true, },
 	castTime = 0.8,
 	qualityStats = {
-		{ "djinn_damage_+%_final_per_teleport_in_sequence", 0.5 },
+		{ "djinn_damage_+%_final_per_teleport_in_sequence", 0.5, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 5, critChance = 15, levelRequirement = 0, storedUses = 3, },
@@ -2222,7 +2392,9 @@ skills["HandSlamSandDjinn"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Spell] = true, [SkillType.Physical] = true, [SkillType.Damage] = true, [SkillType.Channel] = true, [SkillType.Cooldown] = true, [SkillType.GainsStages] = true, },
 	castTime = 0.5,
 	qualityStats = {
-		{ "apply_X_stacks_of_critical_weakness_on_hit", 0.1 },
+		{ "apply_X_stacks_of_critical_weakness_on_hit", 0.1, {  } },
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 12, critChance = 15, levelRequirement = 0, storedUses = 1, },
@@ -2275,6 +2447,8 @@ skills["ApplyTangmazuSwarmAuraPlayer"] = {
 	skillTypes = { [SkillType.Buff] = true, [SkillType.HasReservation] = true, [SkillType.Aura] = true, [SkillType.OngoingSkill] = true, [SkillType.Persistent] = true, [SkillType.AffectsPresence] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -2364,6 +2538,8 @@ skills["TangmazuMadFlightMinion"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { baseMultiplier = 5.5, cooldown = 10, levelRequirement = 0, storedUses = 1, },
 	},
@@ -2404,6 +2580,8 @@ skills["AzmerianSwarmAttack"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { baseMultiplier = 0.75, levelRequirement = 0, },
 	},
@@ -2435,6 +2613,8 @@ skills["MeleeAtAnimationSpeedWolfPackleader"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.MirageArcherCanUse] = true, [SkillType.Projectile] = true, [SkillType.MeleeSingleTarget] = true, [SkillType.Melee] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { baseMultiplier = 2.5, levelRequirement = 0, },
@@ -2470,6 +2650,8 @@ skills["WolfPackleaderDashAttack"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { baseMultiplier = 7, cooldown = 7.5, levelRequirement = 0, storedUses = 1, },
 	},
@@ -2503,6 +2685,8 @@ skills["WolfPackleaderLungeBite"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.RangedAttack] = true, [SkillType.MirageArcherCanUse] = true, [SkillType.Projectile] = true, [SkillType.MeleeSingleTarget] = true, [SkillType.Melee] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { baseMultiplier = 3.5, cooldown = 3.5, levelRequirement = 0, storedUses = 1, },
@@ -2539,6 +2723,8 @@ skills["GreatHuntPackleaderMinion"] = {
 	skillTypes = { [SkillType.Attack] = true, [SkillType.Area] = true, [SkillType.Damage] = true, [SkillType.Cooldown] = true, [SkillType.Duration] = true, [SkillType.Physical] = true, },
 	castTime = 4,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { attackSpeedMultiplier = 50, baseMultiplier = 10, cooldown = 15, levelRequirement = 0, storedUses = 1, },
@@ -2579,6 +2765,8 @@ skills["CompanionBearMaul"] = {
 	castTime = 1,
 	qualityStats = {
 	},
+	altQualityStats = {
+	},
 	levels = {
 		[1] = { attackSpeedMultiplier = 20, levelRequirement = 0, },
 	},
@@ -2614,6 +2802,8 @@ skills["CompanionBearSlam"] = {
 	skillTypes = { [SkillType.Area] = true, [SkillType.Attack] = true, [SkillType.Slam] = true, [SkillType.Melee] = true, [SkillType.Cooldown] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { cooldown = 5, levelRequirement = 0, storedUses = 1, },
@@ -2652,6 +2842,8 @@ skills["CompanionBearLeapImpact"] = {
 	skillTypes = { [SkillType.Triggerable] = true, [SkillType.Attack] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { levelRequirement = 0, },
@@ -2692,6 +2884,8 @@ skills["GSWardboundMinionBlast"] = {
 	skillTypes = { [SkillType.Triggerable] = true, [SkillType.Spell] = true, [SkillType.Damage] = true, [SkillType.AttackInPlace] = true, },
 	castTime = 1,
 	qualityStats = {
+	},
+	altQualityStats = {
 	},
 	levels = {
 		[1] = { critChance = 7, levelRequirement = 0, },
