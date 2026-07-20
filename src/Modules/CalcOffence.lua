@@ -1243,6 +1243,30 @@ function calcs.offence(env, actor, activeSkill)
 			end
 		end
 	end
+	-- Verglas: supported skills gain a % of Damage as extra Cold based on the Life of the Ice Crystals you destroy
+	local verglasColdGainPer2000 = skillModList:Sum("BASE", skillCfg, "VerglasColdGainPer2000CrystalLife")
+	if verglasColdGainPer2000 > 0 then
+		local crystalLife = 0
+		for _, otherSkill in ipairs(actor.activeSkillList) do
+			if otherSkill.skillTypes[SkillType.IceCrystal] then
+				local life = otherSkill.skillModList:Sum("BASE", otherSkill.skillCfg, "IceCrystalLifeBase") * calcLib.mod(otherSkill.skillModList, otherSkill.skillCfg, "IceCrystalLife")
+				crystalLife = m_max(crystalLife, life)
+			end
+		end
+		if crystalLife > 0 then
+			local gainAsCold = verglasColdGainPer2000 * crystalLife / 2000
+			skillModList:NewMod("DamageGainAsCold", "BASE", gainAsCold, "Verglas")
+			output.VerglasCrystalLife = crystalLife
+			output.VerglasColdGain = gainAsCold
+			if breakdown then
+				breakdown.VerglasColdGain = {
+					s_format("%.2g%% ^8(gained as extra Cold per 2000 Ice Crystal Life)", verglasColdGainPer2000),
+					s_format("x %.f / 2000 ^8(destroyed Ice Crystal Life)", crystalLife),
+					s_format("= %.2f%% ^8(of Damage gained as extra Cold Damage)", gainAsCold),
+				}
+			end
+		end
+	end
 	-- momentum stacks
 	if skillModList:Flag(nil, "SupportedByMomentum") then
 		local maxMomentumStacks = skillModList:Sum("BASE", skillCfg, "MomentumStacksMax")
