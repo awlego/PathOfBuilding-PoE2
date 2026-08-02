@@ -3448,6 +3448,8 @@ local specialModList = {
 	} end,
 	["only soul cores can be socketed in this item"] = { flag("SocketedSoulCoresOnly") },
 	["only runes can be socketed in this item"] = { flag("SocketedRunesOnly") },
+	["this item gains bonuses from socketed items as though it was a? ?(.+)"] = { }, -- Handled in Item.lua
+	["this item gains bonuses from socketed soul cores as though it was also a? ?(.+)"] = { }, -- Handled in Item.lua
 	["has (%d+) sockets?"] = function(num) return { mod("SocketCount", "BASE", num) } end,
 	["no physical damage"] = { mod("WeaponData", "LIST", { key = "PhysicalMin" }), mod("WeaponData", "LIST", { key = "PhysicalMax" }), mod("WeaponData", "LIST", { key = "PhysicalDPS" }) },
 	["cannot load or fire ammunition"] = { mod("WeaponData", "LIST", { key = "cannotUseGemTag", value = "ammunition" }) },
@@ -3829,6 +3831,8 @@ local specialModList = {
 		mod("EnemyModifier", "LIST", { mod = mod("DamageTaken", "INC", num) }, { type = "ActorCondition", actor = "enemy", var = "Poisoned" }),
 		mod("EnemyModifier", "LIST", { mod = mod("DamageTaken", "INC", num) }, { type = "ActorCondition", actor = "enemy", var = "Electrocuted" }),
 	} end,
+	["non%-channelling spells have (%d+)%% increased magnitude of ailments per (%d+) maximum life"] = function(num, _, div) return { mod("AilmentMagnitude", "INC", num, nil, 0, KeywordFlag.Spell, { type = "SkillType", skillType = SkillType.Channel, neg = true }, { type = "PerStat", stat = "Life", div = tonumber(div) }) } end,
+	["non%-channelling spells have (%d+)%% reduced magnitude of ailments per (%d+) maximum life"] = function(num, _, div) return { mod("AilmentMagnitude", "INC", -num, nil, 0, KeywordFlag.Spell, { type = "SkillType", skillType = SkillType.Channel, neg = true }, { type = "PerStat", stat = "Life", div = tonumber(div) }) } end,
 	-- Elemental Ailments
 	["enemies take (%d+)%% increased damage for each elemental ailment type among your ailments on them"] = function(num) return {
 		mod("EnemyModifier", "LIST", { mod = mod("DamageTaken", "INC", num) }, { type = "ActorCondition", actor = "enemy", var = "Frozen" }),
