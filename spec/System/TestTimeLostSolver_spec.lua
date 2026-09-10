@@ -5,7 +5,7 @@ describe("TimeLostSolver", function()
 		newBuild()
 		-- Trigger lazy class load via getClass, then bind the class table for
 		-- access to its static helpers (BuildTimeLostAffixLine etc.).
-		new("TradeQueryGenerator", { itemsTab = { } })
+		new("TradeQueryGenerator"):TradeQueryGenerator({ itemsTab = { } })
 		TradeQueryGeneratorClass = common.classes["TradeQueryGenerator"]
 	end)
 
@@ -49,7 +49,7 @@ describe("TimeLostSolver", function()
 	-- Fail: base-tag gating is broken and an int-only mod leaks onto a Ruby; this
 	-- would produce nonsense scores for "Cast Speed on a Ruby" rows
 	it("EnumerateTimeLostAffixes filters by base tag", function()
-		local gen = new("TradeQueryGenerator", { itemsTab = {} })
+		local gen = new("TradeQueryGenerator"):TradeQueryGenerator({ itemsTab = {} })
 		local item = TradeQueryGeneratorClass.BuildTimeLostTestItem("Time-Lost Ruby", "Small")
 		local prefixes, suffixes, radiusUpgrades = gen:EnumerateTimeLostAffixes(item)
 

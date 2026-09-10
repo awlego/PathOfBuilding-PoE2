@@ -10,6 +10,8 @@ local t_remove = table.remove
 local m_min = math.min
 local m_max = math.max
 
+local supportGemSolver = LoadModule("Modules/SupportGemSolver")
+
 local defaultGemLevelList = {
 	{
 		label = "Normal Maximum",
@@ -245,6 +247,95 @@ function SkillsTabClass:SkillsTab(build)
 	self.controls.groupCount.shown = function()
 		return self.displayGroup.source ~= nil
 	end
+
+	-- Support gem solver: pick a metric and a desired support count; the solver
+	-- runs against the group's currently-enabled supports (pinned) and returns
+	-- a non-destructive preview of N picks. "Apply (add-only)" then copies the
+	-- picks into the live gemList, filling empty slots first and appending
+	-- new ones for the remainder. Only available for user-managed socket
+	-- groups (source == nil); item-granted groups have fixed gem lists.
+	-- Row 2: solver controls.
+	self.controls.solveSupportsLabel = new("LabelControl"):LabelControl({ "TOPLEFT", self.anchorGroupDetail, "TOPLEFT" }, { 0, 56, 0, 16 }, "^7Solve for:")
+	self.controls.solveSupportsLabel.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsMetric = new("DropDownControl"):DropDownControl({ "LEFT", self.controls.solveSupportsLabel, "RIGHT" }, { 4, 0, 130, 20 }, supportGemSolver.metricList, function(index, value)
+		self.solveSupportsMetricIndex = index
+	end)
+	self.controls.solveSupportsMetric.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsMetric.tooltipText = "Damage metric the solver will maximise.\nThe active skill for this socket group is whatever you've picked as Main Skill in the Calcs tab."
+	self.controls.solveSupportsCountLabel = new("LabelControl"):LabelControl({ "LEFT", self.controls.solveSupportsMetric, "RIGHT" }, { 12, 0, 0, 16 }, "^7N:")
+	self.controls.solveSupportsCountLabel.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	-- EditControl auto-adds +/- buttons whenever filter == "%D", which eat
+	-- ~34px on the right; width 60 matches the existing groupCount / defaultQuality
+	-- numeric inputs and leaves the digit visible alongside the buttons.
+	self.controls.solveSupportsCount = new("EditControl"):EditControl({ "LEFT", self.controls.solveSupportsCountLabel, "RIGHT" }, { 4, 0, 60, 20 }, tostring(self.solveSupportsCount), nil, "%D", 2, function(buf)
+		local n = tonumber(buf) or 0
+		if n < 1 then n = 1 end
+		if n > 20 then n = 20 end
+		self.solveSupportsCount = n
+	end)
+	self.controls.solveSupportsCount.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsCount.tooltipText = "How many new supports the solver should pick.\nExisting enabled supports stay locked-in and don't count toward this number."
+	self.controls.solveSupports = new("ButtonControl"):ButtonControl({ "LEFT", self.controls.solveSupportsCount, "RIGHT" }, { 6, 0, 80, 20 }, "Solve", function()
+		self:SolveSupports()
+	end)
+	self.controls.solveSupports.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupports.enabled = function()
+		return self.displayGroup and self.solveSupportsCoroutine == nil and (self.solveSupportsCount or 0) >= 1
+	end
+	self.controls.solveSupports.tooltipText = "Greedy search across all compatible support gems.\nEnabled supports already in the group are pinned and\nlock their gem families against duplicates. Picks go\ninto the Suggested panel — nothing is changed until\nyou hit Apply."
+	self.controls.solveSupportsApply = new("ButtonControl"):ButtonControl({ "LEFT", self.controls.solveSupports, "RIGHT" }, { 6, 0, 130, 20 }, "Apply (add-only)", function()
+		self:ApplyPreviewSupports()
+	end)
+	self.controls.solveSupportsApply.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsApply.enabled = function()
+		local p = self.solveSupportsPreview
+		return self.solveSupportsCoroutine == nil and p ~= nil and p.group == self.displayGroup and p.picks and #p.picks > 0
+	end
+	self.controls.solveSupportsApply.tooltipText = "Copy the Suggested supports into this group.\nFills empty slots first, then appends new ones.\nNever overwrites a slot that already contains a gem."
+	self.controls.solveSupportsStatus = new("LabelControl"):LabelControl({ "LEFT", self.controls.solveSupportsApply, "RIGHT" }, { 8, 0, 0, 16 }, "")
+	self.controls.solveSupportsStatus.shown = function()
+		return self.solveSupportsStatusText ~= nil and self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsStatus.label = function()
+		return self.solveSupportsStatusText or ""
+	end
+	-- Row 3: locked supports (read-only summary of what's pinned for the solve).
+	self.controls.solveSupportsLockedLabel = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.solveSupportsLabel, "BOTTOMLEFT" }, { 0, 8, 0, 16 }, "^7Locked:")
+	self.controls.solveSupportsLockedLabel.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsLockedNames = new("LabelControl"):LabelControl({ "LEFT", self.controls.solveSupportsLockedLabel, "RIGHT" }, { 6, 0, 0, 16 }, "")
+	self.controls.solveSupportsLockedNames.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsLockedNames.label = function()
+		return self:FormatLockedSupportsLabel()
+	end
+	-- Row 4: solver suggestions (output of the most recent solve).
+	self.controls.solveSupportsSuggestedLabel = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.solveSupportsLockedLabel, "BOTTOMLEFT" }, { 0, 4, 0, 16 }, "^7Suggested:")
+	self.controls.solveSupportsSuggestedLabel.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsSuggestedNames = new("LabelControl"):LabelControl({ "LEFT", self.controls.solveSupportsSuggestedLabel, "RIGHT" }, { 6, 0, 0, 16 }, "")
+	self.controls.solveSupportsSuggestedNames.shown = function()
+		return self.displayGroup and self.displayGroup.source == nil
+	end
+	self.controls.solveSupportsSuggestedNames.label = function()
+		return self:FormatSuggestedSupportsLabel()
+	end
+
 	self.controls.sourceNote = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.groupLabel, "TOPLEFT" }, { 0, 58, 0, 16 })
 	self.controls.sourceNote.shown = function()
 		return self.displayGroup.explodeSources ~= nil
@@ -272,7 +363,10 @@ which comes from the following sources:]]
 	self:SetActiveSkillSet(1)
 
 	-- Skill gem slots
-	self.anchorGemSlots = new("Control"):Control({ "TOPLEFT", self.anchorGroupDetail, "TOPLEFT" }, { 0, 28 + 28 + 16, 0, 0 })
+	-- Y offset leaves room for three solver rows added below the enabled/FullDPS
+	-- row: metric/N/Solve/Apply controls, a Locked-supports summary, and a
+	-- Suggested-supports summary. See the "Support gem solver" block above.
+	self.anchorGemSlots = new("Control"):Control({ "TOPLEFT", self.anchorGroupDetail, "TOPLEFT" }, { 0, 140, 0, 0 })
 	self.gemSlots = { }
 	self:CreateGemSlot(1)
 	self.controls.gemNameHeader = new("LabelControl"):LabelControl({ "BOTTOMLEFT", self.gemSlots[1].nameSpec, "TOPLEFT" }, { 0, -2, 0, 16 }, "^7Gem name:")

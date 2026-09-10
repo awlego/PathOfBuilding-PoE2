@@ -2272,6 +2272,34 @@ function calcs.initEnv(build, mode, override, specEnv)
 						for index, grantedEffect in ipairs(grantedEffectList) do
 							if not grantedEffect.support and not grantedEffect.hideFromSideBar and (not grantedEffect.hasGlobalEffect or gemInstance["enableGlobal"..index]) then
 								slotHasActiveSkill = true
+								-- Lineage-style support gems (e.g. Hayoxi's Fulmination, Impending Doom)
+								-- have naturalMaxLevel = 1, so their additional granted skills
+								-- (Annihilation, Doom Blast) would lock to level 1 of their damage table.
+								-- In game these track the supported active skill's effective level — so
+								-- we stash the supported gem here and a second build pass mirrors the
+								-- parent's resolved level onto the child after the parent finishes
+								-- building. The level set here is just an initial best-effort; the
+								-- mirror in the activeSkillList build loop is the source of truth.
+								local effectLevel = gemInstance.level
+								local lineageSupportedGem = nil
+								if gemInstance.gemData
+								   and gemInstance.gemData.grantedEffect
+								   and gemInstance.gemData.grantedEffect.support
+								   and gemInstance.gemData.naturalMaxLevel == 1
+								   and grantedEffect ~= gemInstance.gemData.grantedEffect
+								   and grantedEffect.levels and #grantedEffect.levels > 1 then
+									for _, otherGem in ipairs(group.gemList) do
+										if otherGem ~= gemInstance
+										   and otherGem.enabled
+										   and otherGem.gemData
+										   and otherGem.gemData.grantedEffect
+										   and not otherGem.gemData.grantedEffect.support then
+											lineageSupportedGem = otherGem
+											effectLevel = otherGem.level
+											break
+										end
+									end
+								end
 								if gemInstance.gemData and not virtuousMoteSkillCounted[gemInstance] and not (group.gemList[gemIndex].fromNode or group.gemList[gemIndex].fromTree or group.gemList[gemIndex].fromItem) then
 									virtuousMoteSkillCounted[gemInstance] = true
 									local requiredAttributes = { }

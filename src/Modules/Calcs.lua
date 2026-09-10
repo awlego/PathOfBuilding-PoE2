@@ -148,10 +148,17 @@ function calcs.getMiscCalculator(build)
 		-- we need to preserve the override somewhere for use by possible trigger-based build-outs with overrides
 		env.override = override
 		calcs.perform(env)
-		if (useFullDPS ~= false or build.viewMode == "TREE") and usedFullDPS then
-			-- prevent upcoming calculation from using Cached Data and thus forcing it to re-calculate new FullDPS roll-up
-			-- without this, FullDPS increase/decrease when for node/item/gem comparison would be all 0 as it would be comparing
-			-- A with A (due to cache reuse) instead of A with B
+		profile.performMs = profile.performMs + (GetTime() - t1)
+		profile.calls = profile.calls + 1
+		if useFullDPS ~= false and usedFullDPS then
+			-- Re-run FullDPS for any caller that didn't explicitly opt out (nil or
+			-- true). Callers that pass `false` (e.g. PowerBuilder for non-DPS
+			-- stats) skip this and save the FullDPS sweep per calcFunc call.
+			-- The previous `or build.viewMode == "TREE"` clause forced the sweep
+			-- even when the caller opted out, defeating the parameter on the Tree
+			-- tab — see Power Report perf on non-DPS heatmaps.
+			-- This also prevents the upcoming calculation from using cached data, forcing a fresh FullDPS
+			-- roll-up; without it, FullDPS deltas for node/item/gem comparison would all be 0 (A vs A).
 			local fullDPS = calcs.calcFullDPS(build, "CALCULATOR", override, { cachedPlayerDB = cachedPlayerDB, cachedEnemyDB = cachedEnemyDB, cachedMinionDB = cachedMinionDB, env = nil})
 			env.player.output.SkillDPS = fullDPS.skills
 			env.player.output.FullDPS = fullDPS.combinedDPS
@@ -489,33 +496,6 @@ function calcs.calcFullDPS(build, mode, override, specEnv)
 				end
 			end
 		end
-	end
-
-	-- Run the queued non-selected stat sets of simultaneous-stat-set skills.
-	-- The active skill is always built from the stat set selected on the gem
-	-- instance, so temporarily override that selection and rebuild the skill
-	-- list (no `skills`/`everything` acceleration, which would keep the old
-	-- build), then run the rebuilt skill like any other Full DPS entry.
-	for _, run in ipairs(extraStatSetRuns) do
-		local srcInstance = run.srcInstance
-		srcInstance.statSet = srcInstance.statSet or { }
-		local savedIndex = srcInstance.statSet[run.grantedEffectId]
-		srcInstance.statSet[run.grantedEffectId] = run.setIndex
-		fullEnv, _, _, _ = calcs.initEnv(build, mode, override, { cachedPlayerDB = cachedPlayerDB, cachedEnemyDB = cachedEnemyDB, cachedMinionDB = cachedMinionDB, env = fullEnv, accelerate = { nodeAlloc = true, requirementsItems = true, requirementsGems = true } })
-		for _, activeSkill in ipairs(fullEnv.player.activeSkillList) do
-			local activeEffect = activeSkill.activeEffect
-			if activeEffect.srcInstance == srcInstance and activeEffect.grantedEffect.id == run.grantedEffectId then
-				local activeSkillCount, enabled = calcs.getActiveSkillCount(activeSkill)
-				if enabled then
-					fullEnv.player.mainSkill = activeSkill
-					calcs.perform(fullEnv, true)
-					local statSet = activeEffect.grantedEffect.statSets[run.setIndex]
-					accumulateSkillDPS(fullEnv, activeSkill, activeSkillCount, statSet and statSet.label)
-				end
-				break
-			end
-		end
-		srcInstance.statSet[run.grantedEffectId] = savedIndex
 	end
 
 	-- Re-Add ailment DPS components

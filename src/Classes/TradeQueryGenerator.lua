@@ -794,7 +794,7 @@ local buildTimeLostAffixLine = TradeQueryGeneratorClass.BuildTimeLostAffixLine
 -- ParseRaw side-effects consistent with the user-paste flow.
 function TradeQueryGeneratorClass.BuildTimeLostTestItem(baseName, radiusLabel)
 	local raw = ("Rarity: RARE\nStat Tester\n%s\nRadius: %s\nImplicits: 0"):format(baseName, radiusLabel or "Small")
-	return new("Item", raw)
+	return new("Item"):Item(raw)
 end
 local buildTimeLostTestItem = TradeQueryGeneratorClass.BuildTimeLostTestItem
 
@@ -1172,7 +1172,8 @@ Implicits: 0]]
 
 	-- Open progress tracking blocker popup
 	local controls = { }
-	controls.progressText = new("LabelControl"):LabelControl({ "TOP", nil, "TOP" }, { 0, 30, 0, 16 }, string.format("Calculating Mod Weights..."))
+	local progressLabel = options.timeLostSolver and "Solving Time-Lost affixes..." or "Calculating Mod Weights..."
+	controls.progressText = new("LabelControl"):LabelControl({ "TOP", nil, "TOP" }, { 0, 30, 0, 16 }, progressLabel)
 	self.calcContext.popup = main:OpenPopup(280, 65, "Please Wait", controls)
 end
 
@@ -1298,10 +1299,10 @@ function TradeQueryGeneratorClass:FinishTimeLostSolver()
 
 	local controls = { }
 	local popupWidth, popupHeight = 820, 540
-	controls.heading = new("LabelControl", {"TOP", nil, "TOP"}, {0, 10, 0, 18},
+	controls.heading = new("LabelControl"):LabelControl({"TOP", nil, "TOP"}, {0, 10, 0, 18},
 		"^7Time-Lost Jewel Solver  ^8(top " .. #results .. " combinations)")
 
-	controls.list = new("ListControl", {"TOPLEFT", nil, "TOPLEFT"}, {15, 35, popupWidth - 30, popupHeight - 100}, 22, "VERTICAL", false, rowItems)
+	controls.list = new("ListControl"):ListControl({"TOPLEFT", nil, "TOPLEFT"}, {15, 35, popupWidth - 30, popupHeight - 100}, 22, "VERTICAL", false, rowItems)
 	controls.list.colList = { { x = 0 } }
 	controls.list.showRowSeparators = true
 	function controls.list:GetRowValue(column, index, value)
@@ -1339,19 +1340,19 @@ function TradeQueryGeneratorClass:FinishTimeLostSolver()
 		end
 	end
 
-	controls.copyItem = new("ButtonControl", {"BOTTOMLEFT", nil, "BOTTOMLEFT"}, {15, -10, 120, 20}, "Copy Item",
+	controls.copyItem = new("ButtonControl"):ButtonControl({"BOTTOMLEFT", nil, "BOTTOMLEFT"}, {15, -10, 120, 20}, "Copy Item",
 		function()
 			local sel = controls.list.selValue
 			if not sel then return end
 			Copy(buildTimeLostItemRaw(sel.row))
 		end)
-	controls.tradeQuery = new("ButtonControl", {"LEFT", controls.copyItem, "RIGHT"}, {10, 0, 160, 20}, "Build Trade Query",
+	controls.tradeQuery = new("ButtonControl"):ButtonControl({"LEFT", controls.copyItem, "RIGHT"}, {10, 0, 160, 20}, "Build Trade Query",
 		function()
 			local sel = controls.list.selValue
 			if not sel then return end
 			self:BuildTradeQueryFromTimeLostRow(sel.row)
 		end)
-	controls.close = new("ButtonControl", {"BOTTOMRIGHT", nil, "BOTTOMRIGHT"}, {-15, -10, 80, 20}, "Close",
+	controls.close = new("ButtonControl"):ButtonControl({"BOTTOMRIGHT", nil, "BOTTOMRIGHT"}, {-15, -10, 80, 20}, "Close",
 		function() main:ClosePopup() end)
 
 	main:OpenPopup(popupWidth, popupHeight, "Time-Lost Jewel Solver", controls)
@@ -1726,11 +1727,11 @@ Remove: anoints are completely ignored, and removed from items.]]
 		-- Time-Lost solver controls: only meaningful when jewelType = Radius,
 		-- gated behind a Search Mode dropdown so the popup defaults to the
 		-- existing trade-query flow.
-		controls.searchMode = new("DropDownControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 160, 18}, { "Trade Query", "Solve Affixes" }, function(index, value) end,
+		controls.searchMode = new("DropDownControl"):DropDownControl({"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 160, 18}, { "Trade Query", "Solve Affixes" }, function(index, value) end,
 			"Trade Query: build a weighted trade-site search.\nSolve Affixes: brute-force the best prefix/suffix combinations the user could roll on a Time-Lost jewel placed in this socket.")
 		controls.searchMode.selIndex = self.lastTimeLostSearchMode or 1
 		controls.searchMode.shown = function() return controls.jewelType.selIndex == 2 end
-		controls.searchModeLabel = new("LabelControl", {"RIGHT",controls.searchMode,"LEFT"}, {-5, 0, 0, 16}, "Search Mode:")
+		controls.searchModeLabel = new("LabelControl"):LabelControl({"RIGHT",controls.searchMode,"LEFT"}, {-5, 0, 0, 16}, "Search Mode:")
 		controls.searchModeLabel.shown = function() return controls.searchMode:IsShown() end
 		updateLastAnchor(controls.searchMode)
 
@@ -1738,40 +1739,40 @@ Remove: anoints are completely ignored, and removed from items.]]
 			return controls.jewelType.selIndex == 2 and controls.searchMode.selIndex == 2
 		end
 
-		controls.solverBase = new("DropDownControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 180, 18},
+		controls.solverBase = new("DropDownControl"):DropDownControl({"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 180, 18},
 			{ "All", "Time-Lost Ruby", "Time-Lost Emerald", "Time-Lost Sapphire", "Time-Lost Diamond" },
 			function(index, value) end,
 			"Restricts the solver to a specific Time-Lost base, or sweeps all four when 'All' is selected.")
 		controls.solverBase.selIndex = self.lastTimeLostBaseIdx or 1
 		controls.solverBase.shown = inSolverMode
-		controls.solverBaseLabel = new("LabelControl", {"RIGHT",controls.solverBase,"LEFT"}, {-5, 0, 0, 16}, "Base:")
+		controls.solverBaseLabel = new("LabelControl"):LabelControl({"RIGHT",controls.solverBase,"LEFT"}, {-5, 0, 0, 16}, "Base:")
 		controls.solverBaseLabel.shown = inSolverMode
 		updateLastAnchor(controls.solverBase)
 
-		controls.solverMode = new("DropDownControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 180, 18},
+		controls.solverMode = new("DropDownControl"):DropDownControl({"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 180, 18},
 			{ "Solo + Top-K combos", "Solo only", "Full Cartesian" },
 			function(index, value) end,
 			"Solo + Top-K combos: score affixes individually, then brute-force pairs of the top K prefixes x top K suffixes. Catches synergies cheaply.\nSolo only: rank prefixes and suffixes independently. Fastest, but misses synergies.\nFull Cartesian: evaluate every legal prefix x suffix pair. Slowest, most thorough.")
 		controls.solverMode.selIndex = self.lastTimeLostModeIdx or 1
 		controls.solverMode.shown = inSolverMode
-		controls.solverModeLabel = new("LabelControl", {"RIGHT",controls.solverMode,"LEFT"}, {-5, 0, 0, 16}, "Mode:")
+		controls.solverModeLabel = new("LabelControl"):LabelControl({"RIGHT",controls.solverMode,"LEFT"}, {-5, 0, 0, 16}, "Mode:")
 		controls.solverModeLabel.shown = inSolverMode
 		updateLastAnchor(controls.solverMode)
 
-		controls.solverK = new("EditControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 70, 18}, nil, nil, "%D")
+		controls.solverK = new("EditControl"):EditControl({"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 70, 18}, nil, nil, "%D")
 		controls.solverK.buf = tostring(self.lastTimeLostK or 25)
 		controls.solverK.shown = function() return inSolverMode() and controls.solverMode.selIndex == 1 end
-		controls.solverKLabel = new("LabelControl", {"RIGHT",controls.solverK,"LEFT"}, {-5, 0, 0, 16}, "Top-K:")
+		controls.solverKLabel = new("LabelControl"):LabelControl({"RIGHT",controls.solverK,"LEFT"}, {-5, 0, 0, 16}, "Top-K:")
 		controls.solverKLabel.shown = function() return controls.solverK:IsShown() end
 		updateLastAnchor(controls.solverK)
 
-		controls.solverRadii = new("CheckBoxControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Include radius upgrades (Medium/Large/Very Large):", function(state) end,
+		controls.solverRadii = new("CheckBoxControl"):CheckBoxControl({"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Include radius upgrades (Medium/Large/Very Large):", function(state) end,
 			"When on, the solver evaluates each base at Small/Medium/Large/Very Large radius and surfaces the best combination per radius tier. Very Large rows require the crafted/desecrated radius-upgrade prefix.")
 		controls.solverRadii.state = (self.lastTimeLostIncludeRadii == nil or self.lastTimeLostIncludeRadii == true)
 		controls.solverRadii.shown = inSolverMode
 		updateLastAnchor(controls.solverRadii)
 
-		controls.solverHideNeg = new("CheckBoxControl", {"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Hide negative-effect mods:", function(state) end,
+		controls.solverHideNeg = new("CheckBoxControl"):CheckBoxControl({"TOPLEFT",lastItemAnchor,"BOTTOMLEFT"}, {0, 5, 18}, "Hide negative-effect mods:", function(state) end,
 			"Drops affixes whose effect on the build is zero or negative (e.g. 'Notable Passive Skills in Radius grant nothing'). Recommended.")
 		controls.solverHideNeg.state = (self.lastTimeLostHideNeg == nil or self.lastTimeLostHideNeg == true)
 		controls.solverHideNeg.shown = inSolverMode
