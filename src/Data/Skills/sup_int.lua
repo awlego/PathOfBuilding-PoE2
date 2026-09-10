@@ -4,8 +4,8 @@
 -- Intelligence support gems
 -- Skill data (c) Grinding Gear Games
 --
-local skills, mod, flag, skill = ...
-
+			return function(skills, mod, flag, skill)
+---@cast mod SkillModFunction
 skills["SupportAbidingHexPlayer"] = {
 	name = "Abiding Hex",
 	description = "Supports Curse Skills you cast yourself. Supported Skills will consume Power Charges on use, gaining significant Curse duration if they do. Cannot Support Skills which consume Power Charges.",
@@ -1942,7 +1942,7 @@ skills["SupportAddedColdDamagePlayer"] = {
 }
 skills["SupportColdExposurePlayer"] = {
 	name = "Cold Exposure",
-	description = "Supports any skill that Hits enemies, causing it to inflict Exposure when it Critically Hits an enemy.",
+	description = "Supports any skill that Hits enemies, causing it to inflict Exposure when it inflicts Freeze.",
 	color = 3,
 	support = true,
 	requireSkillTypes = { SkillType.Attack, SkillType.Damage, SkillType.CrossbowAmmoSkill, },
@@ -3091,7 +3091,7 @@ skills["SupportDiallasDesirePlayer"] = {
 }
 skills["SupportDoedresUndoingPlayer"] = {
 	name = "Doedre's Undoing",
-	description = "Supports Curse Skills. Supported Skills create an area which Curses Enemies within it, and spawns Witchtoads in that area. Witchtoads leap at eneimes that get close, and seek out Cursed enemies with higher aggression. Dark Consequences will be Triggered when they hit enemies with their leap, violently exploding the Witchtoad.",
+	description = "Supports Curse Skills. Supported Skills create an area which Curses Enemies within it, and spawns Witchtoads in that area. Witchtoads leap at enemies that get close, and seek out Cursed enemies with higher aggression. Dark Consequences will be Triggered when they hit enemies with their leap, violently exploding the Witchtoad.",
 	color = 3,
 	support = true,
 	requireSkillTypes = { SkillType.AppliesCurse, },
@@ -8997,4 +8997,4 @@ skills["SupportZenithPlayerTwo"] = {
 			},
 		},
 	}
-}
+}			end

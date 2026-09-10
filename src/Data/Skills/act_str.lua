@@ -4,8 +4,8 @@
 -- Active Strength skill gems
 -- Skill data (c) Grinding Gear Games
 --
-local skills, mod, flag, skill = ...
-
+			return function(skills, mod, flag, skill)
+---@cast mod SkillModFunction
 skills["AncestralCryPlayer"] = {
 	name = "Ancestral Cry",
 	baseTypeName = "Ancestral Cry",
@@ -3254,7 +3254,7 @@ skills["WolfCrossSlashPlayer"] = {
 	baseTypeName = "Cross Slash",
 	icon = "Art/2DArt/SkillIcons/DruidCrossSlash.dds",
 	color = 1,
-	description = "Shapeshift into a Werewolf and leap backwards as you gouge the ground with both claws. Enemies can be Hit separately by both gouges. Hitting a Marked enemy with both gouges will Activate the Mark and cause an additional shockwave. Ice Fragments will be pulled into the location where the gouges cross and explode immediately. This skill can be used while using other skills to interrupt them.",
+	description = "Shapeshift into a Werewolf and leap backwards as you gouge the ground with both claws. Enemies can be Hit separately by both gouges. Hitting a Marked enemy with both gouges will Activate the Mark and cause an additional shockwave. Ice Fragments will be pulled into the location where the gouges cross and explode. immediately. This skill can be used while using other skills to interrupt them.",
 	skillTypes = { [SkillType.Attack] = true, [SkillType.Melee] = true, [SkillType.Shapeshift] = true, [SkillType.Wolf] = true, [SkillType.Cooldown] = true, [SkillType.CanCancelActions] = true, [SkillType.Area] = true, [SkillType.Triggerable] = true, },
 	weaponTypes = {
 		["Talisman"] = true,
@@ -5529,27 +5529,27 @@ skills["SupportFerociousRoarPlayer"] = {
 				[17] = { 78, 78, statInterpolation = { 1, 1, }, actorLevel = 76.906997680664, },
 				[18] = { 81, 81, statInterpolation = { 1, 1, }, actorLevel = 83.611999511719, },
 				[19] = { 84, 84, statInterpolation = { 1, 1, }, actorLevel = 90.542999267578, },
-				[20] = { 58, 58, statInterpolation = { 1, 1, }, actorLevel = 97.699996948242, },
-				[21] = { 87, 87, statInterpolation = { 1, 1, }, actorLevel = 105.08300018311, },
-				[22] = { 90, 90, statInterpolation = { 1, 1, }, actorLevel = 112.69200134277, },
-				[23] = { 93, 93, statInterpolation = { 1, 1, }, actorLevel = 120.52700042725, },
-				[24] = { 96, 96, statInterpolation = { 1, 1, }, actorLevel = 128.58799743652, },
-				[25] = { 99, 99, statInterpolation = { 1, 1, }, actorLevel = 136.875, },
-				[26] = { 102, 102, statInterpolation = { 1, 1, }, actorLevel = 145.38800048828, },
-				[27] = { 105, 105, statInterpolation = { 1, 1, }, actorLevel = 154.12699890137, },
-				[28] = { 108, 108, statInterpolation = { 1, 1, }, actorLevel = 163.09199523926, },
-				[29] = { 111, 111, statInterpolation = { 1, 1, }, actorLevel = 172.28300476074, },
-				[30] = { 114, 114, statInterpolation = { 1, 1, }, actorLevel = 181.69999694824, },
-				[31] = { 115, 115, statInterpolation = { 1, 1, }, actorLevel = 191.34300231934, },
-				[32] = { 117, 117, statInterpolation = { 1, 1, }, actorLevel = 201.21200561523, },
-				[33] = { 118, 118, statInterpolation = { 1, 1, }, actorLevel = 211.30700683594, },
-				[34] = { 120, 120, statInterpolation = { 1, 1, }, actorLevel = 221.62800598145, },
-				[35] = { 121, 121, statInterpolation = { 1, 1, }, actorLevel = 232.17500305176, },
-				[36] = { 123, 123, statInterpolation = { 1, 1, }, actorLevel = 242.94799804688, },
-				[37] = { 124, 124, statInterpolation = { 1, 1, }, actorLevel = 253.94700622559, },
-				[38] = { 126, 126, statInterpolation = { 1, 1, }, actorLevel = 265.17199707031, },
-				[39] = { 127, 127, statInterpolation = { 1, 1, }, actorLevel = 276.62298583984, },
-				[40] = { 129, 129, statInterpolation = { 1, 1, }, actorLevel = 288.29998779297, },
+				[20] = { 87, 87, statInterpolation = { 1, 1, }, actorLevel = 97.699996948242, },
+				[21] = { 90, 90, statInterpolation = { 1, 1, }, actorLevel = 105.08300018311, },
+				[22] = { 93, 93, statInterpolation = { 1, 1, }, actorLevel = 112.69200134277, },
+				[23] = { 96, 96, statInterpolation = { 1, 1, }, actorLevel = 120.52700042725, },
+				[24] = { 99, 99, statInterpolation = { 1, 1, }, actorLevel = 128.58799743652, },
+				[25] = { 102, 102, statInterpolation = { 1, 1, }, actorLevel = 136.875, },
+				[26] = { 105, 105, statInterpolation = { 1, 1, }, actorLevel = 145.38800048828, },
+				[27] = { 108, 108, statInterpolation = { 1, 1, }, actorLevel = 154.12699890137, },
+				[28] = { 111, 111, statInterpolation = { 1, 1, }, actorLevel = 163.09199523926, },
+				[29] = { 114, 114, statInterpolation = { 1, 1, }, actorLevel = 172.28300476074, },
+				[30] = { 117, 117, statInterpolation = { 1, 1, }, actorLevel = 181.69999694824, },
+				[31] = { 118, 118, statInterpolation = { 1, 1, }, actorLevel = 191.34300231934, },
+				[32] = { 120, 120, statInterpolation = { 1, 1, }, actorLevel = 201.21200561523, },
+				[33] = { 121, 121, statInterpolation = { 1, 1, }, actorLevel = 211.30700683594, },
+				[34] = { 123, 123, statInterpolation = { 1, 1, }, actorLevel = 221.62800598145, },
+				[35] = { 124, 124, statInterpolation = { 1, 1, }, actorLevel = 232.17500305176, },
+				[36] = { 126, 126, statInterpolation = { 1, 1, }, actorLevel = 242.94799804688, },
+				[37] = { 127, 127, statInterpolation = { 1, 1, }, actorLevel = 253.94700622559, },
+				[38] = { 129, 129, statInterpolation = { 1, 1, }, actorLevel = 265.17199707031, },
+				[39] = { 130, 130, statInterpolation = { 1, 1, }, actorLevel = 276.62298583984, },
+				[40] = { 132, 132, statInterpolation = { 1, 1, }, actorLevel = 288.29998779297, },
 			},
 		},
 	}
@@ -15970,7 +15970,7 @@ skills["RollingMagmaPlayer"] = {
 	baseTypeName = "Rolling Magma",
 	icon = "Art/2DArt/SkillIcons/DruidRollingMagma.dds",
 	color = 1,
-	description = "Shapeshift into a Wyvern and lob a ball of magma that deals area damage as it hits the ground. The skill Chains, bouncing forward to deal damage multiple times. Impacts on Molten Fissures or Volcanos will activate them as though they were Slammed.",
+	description = "Shapeshift into a Wyvern and lob a ball of magma that deals area damage as it hits the ground. The skillChains, bouncing forward to deal damage multiple times. Impacts on Molten Fissures or Volcanos will activate them as though they were Slammed.",
 	skillTypes = { [SkillType.Attack] = true, [SkillType.Damage] = true, [SkillType.Area] = true, [SkillType.Fire] = true, [SkillType.Projectile] = true, [SkillType.ProjectilesFromUser] = true, [SkillType.UsableWhileMoving] = true, [SkillType.Shapeshift] = true, [SkillType.Wyvern] = true, [SkillType.Detonator] = true, [SkillType.Triggerable] = true, [SkillType.RangedAttack] = true, },
 	weaponTypes = {
 		["Talisman"] = true,
@@ -21694,46 +21694,4 @@ skills["WolfPackPlayer"] = {
 			},
 		},
 	}
-}
--- TEMP: Return of the Ancients skill, replace on next export
-skills["StarbornOnslaughtPlayer"] = {
-	name = "Starborn Onslaught",
-	baseTypeName = "Starborn Onslaught",
-	fromItem = true,
-	color = 1,
-	description = "Build up Glory by Freezing or Chilling enemies. When you have maximum Glory you may jump backwards loosing your Mace with the force of a falling comet onto your target. The impact releases Fissures and causes stars to fall in the area for a brief period.",
-	skillTypes = { [SkillType.Attack] = true, [SkillType.Area] = true, [SkillType.Melee] = true, [SkillType.Slam] = true, [SkillType.Physical] = true, [SkillType.Cold] = true, [SkillType.Duration] = true, [SkillType.CreatesFissure] = true, [SkillType.AttackInPlace] = true, [SkillType.Limit] = true, },
-	weaponTypes = {
-		["Two Hand Mace"] = true,
-	},
-	castTime = 1,
-	qualityStats = {
-	},
-	levels = {
-		[18] = { baseMultiplier = 1.55, levelRequirement = 78, cost = { Mana = 35, }, },
-	},
-	statSets = {
-		[1] = {
-			label = "Starborn Onslaught",
-			incrementalEffectiveness = 0.092720001935959,
-			statDescriptionScope = "skill_stat_descriptions",
-			baseFlags = {
-				attack = true,
-				area = true,
-				melee = true,
-				duration = true,
-			},
-			constantStats = {
-				{ "active_skill_base_physical_damage_%_to_convert_to_cold", 70 },
-				{ "base_skill_effect_duration", 8000 },
-				{ "number_of_branching_fissures", 2 },
-			},
-			stats = {
-				"is_area_damage",
-			},
-			levels = {
-				[18] = { actorLevel = 83.611999511719, },
-			},
-		},
-	}
-}
+}			end

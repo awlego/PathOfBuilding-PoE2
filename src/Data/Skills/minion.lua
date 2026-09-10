@@ -4,8 +4,8 @@
 -- Minion active skills
 -- Skill data (c) Grinding Gear Games
 --
-local skills, mod, flag, skill = ...
-
+			return function(skills, mod, flag, skill)
+---@cast mod SkillModFunction
 skills["MeleeAtAnimationSpeed"] = {
 	name = "Basic Attack",
 	hidden = true,
@@ -1509,7 +1509,7 @@ skills["WolfLeapAttackMinion"] = {
 	name = "Leap Slam",
 	hidden = true,
 	icon = "Art/2DArt/SkillIcons/BruteLeapSlam.dds",
-	description = "Jump into the air, damaging and knocking back enemies with your weapon where you land. Enemies you would land on are pushed out of the way.",
+	description = "Jump into the air, damaging and Knocking Back back enemies with your weapon where you land. Enemies you would land on are pushed out of the way.",
 	skillTypes = { [SkillType.Attack] = true, [SkillType.Area] = true, [SkillType.Melee] = true, [SkillType.Movement] = true, [SkillType.Travel] = true, [SkillType.Slam] = true, [SkillType.Totemable] = true, [SkillType.Cooldown] = true, [SkillType.AttackInPlace] = true, },
 	weaponTypes = {
 		["One Hand Axe"] = true,
@@ -2919,4 +2919,4 @@ skills["GSWardboundMinionBlast"] = {
 			},
 		},
 	}
-}
+}			end

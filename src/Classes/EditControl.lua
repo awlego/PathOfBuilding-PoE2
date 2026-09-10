@@ -36,11 +36,14 @@ local function newlineCount(str)
 	end
 end
 
-local EditClass = newClass("EditControl", "ControlHost", "Control", "UndoHandler", "TooltipHost", function(self, anchor, rect, init, prompt, filter, limit, changeFunc, lineHeight, allowZoom, clearable)
-	self.ControlHost()
-	self.Control(anchor, rect)
-	self.UndoHandler()
-	self.TooltipHost()
+---@class EditControl: ControlHost, Control, UndoHandler, TooltipHost
+local EditClass = newClass("EditControl", "ControlHost", "Control", "UndoHandler", "TooltipHost")
+
+function EditClass:EditControl(anchor, rect, init, prompt, filter, limit, changeFunc, lineHeight, allowZoom, clearable)
+	self:ControlHost()
+	self:Control(anchor, rect)
+	self:UndoHandler()
+	self:TooltipHost()
 	self:SetText(init or "")
 	self.prompt = prompt
 	self.filter = filter or (main.unicode and "%c" or "^%w%p ")
@@ -64,24 +67,24 @@ local EditClass = newClass("EditControl", "ControlHost", "Control", "UndoHandler
 	if self.filter == "%D" or self.filter == "^%-%d" or self.filter == "^%d." then
 		-- Add +/- buttons for integer number edits
 		self.isNumeric = true
-		self.controls.buttonDown = new("ButtonControl", {"RIGHT",self,"RIGHT"}, {-2, 0, buttonSize, buttonSize}, "-", function()
+		self.controls.buttonDown = new("ButtonControl"):ButtonControl({ "RIGHT", self, "RIGHT" }, { -2, 0, buttonSize, buttonSize }, "-", function()
 			self:OnKeyUp("DOWN")
 		end)
-		self.controls.buttonUp = new("ButtonControl", {"RIGHT",self.controls.buttonDown,"LEFT"}, {-1, 0, buttonSize, buttonSize}, "+", function()
+		self.controls.buttonUp = new("ButtonControl"):ButtonControl({ "RIGHT", self.controls.buttonDown, "LEFT" }, { -1, 0, buttonSize, buttonSize }, "+", function()
 			self:OnKeyUp("UP")
 		end)
 	elseif clearable then
-		self.controls.buttonClear = new("ButtonControl", {"RIGHT",self,"RIGHT"}, {-2, 0, buttonSize, buttonSize}, "x", function()
+		self.controls.buttonClear = new("ButtonControl"):ButtonControl({ "RIGHT", self, "RIGHT" }, { -2, 0, buttonSize, buttonSize }, "x", function()
 			self:SetText("", true)
 		end)
 		self.controls.buttonClear.shown = function() return #self.buf > 0 and self:IsMouseInBounds() end
 	end
-	self.controls.scrollBarH = new("ScrollBarControl", {"BOTTOMLEFT",self,"BOTTOMLEFT"}, {1, -1, 0, 14}, 60, "HORIZONTAL", true)
+	self.controls.scrollBarH = new("ScrollBarControl"):ScrollBarControl({ "BOTTOMLEFT", self, "BOTTOMLEFT" }, { 1, -1, 0, 14 }, 60, "HORIZONTAL", true)
 	self.controls.scrollBarH.width = function()
 		local width, height = self:GetSize()
 		return width - (self.controls.scrollBarV.enabled and 16 or 2)
 	end
-	self.controls.scrollBarV = new("ScrollBarControl", {"TOPRIGHT",self,"TOPRIGHT"}, {-1, 1, 14, 0}, (lineHeight or 0) * 3, "VERTICAL", true)
+	self.controls.scrollBarV = new("ScrollBarControl"):ScrollBarControl({ "TOPRIGHT", self, "TOPRIGHT" }, { -1, 1, 14, 0 }, (lineHeight or 0) * 3, "VERTICAL", true)
 	self.controls.scrollBarV.height = function()
 		local width, height = self:GetSize()
 		return height - (self.controls.scrollBarH.enabled and 16 or 2)
@@ -91,7 +94,8 @@ local EditClass = newClass("EditControl", "ControlHost", "Control", "UndoHandler
 		self.controls.scrollBarV.shown = false
 	end
 	self.protected = false
-end)
+	return self
+end
 
 function EditClass:SetText(text, notify)
 	self.buf = tostring(text)
@@ -277,27 +281,26 @@ function EditClass:Draw(viewPort, noTooltip)
 		end
 		textX = textX + DrawStringWidth(textHeight, self.font, self.prompt) + textHeight/2
 	end
-	if not enabled then
-		return
-	end
-	if mOver and not noTooltip then
+	if enabled and mOver and not noTooltip then
 		SetDrawLayer(nil, 100)
 		self:DrawTooltip(x, y, width, height, viewPort)
 		SetDrawLayer(nil, 0)
 	end
-	self:UpdateScrollBars()
+	if enabled then
+		self:UpdateScrollBars()
+	end
 	local marginL = textX - x - 2
 	local marginR = self.controls.scrollBarV:IsShown() and 14 or 0
 	local marginB = self.controls.scrollBarH:IsShown() and 14 or 0
 	SetViewport(textX, textY, width - 4 - marginL - marginR, height - 4 - marginB)
-	if not self.hasFocus then
+	if not enabled or not self.hasFocus then
 		if self.buf == '' and self.placeholder then
 			SetDrawColor(self.disableCol)
 			DrawString(-self.controls.scrollBarH.offset, -self.controls.scrollBarV.offset, "LEFT", textHeight, self.font, self.placeholder)
 		else
 			SetDrawColor(self.inactiveCol)
 			if self.inactiveText then
-				local inactiveText = type(inactiveText) == "string" and self.inactiveText or self.inactiveText(self.buf)
+				local inactiveText = type(self.inactiveText) == "string" and self.inactiveText or self.inactiveText(self.buf)
 				DrawString(-self.controls.scrollBarH.offset, -self.controls.scrollBarV.offset, "LEFT", textHeight, self.font, inactiveText)
 			elseif self.protected then
 				DrawString(-self.controls.scrollBarH.offset, -self.controls.scrollBarV.offset, "LEFT", textHeight, self.font, string.rep(protected_replace, #self.buf))
@@ -401,6 +404,10 @@ function EditClass:Draw(viewPort, noTooltip)
 			DrawImage(nil, caretX, textY, 1, textHeight)
 		end
 	else
+		if self.buf == '' and self.placeholder then
+			SetDrawColor(self.disableCol)
+			DrawString(textX, textY, "LEFT", textHeight, self.font, self.placeholder)
+		end
 		local pre = self.textCol .. self.buf:sub(1, self.caret - 1)
 		local post = self.buf:sub(self.caret)
 		if self.protected then

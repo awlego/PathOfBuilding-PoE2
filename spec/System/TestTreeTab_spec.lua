@@ -3,6 +3,21 @@ describe("TreeTab", function()
 		newBuild()
 	end)
 
+	it("Draws after switching between tree versions with different connector assets", function()
+		local viewer = build.treeTab.viewer
+		local viewport = { x = 0, y = 0, width = 1920, height = 1080 }
+		viewer.zoom = 0.5
+		viewer:Draw(build, viewport, {})
+
+		local oldSpec = new("PassiveSpec"):PassiveSpec(build, "0_1")
+		table.insert(build.treeTab.specList, oldSpec)
+		build.treeTab:SetActiveSpec(#build.treeTab.specList)
+		viewer:Draw(build, viewport, {})
+
+		build.treeTab:SetActiveSpec(1)
+		viewer:Draw(build, viewport, {})
+	end)
+
 	describe("CopyTree", function()
 		it("Copies a tree spec with a new name", function()
 			local newTitle = "Copied Tree"
@@ -88,6 +103,18 @@ describe("TreeTab", function()
 			assert.is_not_nil(newSpec.hashOverrides)
 			assert.is_not_nil(newSpec.hashOverrides[100])
 			assert.are.equals("Strength", newSpec.hashOverrides[100].dn)
+		end)
+
+		it("Copies node notes", function()
+			local sourceSpec = build.treeTab.specList[1]
+			local nodeId = sourceSpec.curClass.startNodeId
+			sourceSpec.nodeNotes[nodeId] = "Keep this note"
+
+			local newSpec = build.treeTab:CopyTree(1, "Copy Test")
+
+			assert.are.equals("Keep this note", newSpec.nodeNotes[nodeId])
+			sourceSpec.nodeNotes[nodeId] = "Changed"
+			assert.are.equals("Keep this note", newSpec.nodeNotes[nodeId])
 		end)
 
 		it("Handles copying when source has no jewels", function()

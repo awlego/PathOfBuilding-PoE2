@@ -10,8 +10,20 @@ local m_max = math.max
 local m_floor = math.floor
 
 
-local ItemDBClass = newClass("ItemDBControl", "ListControl", function(self, anchor, rect, itemsTab, db, dbType)
-	self.ListControl(anchor, rect, 16, "VERTICAL", false)
+---@class ItemDBControl: ListControl
+local ItemDBClass = newClass("ItemDBControl", "ListControl")
+
+---@class ItemDBData
+---@field list table<string, Item>
+---@field loading boolean?
+
+---@param anchor Anchor?
+---@param rect Rect?
+---@param itemsTab ItemsTab
+---@param db ItemDBData
+---@param dbType "RARE"|"UNIQUE"
+function ItemDBClass:ItemDBControl(anchor, rect, itemsTab, db, dbType)
+	self:ListControl(anchor, rect, 16, "VERTICAL", false)
 	self.itemsTab = itemsTab
 	self.db = db
 	self.dbType = dbType
@@ -28,35 +40,36 @@ local ItemDBClass = newClass("ItemDBControl", "ListControl", function(self, anch
 	self.typeList = { "Any type", "Armour", "Jewellery", "One Handed Melee", "Two Handed Melee" }
 	self.slotList = { "Any slot", "Weapon 1", "Weapon 2", "Helmet", "Body Armour", "Gloves", "Boots", "Amulet", "Ring", "Belt", "Jewel" }
 	local baseY = dbType == "RARE" and -22 or -62
-	self.controls.slot = new("DropDownControl", {"BOTTOMLEFT",self,"TOPLEFT"}, {0, baseY, 179, 18}, self.slotList, function(index, value)
+	self.controls.slot = new("DropDownControl"):DropDownControl({ "BOTTOMLEFT", self, "TOPLEFT" }, { 0, baseY, 179, 18 }, self.slotList, function(index, value)
 		self.listBuildFlag = true
 	end)
-	self.controls.type = new("DropDownControl", {"LEFT",self.controls.slot,"RIGHT"}, {2, 0, 179, 18}, self.typeList, function(index, value)
+	self.controls.type = new("DropDownControl"):DropDownControl({ "LEFT", self.controls.slot, "RIGHT" }, { 2, 0, 179, 18 }, self.typeList, function(index, value)
 		self.listBuildFlag = true
 	end)
 	if dbType == "UNIQUE" then
-		self.controls.sort = new("DropDownControl", {"BOTTOMLEFT",self,"TOPLEFT"}, {0, baseY + 20, 179, 18}, self.sortDropList, function(index, value)
+		self.controls.sort = new("DropDownControl"):DropDownControl({ "BOTTOMLEFT", self, "TOPLEFT" }, { 0, baseY + 20, 179, 18 }, self.sortDropList, function(index, value)
 			self:SetSortMode(value.sortMode)
 		end)
-		self.controls.league = new("DropDownControl", {"LEFT",self.controls.sort,"RIGHT"}, {2, 0, 179, 18}, self.leagueList, function(index, value)
+		self.controls.league = new("DropDownControl"):DropDownControl({ "LEFT", self.controls.sort, "RIGHT" }, { 2, 0, 179, 18 }, self.leagueList, function(index, value)
 			self.listBuildFlag = true
 		end)
-		self.controls.requirement = new("DropDownControl", {"LEFT",self.controls.sort,"BOTTOMLEFT"}, {0, 11, 179, 18}, { "Any requirements", "Current level", "Current attributes", "Current useable" }, function(index, value)
+		self.controls.requirement = new("DropDownControl"):DropDownControl({ "LEFT", self.controls.sort, "BOTTOMLEFT" }, { 0, 11, 179, 18 }, { "Any requirements", "Current level", "Current attributes", "Current useable" }, function(index, value)
 			self.listBuildFlag = true
 		end)
-		self.controls.obtainable = new("DropDownControl", {"LEFT",self.controls.requirement,"RIGHT"}, {2, 0, 179, 18}, { "Obtainable", "Any source", "Unobtainable", "Vendor Recipe", "Upgraded", "Boss Item", "Corruption"}, function(index, value)
+		self.controls.obtainable = new("DropDownControl"):DropDownControl({ "LEFT", self.controls.requirement, "RIGHT" }, { 2, 0, 179, 18 }, { "Obtainable", "Any source", "Unobtainable", "Vendor Recipe", "Upgraded", "Boss Item", "Corruption" }, function(index, value)
 			self.listBuildFlag = true
 		end)
 	end
-	self.controls.search = new("EditControl", {"BOTTOMLEFT",self,"TOPLEFT"}, {0, -2, 258, 18}, "", "Search", "%c", 100, function()
+	self.controls.search = new("EditControl"):EditControl({ "BOTTOMLEFT", self, "TOPLEFT" }, { 0, -2, 258, 18 }, "", "Search", "%c", 100, function()
 		self.listBuildFlag = true
 	end, nil, nil, true)
-	self.controls.searchMode = new("DropDownControl", {"LEFT",self.controls.search,"RIGHT"}, {2, 0, 100, 18}, { "Anywhere", "Names", "Modifiers" }, function(index, value)
+	self.controls.searchMode = new("DropDownControl"):DropDownControl({ "LEFT", self.controls.search, "RIGHT" }, { 2, 0, 100, 18 }, { "Anywhere", "Names", "Modifiers" }, function(index, value)
 		self.listBuildFlag = true
 	end)
 	self:BuildSortOrder()
 	self.listBuildFlag = true
-end)
+	return self
+end
 
 function ItemDBClass:LoadLeaguesAndTypes()
 	local leagueFlag = { }
@@ -238,10 +251,11 @@ function ItemDBClass:ListBuilder()
 		local useFullDPS = self.sortDetail.stat == "FullDPS"
 		local start = GetTime()
 		local calcFunc, calcBase = self.itemsTab.build.calcsTab:GetMiscCalculator(self.build)
+		local weaponSet = self.itemsTab.build.calcsTab.mainEnv and self.itemsTab.build.calcsTab.mainEnv.weaponSet or (self.itemsTab.activeItemSet.useSecondWeaponSet and 2 or 1)
 		for itemIndex, item in ipairs(list) do
 			item.measuredPower = nil
 			for slotName, slot in pairs(self.itemsTab.slots) do
-				if self.itemsTab:IsItemValidForSlot(item, slotName) and not slot.inactive and (not slot.weaponSet or slot.weaponSet == (self.itemsTab.activeItemSet.useSecondWeaponSet and 2 or 1)) then
+				if self.itemsTab:IsItemValidForSlot(item, slotName) and not slot.inactive and (not slot.weaponSet or slot.weaponSet == weaponSet) then
 					local output = calcFunc(item.base.flask and { toggleFlask = item } or item.base.charm and { toggleCharm = item } or { repSlotName = slotName, repItem = item }, useFullDPS)
 					local measuredPower = data.powerStatList.GetFromOutput(output, self.sortDetail)
 					item.measuredPower = item.measuredPower and m_max(item.measuredPower, measuredPower) or measuredPower
@@ -311,7 +325,7 @@ function ItemDBClass:Draw(viewPort)
 end
 
 function ItemDBClass:GetRowValue(column, index, item)
-	if column == 1 then
+	if item and column == 1 then
 		return colorCodes[item.rarity] .. item.name
 	end
 end
@@ -333,7 +347,7 @@ end
 function ItemDBClass:OnSelClick(index, item, doubleClick)
 	if IsKeyDown("CTRL") then
 		-- Add item
-		local newItem = new("Item", item.raw)
+		local newItem = new("Item"):Item(item.raw)
 		newItem:NormaliseQuality()
 		self.itemsTab:AddItem(newItem, true)
 
@@ -358,7 +372,12 @@ function ItemDBClass:OnSelClick(index, item, doubleClick)
 		self.itemsTab:AddUndoState()
 		self.itemsTab.build.buildFlag = true
 	elseif doubleClick then
+		-- disallow dragging after double click since the window can jump when
+		-- the display item tooltip is created, which might cause the drag item
+		-- to get stuck to the cursor
+		self.selDragging = false
 		self.itemsTab:CreateDisplayItemFromRaw(item.raw, true)
+		return false
 	end
 end
 

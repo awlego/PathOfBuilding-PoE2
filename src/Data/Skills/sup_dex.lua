@@ -3,8 +3,8 @@
 -- Dexterity support gems
 -- Skill data (c) Grinding Gear Games
 --
-local skills, mod, flag, skill = ...
-
+			return function(skills, mod, flag, skill)
+---@cast mod SkillModFunction
 skills["SupportAdhesiveGrenadesPlayer"] = {
 	name = "Adhesive Grenades I",
 	description = "Supports Grenade Skills. Grenades from Supported Skills do not bounce, instead halting movement where they intially land, but doing lower damage when they detonate.",
@@ -2312,7 +2312,7 @@ skills["SupportFrenziedRipostePlayer"] = {
 }
 skills["SupportFrozenSpitePlayer"] = {
 	name = "Frozen Spite",
-	description = "Supports Attack Skills, causing them to create Ice Fragments on killing Frozen Enemies. Cannot Support Totem Skills and does not modify Skills used by Minions.",
+	description = "Supports Skills that Hit enemies, causing them to create Ice Fragments on killing Frozen Enemies. Cannot Support Totem Skills and does not modify Skills used by Minions.",
 	color = 2,
 	support = true,
 	requireSkillTypes = { SkillType.Attack, },
@@ -5892,4 +5892,4 @@ skills["SupportWindowOfOpportunityPlayerTwo"] = {
 			},
 		},
 	}
-}
+}			end

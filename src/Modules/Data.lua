@@ -74,14 +74,14 @@ local function processMod(grantedEffect, mod, statName)
 	if type(mod.value) == "table" and mod.value.mod then
 		mod.value.mod.source = "Skill:"..grantedEffect.id
 	end
-	
+
 	for _, tag in ipairs(mod) do
 		if tag.type == "GlobalEffect" then
 			grantedEffect.hasGlobalEffect = true
 			break
 		end
 	end
-	
+
 	local notMinionStat = false
 	for _, statStet in ipairs(grantedEffect.statSets) do
 		if statStet.notMinionStat and statName and (grantedEffect.support or grantedEffect.skillTypes and grantedEffect.skillTypes[SkillType.Buff]) then
@@ -112,18 +112,22 @@ end
 data = { }
 
 -- Misc data tables
-LoadModule("Data/Misc", data)
+local miscData = LoadModule("Data/Misc")
+for k, v in pairs(miscData) do
+	data[k] = v
+end
 
----@class StatTable
+---@class PowerStat
 ---@field stat? string stat ID
 ---@field label string A short description of the stat
----@field transform fun(in: number|string): number|string A function to e.g. invert the value, if the stat represents something where lower is better
+---@field transform? fun(in: number|string): number|string A function to e.g. invert the value, if the stat represents something where lower is better
 ---@field combinedOffDef? boolean
 ---@field ignoreForNodes? boolean
 ---@field ignoreForItems? boolean
 ---@field reverseSort? boolean
+---@field itemField string?
 
----@type StatTable[]
+---@type PowerStat[]
 data.powerStatList = {
 	{ stat=nil, label="Offence/Defence", combinedOffDef=true, ignoreForItems=true },
 	{ stat=nil, label="Name", itemField="Name", ignoreForNodes=true, reverseSort=true, transform=function(value) return value:gsub("^The ","") end},
@@ -149,7 +153,7 @@ data.powerStatList = {
 	{ stat="Mana", label="Mana" },
 	{ stat="ManaRegen", label="Mana regen" },
 	{ stat="ManaLeechRate", label="Mana leech" },
-	{ stat="Ward", label="Ward" },
+	{ stat="Ward", label="Runic Ward" },
 	{ stat="Spirit", label="Spirit" },
 	{ stat="Str", label="Strength" },
 	{ stat="Dex", label="Dexterity" },
@@ -172,6 +176,7 @@ data.powerStatList = {
 	{ stat="IgniteChance", label="Ignite Chance" },
 	{ stat="ShockChance", label="Shock Chance" },
 	{ stat="EffectiveMovementSpeedMod", label="Move speed" },
+	{ stat="LightRadiusMod", label="Light Radius" },
 	{ stat="BlockChance", label="Block Chance" },
 	{ stat="SpellBlockChance", label="Spell Block Chance" },
 	{ stat="SpellSuppressionChance", label="Spell Suppression Chance" },
@@ -179,7 +184,7 @@ data.powerStatList = {
 }
 
 ---@param output any Calc output
----@param statTable StatTable Table with stats as in data.powerStatList
+---@param statTable PowerStat Table with stats as in data.powerStatList
 ---@param skipTransform? boolean Whether the stat transform should be skipped. This is useful if you want to e.g. divide two less is better stats
 ---@return number
 function data.powerStatList.GetFromOutput(output, statTable, skipTransform)
@@ -218,6 +223,7 @@ local minionNonApplicableStats = {
 	Int = true,
 	Spirit = true,
 	EffectiveLootRarityMod = true,
+	LightRadiusMod = true,
 }
 for i = 1, #data.powerStatList do
 	local statEntry = data.powerStatList[i]
@@ -257,7 +263,6 @@ data.misc = { -- magic numbers
 	ManaRegenBase = data.characterConstants["character_inherent_mana_regeneration_rate_per_minute_%"] / 60 / 100,
 	EnergyShieldRechargeBase = data.characterConstants["energy_shield_recharge_rate_per_minute_%"] / 60 / 100,
 	EnergyShieldRechargeDelay = 4,
-	WardRechargeDelay = 2,
 	Transfiguration = 0.3,
 	EnemyMaxResist = data.monsterConstants["base_maximum_all_resistances_%"],
 	LeechRateBase = 0.02,
@@ -490,6 +495,9 @@ data.highPrecisionMods = {
 	["EnergyShieldRegenPercent"] = {
 		["BASE"] = 2,
 	},
+	["WardRegenPercent"] = {
+		["BASE"] = 2,
+	},
 	["LifeRegen"] = {
 		["BASE"] = 1,
 	},
@@ -497,6 +505,9 @@ data.highPrecisionMods = {
 		["BASE"] = 1,
 	},
 	["EnergyShieldRegen"] = {
+		["BASE"] = 1,
+	},
+	["WardRegen"] = {
 		["BASE"] = 1,
 	},
 	["RageRegen"] = {
@@ -741,6 +752,7 @@ end
 data.essences = LoadModule("Data/Essence")
 data.emotions = LoadModule("Data/LiquidEmotions")
 data.costs = LoadModule("Data/Costs")
+data.buildFileInventorySlotMap = LoadModule("Data/InventorySlots")
 do
 	local map = { }
 	for i, value in ipairs(data.costs) do
@@ -870,10 +882,10 @@ data.itemTagSpecialExclusionPattern = {
 }
 
 -- Load bosses
-do 
-	data.bosses = { }
-	LoadModule("Data/Bosses", data.bosses)
-	
+do
+	---@class BossData
+	data.bosses = LoadModule("Data/Bosses")
+
 	local count, uberCount = 0, 0
 	local armourTotal, evasionTotal = 0, 0
 	local uberArmourTotal, uberEvasionTotal = 0, 0
@@ -896,8 +908,9 @@ do
 		UberEvasionMean = 100 + uberEvasionTotal / uberCount
 	}
 
-	data.bossSkills, data.bossSkillsList = LoadModule("Data/BossSkills")
-
+	local bossSkillData     = LoadModule("Data/BossSkills")
+	data.bossSkills         = bossSkillData.bossSkills
+	data.bossSkillsList     = bossSkillData.bossSkillsList
 	data.enemyIsBossTooltip = [[Bosses' damage is monster damage scaled to an average damage of their attacks
 This is divided by 4.40 to represent 4 damage types + some (40% as much) ^xD02090chaos
 ^7Fill in the exact damage numbers if more precision is needed
@@ -929,7 +942,7 @@ end
 
 -- Load skills
 data.skills = { }
-data.skillStatMap = LoadModule("Data/SkillStatMap", makeSkillMod, makeFlagMod, makeSkillDataMod)
+data.skillStatMap = LoadModule("Data/SkillStatMap")(makeSkillMod, makeFlagMod, makeSkillDataMod)
 data.skillStatMapMeta = {
 	__index = function(t, key)
 		local map = data.skillStatMap[key]
@@ -944,7 +957,7 @@ data.skillStatMapMeta = {
 	end
 }
 for _, type in pairs(skillTypes) do
-	LoadModule("Data/Skills/"..type, data.skills, makeSkillMod, makeFlagMod, makeSkillDataMod)
+	LoadModule("Data/Skills/" .. type)(data.skills, makeSkillMod, makeFlagMod, makeSkillDataMod)
 end
 for skillId, grantedEffect in pairs(data.skills) do
 	grantedEffect.name = sanitiseText(grantedEffect.name)
@@ -996,6 +1009,7 @@ end
 
 -- Load gems
 data.gems = LoadModule("Data/Gems")
+data.characterMeleeSkills = LoadModule("Data/CharacterMeleeSkills")
 data.assets = LoadModule("Data/Assets")
 data.skillAssets = LoadModule("Data/Skills/SkillAssets")
 data.gemForSkill = { }
@@ -1087,7 +1101,7 @@ for gemId, gem in pairs(data.gems) do
 		data.gemGrantedEffectIdForVaalGemId[gem.secondaryGrantedEffectId] = gemId
 		for otherGemId, otherGem in pairs(data.gems) do
 			if otherGem.grantedEffectId == gem.secondaryGrantedEffectId then
-				data.gemVaalGemIdForBaseGemId[gemId] = otherGemId 
+				data.gemVaalGemIdForBaseGemId[gemId] = otherGemId
 				break
 			end
 		end
@@ -1097,11 +1111,20 @@ for id, gem in pairs(toAddGems) do
     data.gems[id] = gem
 end
 
+-- Resolve exported default-attack gem IDs once. Keep missing entries as false so
+-- later entries are still processed when a skill is not implemented yet.
+for _, offHandSkills in pairs(data.characterMeleeSkills) do
+	for _, gems in pairs(offHandSkills) do
+		for index, gameId in ipairs(gems) do
+			local variants = data.gemsByGameId[gameId]
+			gems[index] = variants and variants[next(variants)] or false
+		end
+	end
+end
+
 -- Load minions
-data.minions = { }
-LoadModule("Data/Minions", data.minions, makeSkillMod, makeFlagMod)
-data.spectres = { }
-LoadModule("Data/Spectres", data.spectres, makeSkillMod, makeFlagMod)
+data.minions = LoadModule("Data/Minions")(makeSkillMod, makeFlagMod)
+data.spectres = LoadModule("Data/Spectres")(makeSkillMod, makeFlagMod)
 for name, spectre in pairs(data.spectres) do
 	spectre.limit = "ActiveSpectreLimit"
 	data.minions[name] = spectre
@@ -1126,7 +1149,7 @@ end
 -- Item bases
 data.itemBases = { }
 for _, type in pairs(itemTypes) do
-	LoadModule("Data/Bases/"..type, data.itemBases)
+	LoadModule("Data/Bases/" .. type)(data.itemBases)
 end
 
 -- Build lists of item bases, separated by type
@@ -1178,4 +1201,14 @@ data.questRewards = LoadModule("Data/QuestRewards")
 
 data.flavourText = LoadModule("Data/FlavourText")
 data.worldAreas = {}
-LoadModule("Data/WorldAreas", data.worldAreas)
+LoadModule("Data/WorldAreas")(data.worldAreas)
+
+-- Maps socketed augment types to the spawn tags granted by their influence runes.
+data.runeInfluences = {
+	boots = { "chronomancy" },
+	gloves = { "marksman", "decay" },
+	helmet = { "berserking" },
+	weapon = { "destruction" },
+	caster = { "destruction" },
+	["body armour"] = { "soul" },
+}

@@ -44,7 +44,7 @@ describe("TestPassiveSpec", function()
 	end
 
 	local function makeAmulet(rawMod)
-		local item = new("Item", [[
+		local item = new("Item"):Item([[
 Rarity: RARE
 Test Locket
 Gold Amulet
@@ -65,7 +65,7 @@ Item Level: 80
 	end
 
 	local function socketJewel(nodeId, raw)
-		local item = new("Item", raw)
+		local item = new("Item"):Item(raw)
 		build.itemsTab:AddItem(item, true)
 		build.spec.jewels[nodeId] = item.id
 		if build.itemsTab.sockets[nodeId] then
@@ -88,7 +88,7 @@ Item Level: 80
 	end
 
 	it("ignores stale jewel socket item ids when loading saved builds", function()
-		local spec = new("PassiveSpec", build, latestTreeVersion)
+		local spec = new("PassiveSpec"):PassiveSpec(build, latestTreeVersion)
 		local socketNodeId = firstLoadedSocketNode(spec)
 
 		spec:Load({
@@ -109,7 +109,7 @@ Item Level: 80
 	end)
 
 	it("does not crash when radius helpers see a stale jewel socket item id", function()
-		local spec = new("PassiveSpec", build, latestTreeVersion)
+		local spec = new("PassiveSpec"):PassiveSpec(build, latestTreeVersion)
 		local socketNodeId = firstLoadedSocketNode(spec)
 		spec.jewels[socketNodeId] = 999999
 
@@ -190,6 +190,36 @@ Item Level: 80
 		end
 	end)
 
+	it("builds opposite-set skill contexts with radius jewels", function()
+		local nodeId, node = firstNormalJewelSocket(build.spec)
+		build.spec:AllocNode(node)
+		socketJewel(nodeId, [[
+Rarity: RARE
+Test Mind
+Time-Lost Sapphire
+--------
+Radius: Large
+--------
+Item Level: 80
+--------
++10 to Intelligence
+]])
+		build.skillsTab:PasteSocketGroup("Spark 20/0  1")
+		build.skillsTab:PasteSocketGroup("Elemental Weakness 20/0  1")
+		build.skillsTab.socketGroupList[1].set1 = true
+		build.skillsTab.socketGroupList[1].set2 = false
+		build.skillsTab.socketGroupList[2].set1 = false
+		build.skillsTab.socketGroupList[2].set2 = true
+		build.mainSocketGroup = 1
+		build.buildFlag = true
+
+		assert.has_no.errors(function()
+			runCallback("OnFrame")
+		end)
+		assert.True(#build.calcsTab.mainEnv.radiusJewelList > 0)
+		assert.are.equals(2, build.calcsTab.mainEnv.weaponSetEnvs[2].weaponSet)
+	end)
+
 	it("does not apply jewel socket passive skill effect to jewels in item-granted Zarokh's Gift", function()
 		local normalNodeId, normalNode = firstNormalJewelSocket(build.spec)
 		build.spec:AllocNode(normalNode)
@@ -262,7 +292,7 @@ Corrupted
 		runCallback("OnFrame")
 
 		local nodeId = assert(findNodeByName(build.spec, "Zarokh's Gift"))
-		local voices = new("Item", [[
+		local voices = new("Item"):Item([[
 Rarity: UNIQUE
 Voices
 Sapphire
@@ -520,7 +550,7 @@ Item Level: 80
 
 	it("remaps legacy class ids only for trees before 0.4", function()
 		local function loadClass(treeVersion, classId)
-			local spec = new("PassiveSpec", build, latestTreeVersion)
+			local spec = new("PassiveSpec"):PassiveSpec(build, latestTreeVersion)
 			spec.treeVersion = treeVersion
 			spec:Load({
 				attrib = {
@@ -547,6 +577,13 @@ Item Level: 80
 		return node
 	end
 
+	it("rebuilds an allocated jewel socket's distance from the class start", function()
+		local socket = build.spec.nodes[60735]
+		build.spec:AllocNode(socket)
+
+		assert.True(socket.distanceToClassStart > 0)
+	end)
+
 	it("normal passive allocation promotes the shortest path instead of using a longer detour", function()
 		local spec = build.spec
 		allocNode(spec, 56651, 0)
@@ -564,10 +601,27 @@ Item Level: 80
 		assert.are.equals(0, weaponSetNode.allocMode)
 	end)
 
-	it("normal passive allocation promotes the weapon-set chain behind the path root", function()
+	it("normal passive allocation preserves an unused weapon-set path", function()
 		local spec = build.spec
 		allocNode(spec, 56651, 0)
 		allocNode(spec, 35324, 0)
+		allocNode(spec, 35660, 1)
+		allocNode(spec, 18548, 1)
+
+		local promotedNode = spec.nodes[28992]
+		assert.are.equals("Honed Instincts", promotedNode.dn)
+
+		spec.allocMode = 0
+		spec:AllocNode(promotedNode)
+
+		assert.True(promotedNode.alloc)
+		assert.are.equals(0, promotedNode.allocMode)
+		assert.are.equals(1, spec.nodes[18548].allocMode)
+		assert.are.equals(1, spec.nodes[35660].allocMode)
+	end)
+
+	it("normal passive allocation promotes a required weapon-set path", function()
+		local spec = build.spec
 		allocNode(spec, 35660, 1)
 		allocNode(spec, 18548, 1)
 
