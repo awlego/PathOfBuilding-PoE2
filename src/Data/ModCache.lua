@@ -291,6 +291,7 @@ c["+113 to Armour"]={{[1]={flags=0,keywordFlags=0,name="Armour",type="BASE",valu
 c["+113 to Stun Threshold"]={{[1]={flags=0,keywordFlags=0,name="StunThreshold",type="BASE",value=113}},nil}
 c["+113 to maximum Energy Shield"]={{[1]={flags=0,keywordFlags=0,name="EnergyShield",type="BASE",value=113}},nil}
 c["+113% to Melee Critical Damage Bonus"]={{[1]={flags=256,keywordFlags=0,name="CritMultiplier",type="BASE",value=113}},nil}
+c["+115 to Armour"]={{[1]={flags=0,keywordFlags=0,name="Armour",type="BASE",value=115}},nil}
 c["+12 to Dexterity and Intelligence"]={{[1]={flags=0,keywordFlags=0,name="Dex",type="BASE",value=12},[2]={flags=0,keywordFlags=0,name="Int",type="BASE",value=12},[3]={flags=0,keywordFlags=0,name="DexInt",type="BASE",value=12}},nil}
 c["+12 to Intelligence"]={{[1]={flags=0,keywordFlags=0,name="Int",type="BASE",value=12}},nil}
 c["+12 to Spirit per Socket filled"]={{[1]={[1]={type="Multiplier",var="RunesSocketedIn{SlotName}"},flags=0,keywordFlags=0,name="Spirit",type="BASE",value=12}},nil}
@@ -333,6 +334,7 @@ c["+13% to Cold Resistance"]={{[1]={flags=0,keywordFlags=0,name="ColdResist",typ
 c["+13% to Fire Resistance"]={{[1]={flags=0,keywordFlags=0,name="FireResist",type="BASE",value=13}},nil}
 c["+13% to Lightning Resistance"]={{[1]={flags=0,keywordFlags=0,name="LightningResist",type="BASE",value=13}},nil}
 c["+13% to all Elemental Resistances"]={{[1]={flags=0,keywordFlags=0,name="ElementalResist",type="BASE",value=13}},nil}
+c["+130 to Armour"]={{[1]={flags=0,keywordFlags=0,name="Armour",type="BASE",value=130}},nil}
 c["+135 to maximum Life"]={{[1]={flags=0,keywordFlags=0,name="Life",type="BASE",value=135}},nil}
 c["+14 to Dexterity"]={{[1]={flags=0,keywordFlags=0,name="Dex",type="BASE",value=14}},nil}
 c["+14 to Intelligence"]={{[1]={flags=0,keywordFlags=0,name="Int",type="BASE",value=14}},nil}
@@ -4999,9 +5001,9 @@ c["75% increased Spirit"]={{[1]={flags=0,keywordFlags=0,name="Spirit",type="INC"
 c["75% increased Thorns damage if you've Blocked Recently"]={{[1]={[1]={type="Condition",var="BlockedRecently"},flags=32,keywordFlags=0,name="Damage",type="INC",value=75}},nil}
 c["75% increased chance to Shock"]={{[1]={flags=0,keywordFlags=0,name="EnemyShockChance",type="INC",value=75}},nil}
 c["75% increased effect of Socketed Augment Items"]={{[1]={flags=0,keywordFlags=0,name="SocketedAugmentItemEffect",type="INC",value=75}},nil}
+end)();(function()
 c["75% more Stun Buildup with Lightning Damage"]={{[1]={[1]={type="Condition",var="LightningHasDamage"},flags=0,keywordFlags=0,name="EnemyHeavyStunBuildup",type="MORE",value=75}},nil}
 c["75% of Damage Converted to Fire Damage"]={{[1]={flags=0,keywordFlags=0,name="DamageConvertToFire",type="BASE",value=75}},nil}
-end)();(function()
 c["75% of Volatility Physical Damage Taken as Cold Damage"]={{[1]={flags=0,keywordFlags=0,name="PhysicalDamageTakenAsCold",type="BASE",value=75}}," Volatility   "}
 c["75% reduced Amount Recovered"]={{[1]={flags=0,keywordFlags=0,name="FlaskRecovery",type="INC",value=-75}},nil}
 c["75% reduced Charges per use"]={{[1]={flags=0,keywordFlags=0,name="FlaskChargesUsed",type="INC",value=-75}},nil}
@@ -6626,8 +6628,7 @@ c["Attacks Gain 6% of Damage as Extra Cold Damage"]={{[1]={flags=1,keywordFlags=
 c["Attacks Gain 6% of Damage as Extra Fire Damage"]={{[1]={flags=1,keywordFlags=0,name="DamageGainAsFire",type="BASE",value=6}},nil}
 c["Attacks Gain 8% of Damage as Extra Cold Damage"]={{[1]={flags=1,keywordFlags=0,name="DamageGainAsCold",type="BASE",value=8}},nil}
 c["Attacks Gain 8% of Damage as Extra Fire Damage"]={{[1]={flags=1,keywordFlags=0,name="DamageGainAsFire",type="BASE",value=8}},nil}
-c["Attacks consume an Endurance Charge to Critically Hit"]={nil,"Attacks consume an Endurance Charge to Critically Hit "}
-c["Attacks consume an Endurance Charge to Critically Hit Take 100 Chaos damage per second per Endurance Charge"]={nil,"Attacks consume an Endurance Charge to Critically Hit Take 100 Chaos damage per second per Endurance Charge "}
+c["Attacks consume an Endurance Charge to Critically Hit"]={{[1]={flags=0,keywordFlags=0,name="Condition:HaveNebulochCrit",type="FLAG",value=true},[2]={[1]={limit=100,type="Multiplier",var="NebulochCritUptime"},[2]={skillType=1,type="SkillType"},flags=4,keywordFlags=0,name="CritChance",type="OVERRIDE",value=1}},nil}
 c["Attacks cost an additional 6% of your maximum Mana"]={{[1]={[1]={floor=true,percent=6,stat="Mana",type="PercentStat"},flags=0,keywordFlags=65536,name="ManaCostBase",type="BASE",value=1}},nil}
 c["Attacks deal no Physical Damage"]={nil,"no Physical Damage "}
 c["Attacks fire an additional Projectile"]={{[1]={flags=1,keywordFlags=0,name="ProjectileCount",type="BASE",value=1}},nil}
@@ -6989,7 +6990,7 @@ c["Consumes Frenzy Charges on use"]={nil,"Consumes Frenzy Charges on use "}
 c["Consumes a Void Charge to Trigger Level 20 Void Shot when you fire Arrows with a Non-Triggered Skill"]={{},nil}
 c["Consuming Glory grants you 3% increased Attack damage per Glory consumed for 6 seconds, up to 60%"]={nil,"Consuming Glory grants you 3% increased Attack damage per Glory consumed for 6 seconds, up to 60% "}
 c["Convert 1% of maximum Life to twice as much Armour per 1% Chaos Resistance above 0%"]={{[1]={[1]={div=1,stat="ChaosResist",type="PerStat"},flags=0,keywordFlags=0,name="LifeConvertToArmour",type="BASE",value=1},[2]={[1]={div=1,stat="ChaosResist",type="PerStat"},flags=0,keywordFlags=0,name="LifeGainAsArmour",type="BASE",value=1}},nil}
-c["Convert 100% of Fire Damage with Mace Skills to Cold Damage"]={nil,"Convert 100% of Fire Damage with Mace Skills to Cold Damage "}
+c["Convert 100% of Fire Damage with Mace Skills to Cold Damage"]={{[1]={flags=1048576,keywordFlags=0,name="FireDamageConvertToCold",type="BASE",value=100}},nil}
 c["Convert 100% of maximum Energy Shield to maximum Divinity"]={nil,"Convert 100% of maximum Energy Shield to maximum Divinity "}
 c["Convert 100% of maximum Energy Shield to maximum Divinity 100% increased maximum Divinity"]={nil,"Convert 100% of maximum Energy Shield to maximum Divinity 100% increased maximum Divinity "}
 c["Convert 100% of maximum Energy Shield to maximum Mana"]={{[1]={flags=0,keywordFlags=0,name="EnergyShieldConvertToMana",type="BASE",value=100}},nil}
@@ -8243,10 +8244,11 @@ c["Hits with this Weapon have no Critical Damage Bonus"]={{[1]={[1]={type="Condi
 c["Hits with this Weapon inflict 4 Gruelling Madness"]={nil,"Hits with this Weapon inflict 4 Gruelling Madness "}
 c["Hits with this Weapon inflict 5 Gruelling Madness"]={nil,"Hits with this Weapon inflict 5 Gruelling Madness "}
 c["Hits with this Weapon inflict 5 Gruelling Madness Enemies in your Presence have additional Power equal to their Gruelling Madness"]={nil,"Hits with this Weapon inflict 5 Gruelling Madness Enemies in your Presence have additional Power equal to their Gruelling Madness "}
+c["Hits with this weapon have 1 to 4 Added Physical Damage per 1% Block Chance"]={{[1]={[1]={type="Condition",var="{Hand}Attack"},[2]={skillType=1,type="SkillType"},[3]={div=1,stat="BlockChance",type="PerStat"},flags=4,keywordFlags=0,name="PhysicalMin",type="BASE",value=1},[2]={[1]={type="Condition",var="{Hand}Attack"},[2]={skillType=1,type="SkillType"},[3]={div=1,stat="BlockChance",type="PerStat"},flags=4,keywordFlags=0,name="PhysicalMax",type="BASE",value=4}},nil}
 c["Hits with this weapon have 2 to 5 Added Physical Damage per 1% Block Chance"]={{[1]={[1]={type="Condition",var="{Hand}Attack"},[2]={skillType=1,type="SkillType"},[3]={div=1,stat="BlockChance",type="PerStat"},flags=4,keywordFlags=0,name="PhysicalMin",type="BASE",value=2},[2]={[1]={type="Condition",var="{Hand}Attack"},[2]={skillType=1,type="SkillType"},[3]={div=1,stat="BlockChance",type="PerStat"},flags=4,keywordFlags=0,name="PhysicalMax",type="BASE",value=5}},nil}
 c["Hollow Palm Technique"]={{[1]={flags=0,keywordFlags=0,name="Keystone",type="LIST",value="Hollow Palm Technique"},[2]={flags=0,keywordFlags=0,name="Condition:HaveHollowPalmTechnique",type="FLAG",value=true}},nil}
-c["Ice Crystals have 0% reduced maximum Life per 5% Cold Resistance you have"]={nil,"Ice Crystals have 0% reduced maximum Life per 5% Cold Resistance you have "}
-c["Ice Crystals have 3% reduced maximum Life per 5% Cold Resistance you have"]={nil,"Ice Crystals have 3% reduced maximum Life per 5% Cold Resistance you have "}
+c["Ice Crystals have 0% reduced maximum Life per 5% Cold Resistance you have"]={{[1]={[1]={div=5,stat="ColdResist",type="PerStat"},flags=0,keywordFlags=0,name="IceCrystalLife",type="INC",value=-0}},nil}
+c["Ice Crystals have 3% reduced maximum Life per 5% Cold Resistance you have"]={{[1]={[1]={div=5,stat="ColdResist",type="PerStat"},flags=0,keywordFlags=0,name="IceCrystalLife",type="INC",value=-3}},nil}
 c["If you would gain a Charge, Allies in your Presence gain that Charge instead"]={nil,"If you would gain a Charge, that Charge instead "}
 c["If you would gain an Endurance Charge, Allies in your Presence gain that Charge instead"]={nil,"If you would gain an Endurance Charge, that Charge instead "}
 c["If you've Warcried Recently, you and nearby allies have 20% increased Attack, Cast and Movement Speed"]={{[1]={[1]={type="Condition",var="UsedWarcryRecently"},flags=0,keywordFlags=0,name="ExtraAura",type="LIST",value={mod={flags=0,keywordFlags=0,name="Speed",type="INC",value=20}}},[2]={[1]={type="Condition",var="UsedWarcryRecently"},flags=0,keywordFlags=0,name="ExtraAura",type="LIST",value={mod={flags=0,keywordFlags=0,name="MovementSpeed",type="INC",value=20}}}},nil}
@@ -8817,7 +8819,7 @@ c["Non-Keystone Passive Skills in Medium Radius of allocated Keystone Passive Sk
 c["Non-Minion Skills have 50% less Reservation Efficiency"]={{[1]={[1]={neg=true,skillType=6,type="SkillType"},flags=0,keywordFlags=0,name="ReservationEfficiency",type="MORE",value=-50}},nil}
 c["Non-Unique Life Flasks apply their Effects constantly"]={nil,"Non-Unique Life Flasks apply their Effects constantly "}
 c["Non-Unique Life Flasks apply their Effects constantly Recovery from Life Flasks cannot be Instant"]={nil,"Non-Unique Life Flasks apply their Effects constantly Recovery from Life Flasks cannot be Instant "}
-c["Non-Unique Time-Lost Jewels have 40% increased radius"]={nil,"Non-Unique Time-Lost Jewels have 40% increased radius "}
+c["Non-Unique Time-Lost Jewels have 40% increased radius"]={{[1]={flags=0,keywordFlags=0,name="NonUniqueTimeLostJewelRadius",type="INC",value=40}},nil}
 c["Non-instant Recovery from Mana Flasks also applies to Life"]={nil,"Non-instant Recovery from Mana Flasks also applies to Life "}
 c["Nova Spells have 20% less Area of Effect"]={{[1]={[1]={skillType=85,type="SkillType"},flags=0,keywordFlags=0,name="AreaOfEffect",type="MORE",value=-20}},nil}
 c["Oasis"]={{[1]={flags=0,keywordFlags=0,name="Keystone",type="LIST",value="Oasis"},[2]={flags=0,keywordFlags=0,name="Condition:HaveOasis",type="FLAG",value=true}},nil}
@@ -10001,9 +10003,9 @@ c["as being boosted by Shocked Ground"]={nil,"as being boosted by Shocked Ground
 c["being Shapeshifted for at least 8 seconds"]={nil,"being Shapeshifted for at least 8 seconds "}
 c["for 4 seconds, every 0.25 seconds while raised"]={nil,"for 4 seconds, every 0.25 seconds while raised "}
 c["gain 6 Cold Surges or 6 Fire Surges"]={{}," Cold Surges or 6 Fire Surges "}
+end)();(function()
 c["the enemy's Power for 20 seconds, up to a total of 500"]={nil,"the enemy's Power for 20 seconds, up to a total of 500 "}
 c["their Explicit Modifiers are transformed into more powerful related Modifiers"]={nil,"their Explicit Modifiers are transformed into more powerful related Modifiers "}
-end)();(function()
 c["their Explicit Modifiers are transformed into more powerful related Modifiers Ignore Attribute Requirements to equip Gloves"]={nil,"their Explicit Modifiers are transformed into more powerful related Modifiers Ignore Attribute Requirements to equip Gloves "}
 c["until you take no Damage to Life for 3 seconds"]={nil,"until you take no Damage to Life for 3 seconds "}
 c["until you take no Damage to Life for 5 seconds"]={nil,"until you take no Damage to Life for 5 seconds "}
