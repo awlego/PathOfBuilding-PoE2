@@ -211,6 +211,15 @@ local configSettings = {
 			modList:NewMod("Condition:WarcryMaxHit", "FLAG", true, "Config")
 		end
 	end },
+	{ var = "ancestrallyBoostedFromHeavyStun", type = "check", label = "Heavy Stun trigger active?", ifFlag = "Condition:AncestralBoostFromHeavyStun", tooltip = "Treat your next Attack as Ancestrally Boosted, simulating the window after Heavy Stunning a Rare or Unique Enemy.", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:AncestrallyBoostedFromHeavyStun", "FLAG", true, "Config")
+	end },
+	{ var = "ancestralAidReady", type = "check", label = "Ancestral Aid: blocks ready?", ifFlag = "Condition:SupportsAncestralAid", tooltip = "Ancestral Aid requires Blocking a number of Hits before the Strike becomes usable. Enable this to treat the skill as Ancestrally Boosted (its only state when actually used).", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:AncestralAidActive", "FLAG", true, "Config")
+	end },
+	{ var = "crescendoFinalStrikeBoosted", type = "check", label = "Crescendo III: assume Final Strike?", ifFlag = "Condition:SupportsCrescendoAncestralBoost", tooltip = "Crescendo III makes the Final Strike of the combo Ancestrally Boosted. Enable this to view the boosted Final Strike's damage; disable to view a non-boosted strike.", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:CrescendoFinalStrikeBoosted", "FLAG", true, "Config")
+	end },
 	{ var = "EVBypass", type = "check", label = "Disable Emperor's Vigilance Bypass", ifCond = "EVBypass", apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:EVBypass", "FLAG", true, "Config")
 	end },

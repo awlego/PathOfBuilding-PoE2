@@ -118,6 +118,11 @@ skills["SupportAncestralAidPlayer"] = {
 			label = "Ancestral Aid",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "gem_stat_descriptions",
+			statMap = {
+				["strikes_are_ancestrally_boosted"] = {
+					flag("Condition:SupportsAncestralAid"),
+				},
+			},
 			baseFlags = {
 			},
 			constantStats = {
