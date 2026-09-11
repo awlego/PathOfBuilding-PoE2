@@ -6356,6 +6356,12 @@ specialModList["immune to (.-) w?h?i[lf]e? (.*)"] = = function(_, debuff, cond)
 	end
 end
  ]]
+-- Ice Crystals have #% increased/reduced maximum Life per 5% Cold Resistance you have (e.g. Eventide Petals)
+specialModList["ice crystals have (%-?%d+)%% (%a+) maximum life per (%d+)%% cold resistance you have"] = function(num, _, word, div)
+	local value = (word == "reduced") and -num or num
+	return { mod("IceCrystalLife", "INC", value, { type = "PerStat", stat = "ColdResist", div = tonumber(div) }) }
+end
+
 local oldList = specialModList
 specialModList = { }
 for k, v in pairs(oldList) do
