@@ -3731,6 +3731,11 @@ skills["SupportFirePenetrationPlayerTwo"] = {
 			label = "Fire Penetration II",
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "gem_stat_descriptions",
+			statMap = {
+				["hits_ignore_enemy_fire_resistance"] = {
+					flag("IgnoreFireResistance"),
+				},
+			},
 			baseFlags = {
 			},
 			stats = {
