@@ -283,6 +283,7 @@ function calcs.copyActiveSkill(env, mode, skill)
 		quality = skill.activeEffect.srcInstance.quality,
 		srcInstance = skill.activeEffect.srcInstance,
 		gemData = skill.activeEffect.srcInstance.gemData,
+		lineageSupportedGem = skill.activeEffect.lineageSupportedGem,
 	}
 	local newSkill = calcs.createActiveSkill(activeEffect, skill.supportList, env, env.player, skill.socketGroup, skill.summonSkill)
 	local newEnv, _, _, _ = calcs.initEnv(env.build, mode, env.override)
@@ -833,6 +834,78 @@ function calcs.buildActiveSkillModList(env, activeSkill)
 	end
 	if level.PvPDamageMultiplier then
 		skillModList:NewMod("PvpDamageMultiplier", "MORE", level.PvPDamageMultiplier, activeEffect.grantedEffect.modSource)
+	end
+
+	-- Lineage support's "phys converted to types matching supported gem's tags"
+	-- mechanic (currently Hayoxi's Fulmination → Annihilation). Detect via the
+	-- display_annihilation_tag_conversion stat so this generalizes if more skills
+	-- adopt the pattern. Split 100% phys evenly across whichever element/chaos
+	-- tags the supported gem has.
+	if activeEffect.lineageSupportedGem and activeStatSet and activeStatSet.stats then
+		local hasTagConversion = false
+		for _, stat in ipairs(activeStatSet.stats) do
+			if stat == "display_annihilation_tag_conversion" then
+				hasTagConversion = true
+				break
+			end
+		end
+		if hasTagConversion then
+			local supportedTags = activeEffect.lineageSupportedGem.gemData and activeEffect.lineageSupportedGem.gemData.tags or { }
+			local elements = { }
+			if supportedTags.fire then t_insert(elements, "Fire") end
+			if supportedTags.cold then t_insert(elements, "Cold") end
+			if supportedTags.lightning then t_insert(elements, "Lightning") end
+			if supportedTags.chaos then t_insert(elements, "Chaos") end
+			if #elements > 0 then
+				local pct = 100 / #elements
+				local source = "Skill:"..activeGrantedEffect.id
+				for _, elem in ipairs(elements) do
+					skillModList:NewMod("PhysicalDamageConvertTo"..elem, "BASE", pct, source)
+				end
+			end
+		end
+	end
+
+	-- Lineage triggered-skill cadence (currently Hayoxi's Fulmination →
+	-- Annihilation): the supported curse creates cursed zones (limit N), and
+	-- each zone erupts as Annihilation once, a fixed delay after creation.
+	-- Zones bank in parallel, so with the curse recast whenever a zone slot
+	-- frees up, sustained eruptions cap at maxZones / delay (2 / 7s = one every
+	-- 3.5s), additionally gated by the curse's Hayoxi-granted cooldown. PoE2 PoB
+	-- has no live trigger-rate machinery (calcs.triggers is disabled for the
+	-- player), so feed the cadence straight into skillData.triggerRate, which
+	-- the cast speed calc consumes; combined with dpsMultiplier (hits per
+	-- eruption) this also lets the skill contribute to Full DPS.
+	if activeEffect.lineageSupportedGem then
+		local support = activeEffect.gemData and activeEffect.gemData.grantedEffect
+		local supportStatSet = support and support.statSets and support.statSets[1]
+		if supportStatSet and supportStatSet.constantStats then
+			local maxZones, delay = 1, nil
+			for _, stat in ipairs(supportStatSet.constantStats) do
+				if stat[1] == "maximum_curse_zones_allowed" then
+					maxZones = m_max(stat[2], 1)
+				elseif stat[1] == "trigger_from_hayhoxis_binding_after_x_ms" then
+					delay = stat[2] / 1000
+				end
+			end
+			if delay and delay > 0 then
+				local supportCooldown = support.levels[1] and support.levels[1].cooldown
+				local rate = maxZones / delay
+				if supportCooldown and supportCooldown > 0 then
+					rate = m_min(rate, 1 / supportCooldown)
+				end
+				-- Registered as SkillData mods (not direct skillData writes) so the
+				-- accelerated env rebuild in CalcSetup, which wipes skillData and
+				-- restores it from these lists, keeps them — Full DPS re-inits the
+				-- env that way between skills.
+				skillModList:NewMod("SkillData", "LIST", { key = "triggered", value = true }, activeGrantedEffect.modSource)
+				skillModList:NewMod("SkillData", "LIST", { key = "triggerRate", value = rate }, activeGrantedEffect.modSource)
+				activeSkill.skillData.triggered = true
+				activeSkill.skillData.triggerRate = rate
+				activeSkill.infoMessage = "Triggered by " .. support.name
+				activeSkill.infoTrigger = support.name
+			end
+		end
 	end
 
 	-- Add extra modifiers from other sources

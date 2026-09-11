@@ -2260,6 +2260,34 @@ function calcs.initEnv(build, mode, override, specEnv)
 						for index, grantedEffect in ipairs(grantedEffectList) do
 							if not grantedEffect.support and not grantedEffect.hideFromSideBar and (not grantedEffect.hasGlobalEffect or gemInstance["enableGlobal"..index]) then
 								slotHasActiveSkill = true
+								-- Lineage-style support gems (e.g. Hayoxi's Fulmination, Impending Doom)
+								-- have naturalMaxLevel = 1, so their additional granted skills
+								-- (Annihilation, Doom Blast) would lock to level 1 of their damage table.
+								-- In game these track the supported active skill's effective level — so
+								-- we stash the supported gem here and a second build pass mirrors the
+								-- parent's resolved level onto the child after the parent finishes
+								-- building. The level set here is just an initial best-effort; the
+								-- mirror in the activeSkillList build loop is the source of truth.
+								local effectLevel = gemInstance.level
+								local lineageSupportedGem = nil
+								if gemInstance.gemData
+								   and gemInstance.gemData.grantedEffect
+								   and gemInstance.gemData.grantedEffect.support
+								   and gemInstance.gemData.naturalMaxLevel == 1
+								   and grantedEffect ~= gemInstance.gemData.grantedEffect
+								   and grantedEffect.levels and #grantedEffect.levels > 1 then
+									for _, otherGem in ipairs(group.gemList) do
+										if otherGem ~= gemInstance
+										   and otherGem.enabled
+										   and otherGem.gemData
+										   and otherGem.gemData.grantedEffect
+										   and not otherGem.gemData.grantedEffect.support then
+											lineageSupportedGem = otherGem
+											effectLevel = otherGem.level
+											break
+										end
+									end
+								end
 								if gemInstance.gemData and not virtuousMoteSkillCounted[gemInstance] and not (group.gemList[gemIndex].fromNode or group.gemList[gemIndex].fromTree or group.gemList[gemIndex].fromItem) then
 									virtuousMoteSkillCounted[gemInstance] = true
 									local requiredAttributes = { }
@@ -2279,13 +2307,14 @@ function calcs.initEnv(build, mode, override, specEnv)
 								end
 								local activeEffect = {
 									grantedEffect = grantedEffect,
-									level = gemInstance.level,
+									level = effectLevel,
 									quality = gemInstance.quality,
 									qualityId = gemInstance.qualityId,
 									corrupted = gemInstance.corrupted,
 									corruptLevel = gemInstance.corruptLevel,
 									srcInstance = gemInstance,
 									gemData = gemInstance.gemData,
+									lineageSupportedGem = lineageSupportedGem,
 								}
 								if activeEffect.corruptLevel then
 									activeEffect.level = m_max(activeEffect.level + activeEffect.corruptLevel, 1)
@@ -2454,9 +2483,29 @@ function calcs.initEnv(build, mode, override, specEnv)
 			t_insert(env.player.activeSkillList, env.player.mainSkill)
 		end
 
-		-- Build skill modifier lists
+		-- Build skill modifier lists. Lineage children (e.g. Hayoxi's Fulmination
+		-- → Annihilation) defer to a second pass so the supported gem's level is
+		-- already finalized — incorporating Dialla's +1, Uhtred's threshold boost,
+		-- "+X to <skill> Skills", etc. — when we mirror it onto the child. This
+		-- assumes one level of indirection: nested lineage (a lineage support's
+		-- additional skill that itself references another lineage child) would
+		-- need topological ordering, but PoE2 has no such case today.
 		for _, activeSkill in pairs(env.player.activeSkillList) do
-			calcs.buildActiveSkillModList(env, activeSkill)
+			if not activeSkill.activeEffect.lineageSupportedGem then
+				calcs.buildActiveSkillModList(env, activeSkill)
+			end
+		end
+		for _, activeSkill in pairs(env.player.activeSkillList) do
+			if activeSkill.activeEffect.lineageSupportedGem then
+				local supportedGem = activeSkill.activeEffect.lineageSupportedGem
+				for _, parent in pairs(env.player.activeSkillList) do
+					if parent.activeEffect.srcInstance == supportedGem then
+						activeSkill.activeEffect.level = parent.activeEffect.level
+						break
+					end
+				end
+				calcs.buildActiveSkillModList(env, activeSkill)
+			end
 		end
 
 		-- Rebuild auxiliary groups assigned exclusively to the other weapon set in
