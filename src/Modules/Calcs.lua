@@ -85,6 +85,17 @@ end
 ---@field mainSocketGroup integer?
 ---@field skipWeaponSetContexts boolean?
 
+-- Phase-level profile counters for the calcFunc closure below. Callers (the
+-- Power Report sweep in CalcsTab.lua) reset these before kicking off and read
+-- them when finished. Cost per call is two GetTime() and two adds — well below
+-- noise floor — so we leave the instrumentation unconditional.
+calcs.profile = { initEnvMs = 0, performMs = 0, calls = 0 }
+function calcs.resetProfile()
+	calcs.profile.initEnvMs = 0
+	calcs.profile.performMs = 0
+	calcs.profile.calls = 0
+end
+
 -- Get calculator for other changes (adding/removing nodes, items, gems, etc)
 ---@param build Build
 ---@return fun(override?: CalcOverride, useFullDPS?: boolean, fastCalcOptions?: table): Output calcFunc
@@ -129,14 +140,25 @@ function calcs.getMiscCalculator(build)
 			end
 			return fastEnv.player.output
 		end
+		local profile = calcs.profile
+		local t0 = GetTime()
 		local env, cachedPlayerDB, cachedEnemyDB, cachedMinionDB = calcs.initEnv(build, "CALCULATOR", override)
+		local t1 = GetTime()
+		profile.initEnvMs = profile.initEnvMs + (t1 - t0)
 		-- we need to preserve the override somewhere for use by possible trigger-based build-outs with overrides
 		env.override = override
 		calcs.perform(env)
-		if (useFullDPS ~= false or build.viewMode == "TREE") and usedFullDPS then
-			-- prevent upcoming calculation from using Cached Data and thus forcing it to re-calculate new FullDPS roll-up
-			-- without this, FullDPS increase/decrease when for node/item/gem comparison would be all 0 as it would be comparing
-			-- A with A (due to cache reuse) instead of A with B
+		profile.performMs = profile.performMs + (GetTime() - t1)
+		profile.calls = profile.calls + 1
+		if useFullDPS ~= false and usedFullDPS then
+			-- Re-run FullDPS for any caller that didn't explicitly opt out (nil or
+			-- true). Callers that pass `false` (e.g. PowerBuilder for non-DPS
+			-- stats) skip this and save the FullDPS sweep per calcFunc call.
+			-- The previous `or build.viewMode == "TREE"` clause forced the sweep
+			-- even when the caller opted out, defeating the parameter on the Tree
+			-- tab — see Power Report perf on non-DPS heatmaps.
+			-- This also prevents the upcoming calculation from using cached data, forcing a fresh FullDPS
+			-- roll-up; without it, FullDPS deltas for node/item/gem comparison would all be 0 (A vs A).
 			local fullDPS = calcs.calcFullDPS(build, "CALCULATOR", override, { cachedPlayerDB = cachedPlayerDB, cachedEnemyDB = cachedEnemyDB, cachedMinionDB = cachedMinionDB, env = nil})
 			env.player.output.SkillDPS = fullDPS.skills
 			env.player.output.FullDPS = fullDPS.combinedDPS
@@ -144,6 +166,46 @@ function calcs.getMiscCalculator(build)
 		end
 		return env.player.output
 	end, env.player.output
+end
+
+-- Specialized calculator for the Power Report: an override always consists of
+-- one or more node additions/removals, never item or skill edits, so we can
+-- skip the item / gem-requirements / skill-list rebuild every call (those
+-- structures are stable across the sweep) and reuse a single env table.
+-- Keeping this in a separate function — rather than branching inside
+-- getMiscCalculator's closure — keeps the JIT trace monomorphic; the earlier
+-- in-place attempt (fix #3) regressed because the conditional fast-path made
+-- LuaJIT specialize on a polluted call-site shape. This closure body has no
+-- such branch.
+function calcs.getNodePowerCalculator(build)
+	-- Initial pass: build env fully (items, skills, gems) so the first call
+	-- has everything the sweep will reuse afterwards.
+	local env, cachedPlayerDB, cachedEnemyDB, cachedMinionDB = calcs.initEnv(build, "CALCULATOR")
+	calcs.perform(env)
+	local baseOutput = env.player.output
+	local specEnv = {
+		env = env,
+		cachedPlayerDB = cachedPlayerDB,
+		cachedEnemyDB = cachedEnemyDB,
+		cachedMinionDB = cachedMinionDB,
+		accelerate = {
+			requirementsItems = true,
+			requirementsGems = true,
+			skills = true,
+		},
+	}
+	return function(override)
+		local profile = calcs.profile
+		local t0 = GetTime()
+		calcs.initEnv(build, "CALCULATOR", override, specEnv)
+		local t1 = GetTime()
+		profile.initEnvMs = profile.initEnvMs + (t1 - t0)
+		env.override = override
+		calcs.perform(env)
+		profile.performMs = profile.performMs + (GetTime() - t1)
+		profile.calls = profile.calls + 1
+		return env.player.output
+	end, baseOutput
 end
 
 -- Output fields harvested from each Full DPS calc pass; captured into plain snapshot
