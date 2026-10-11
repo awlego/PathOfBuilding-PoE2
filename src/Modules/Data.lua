@@ -1137,7 +1137,9 @@ data.printMissingMinionSkills = function()
 	end
 end
 
+data.runeforgingCrafts = require("Data.VerisiumCrafts")
 -- Item bases
+---@type table<string, table>
 data.itemBases = { }
 for _, type in pairs(itemTypes) do
 	LoadModule("Data/Bases/" .. type)(data.itemBases)

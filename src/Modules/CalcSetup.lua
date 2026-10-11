@@ -697,7 +697,14 @@ local function getGrantedSkillLevel(gemData, maxLevel, characterLevel, modDB)
 			return level
 		end
 	end
-	return 1
+	-- Some granted skills only define higher levels (Pinnacle of Power has only 20)
+	local lowest
+	for level in pairs(gemData.grantedEffect.levels) do
+		if type(level) == "number" and (not lowest or level < lowest) then
+			lowest = level
+		end
+	end
+	return lowest or 1
 end
 
 local defaultAttackSlots = {
@@ -2495,29 +2502,19 @@ function calcs.initEnv(build, mode, override, specEnv)
 			t_insert(env.player.activeSkillList, env.player.mainSkill)
 		end
 
-		-- Build skill modifier lists. Lineage children (e.g. Hayoxi's Fulmination
-		-- → Annihilation) defer to a second pass so the supported gem's level is
-		-- already finalized — incorporating Dialla's +1, Uhtred's threshold boost,
-		-- "+X to <skill> Skills", etc. — when we mirror it onto the child. This
-		-- assumes one level of indirection: nested lineage (a lineage support's
-		-- additional skill that itself references another lineage child) would
-		-- need topological ordering, but PoE2 has no such case today.
+		-- some active skills, like those granted by support gems depend on the stats of other gems,
+		-- which means we have to do them last.
+		local deferredActiveSkills = {}
+		-- Build skill modifier lists
 		for _, activeSkill in pairs(env.player.activeSkillList) do
-			if not activeSkill.activeEffect.lineageSupportedGem then
+			if activeSkill.activeEffect.gemData and activeSkill.activeEffect.gemData.grantedEffect.support then
+				table.insert(deferredActiveSkills, activeSkill)
+			else
 				calcs.buildActiveSkillModList(env, activeSkill)
 			end
 		end
-		for _, activeSkill in pairs(env.player.activeSkillList) do
-			if activeSkill.activeEffect.lineageSupportedGem then
-				local supportedGem = activeSkill.activeEffect.lineageSupportedGem
-				for _, parent in pairs(env.player.activeSkillList) do
-					if parent.activeEffect.srcInstance == supportedGem then
-						activeSkill.activeEffect.level = parent.activeEffect.level
-						break
-					end
-				end
-				calcs.buildActiveSkillModList(env, activeSkill)
-			end
+		for _, activeSkill in ipairs(deferredActiveSkills) do
+			calcs.buildActiveSkillModList(env, activeSkill)
 		end
 
 		-- Rebuild auxiliary groups assigned exclusively to the other weapon set in
