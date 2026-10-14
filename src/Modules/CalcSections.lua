@@ -1578,6 +1578,17 @@ return {
 	{ label = "Enemy Mana Recovery", haveOutput = "EnemyManaRegen", { format =  "{0:output:EnemyManaRegen}%", { modName = "ManaRegen", modType = "INC", enemy = true }, }, },
 	{ label = "Enemy ES Recovery", haveOutput = "EnemyEnergyShieldRegen", { format =  "{0:output:EnemyEnergyShieldRegen}%", { modName = "EnergyShieldRegen", modType = "INC", enemy = true }, }, },
 	{ label = "MS While Casting", { format = "{1:output:MovementSpeedWhileUsingSkillPercent}%", { breakdown = "MovementSpeedWhileUsingSkill" }, { modName = { "SkillMovementSpeed", "MovementSpeedPenalty" }, cfg = "skill" }, }, },
+	{ label = "Puppet Master", haveOutput = "PuppetMasterStacksMax", { format = "{0:output:PuppetMasterStacks} / {0:output:PuppetMasterStacksMax}",
+		{ label = "Maximum stacks", modName = "PuppetMasterStacksMax", modType = "BASE" },
+		{ label = "Increased effect", modName = "PuppetMasterEffect", modType = "INC" },
+		{ label = "Increased duration", modName = "PuppetMasterDuration", modType = "INC" },
+		{ label = "Gain chance on Command", modName = "PuppetMasterChance", modType = "BASE" },
+	}, },
+	{ label = "Puppet Master Duration", haveOutput = "PuppetMasterStacksMax", { format = "{1:output:PuppetMasterDuration}s", { modName = { "PuppetMasterDuration", "PuppetMasterNoExpireWithArchonOfUndeath" } }, }, },
+	{ label = "Archon Buff Duration", haveOutput = "ArchonBuffDuration", { format = "{1:output:ArchonBuffDuration}s", { modName = "ArchonBuffDuration", modType = "INC" }, }, },
+	{ label = "Archon Recovery", haveOutput = "ArchonBuffDuration", { format = "{1:output:ArchonRecoveryPeriod}s", { modName = { "ArchonRecoveryRate", "ArchonNoRecoveryPeriod" } }, }, },
+	{ label = "Archon Uptime", haveOutput = "ArchonBuffEffect", { format = "{1:output:ArchonUptime}%", { breakdown = "ArchonUptime" }, { modName = { "ArchonOfUndeathChance", "ArchonOfUndeathChanceOnOffering" } }, }, },
+	{ label = "Archon Buff Effect", haveOutput = "ArchonBuffEffect", { format = "x {2:output:ArchonBuffEffect}", { modName = "ArchonBuffEffect", modType = "INC" }, { label = "Archon Buffs also grant", modName = "ArchonBuffGrant", modType = "LIST" }, }, },
 } }
 } },
 -- attributes/resists

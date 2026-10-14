@@ -1155,6 +1155,24 @@ local function initMinionModDB(env, activeSkill)
 	end
 end
 
+-- Sets the source on a buff mod, including the inner mod of a MinionModifier/LIST wrapper so breakdowns show it
+local function setBuffModSource(mod, source)
+	mod.source = source
+	if type(mod.value) == "table" and mod.value.mod then
+		mod.value.mod.source = source
+	end
+end
+
+-- Parses buff stat lines (e.g. data.archonOfUndeathStats) and adds them to modDB scaled by the buff's effect
+local function addScaledBuffLines(modDB, lines, scale, source)
+	for _, line in ipairs(lines) do
+		for _, mod in ipairs((modLib.parseMod(line))) do
+			setBuffModSource(mod, source)
+			modDB:ScaleAddMod(mod, scale)
+		end
+	end
+end
+
 ---@param modList ModList
 ---@param skillCfg ModCfg
 ---@param minion Actor
@@ -1244,6 +1262,79 @@ function calcs.perform(env, skipEHP)
 		local max = modDB:Sum("BASE", nil, "MaximumValour")
 		local stacks = modDB:Sum("BASE", nil, "Multiplier:ValourStacks")
 		modDB:NewMod("Multiplier:BannerValour", "BASE", m_min(stacks, max), "Base")
+	end
+
+	-- Puppet Master: stacking buff from Command Skills, each stack grants the lines below
+	if modDB:Flag(nil, "Condition:HavePuppetMaster") then
+		local maxStacks = data.misc.PuppetMasterBaseMaxStacks + modDB:Sum("BASE", nil, "PuppetMasterStacksMax")
+		local stacks = m_max(m_min(modDB:Override(nil, "PuppetMasterStacks") or maxStacks, maxStacks), 0)
+		local effect = 1 + modDB:Sum("INC", nil, "PuppetMasterEffect") / 100
+		output.PuppetMasterStacks = stacks
+		output.PuppetMasterStacksMax = maxStacks
+		output.PuppetMasterDuration = data.misc.PuppetMasterBaseDuration * (1 + modDB:Sum("INC", nil, "PuppetMasterDuration") / 100)
+		modDB:NewMod("Multiplier:PuppetMasterStack", "BASE", stacks, "Puppet Master")
+		if stacks > 0 then
+			addScaledBuffLines(modDB, data.puppetMasterStackStats, stacks * effect, "Puppet Master")
+		end
+	end
+
+	-- Archon Buffs: only one can be active at a time; effect scales the buff's own stats and its "also grant" modifiers
+	local archonUptimeBreakdown
+	local archonOfUndeath = modDB:Flag(nil, "Condition:ArchonOfUndeath")
+	if modDB:Flag(nil, "CanGainArchonOfUndeath") or archonOfUndeath or modDB:Flag(nil, "Condition:AffectedByArchonBuff") then
+		output.ArchonBuffDuration = data.misc.ArchonBuffBaseDuration * (1 + modDB:Sum("INC", nil, "ArchonBuffDuration") / 100)
+		output.ArchonRecoveryPeriod = modDB:Flag(nil, "ArchonNoRecoveryPeriod") and 0 or data.misc.ArchonBuffBaseRecoveryPeriod / m_max(1 + modDB:Sum("INC", nil, "ArchonRecoveryRate") / 100, 0.01)
+	end
+	if archonOfUndeath then
+		-- Averaged over a cycle of: buff active, recovery period, then waiting for a gain chance to succeed
+		local commandChance = m_min(modDB:Sum("BASE", nil, "ArchonOfUndeathChance"), 100) / 100
+		local commandRate = modDB:Override(nil, "ArchonCommandUsesPerSecond") or data.misc.ArchonCommandUsesPerSecond
+		local offeringChance = m_min(modDB:Sum("BASE", nil, "ArchonOfUndeathChanceOnOffering"), 100) / 100
+		local offeringRate = modDB:Override(nil, "ArchonOfferingsPerSecond") or 0
+		local gainRate = commandChance * commandRate + offeringChance * offeringRate
+		local uptimeOverride = modDB:Override(nil, "ArchonBuffUptime")
+		if uptimeOverride then
+			output.ArchonUptime = uptimeOverride
+		elseif gainRate > 0 then
+			output.ArchonGainTime = 1 / gainRate
+			output.ArchonUptime = output.ArchonBuffDuration / (output.ArchonBuffDuration + output.ArchonRecoveryPeriod + output.ArchonGainTime) * 100
+		else
+			output.ArchonUptime = 0
+		end
+		if env.buildBreakdown and not uptimeOverride then
+			archonUptimeBreakdown = { }
+			if commandChance > 0 then
+				t_insert(archonUptimeBreakdown, s_format("%.2f ^8(Command Skill uses per second)", commandRate))
+				t_insert(archonUptimeBreakdown, s_format("x %.2f ^8(chance to gain per Command Skill use)", commandChance))
+			end
+			if offeringChance > 0 then
+				t_insert(archonUptimeBreakdown, s_format("%s%.2f ^8(Offerings created per second)", commandChance > 0 and "+ " or "", offeringRate))
+				t_insert(archonUptimeBreakdown, s_format("x %.2f ^8(chance to gain per Offering)", offeringChance))
+			end
+			if output.ArchonGainTime then
+				t_insert(archonUptimeBreakdown, s_format("= %.2fs ^8(average time to regain after recovery)", output.ArchonGainTime))
+				t_insert(archonUptimeBreakdown, s_format("%.2fs / (%.2fs + %.2fs + %.2fs) ^8(duration / (duration + recovery period + time to regain))", output.ArchonBuffDuration, output.ArchonBuffDuration, output.ArchonRecoveryPeriod, output.ArchonGainTime))
+			end
+			t_insert(archonUptimeBreakdown, s_format("= %.1f%%", output.ArchonUptime))
+		end
+		if output.ArchonUptime >= 100 then
+			modDB:NewMod("Condition:AffectedByArchonBuff", "FLAG", true, "Archon of Undeath")
+		end
+	end
+	if archonOfUndeath or modDB:Flag(nil, "Condition:AffectedByArchonBuff") then
+		local effect = m_max(1 + modDB:Sum("INC", nil, "ArchonBuffEffect") / 100, 0)
+		output.ArchonBuffEffect = effect
+		local scale = effect * (archonOfUndeath and output.ArchonUptime / 100 or 1)
+		local source = "Archon Buff"
+		if archonOfUndeath then
+			source = "Archon of Undeath"
+			addScaledBuffLines(modDB, data.archonOfUndeathStats, scale, source)
+		end
+		for _, row in ipairs(modDB:Tabulate("LIST", nil, "ArchonBuffGrant")) do
+			local mod = copyTable(row.value.mod)
+			setBuffModSource(mod, row.mod.source or source)
+			modDB:ScaleAddMod(mod, scale)
+		end
 	end
 
 	if modDB:Flag(nil, "CryWolfMinimumPower") and modDB:Sum("BASE", nil, "WarcryPower") < 10 then
@@ -1465,6 +1556,7 @@ function calcs.perform(env, skipEHP)
 		-- Initialise breakdown module
 		breakdown = LoadModule(calcs.breakdownModule)(modDB, output, env.player)
 		env.player.breakdown = breakdown
+		breakdown.ArchonUptime = archonUptimeBreakdown
 		if env.minion then
 			env.minion.breakdown = LoadModule(calcs.breakdownModule)(env.minion.modDB, env.minion.output, env.minion)
 		end

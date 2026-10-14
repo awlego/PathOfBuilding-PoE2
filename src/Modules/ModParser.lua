@@ -1413,6 +1413,7 @@ local preFlagList = {
 	["^auras from your skills grant "] = { addToAura = true },
 	["^auras grant "] = { addToAura = true },
 	["^banners also grant "] = { addToAura = true, onlyAddToBanners = true },
+	["^archon buffs also grant "] = { addToArchon = true },
 	["^you and nearby allies "] = { newAura = true },
 	["^you and nearby allies [hgd][ae][via][enl] "] = { newAura = true },
 	["^nearby allies [hgd][ae][via][enl] "] = { newAura = true, newAuraOnlyAllies = true },
@@ -1861,6 +1862,8 @@ local modTagList = {
 	["if a non%-vaal guard buff was lost recently"] = { tag = { type = "Condition", var = "LostNonVaalBuffRecently" } },
 	["while affected by a guard skill buff"] = { tag = { type = "Condition", var = "AffectedByGuardSkill" } },
 	["while affected by a herald"] = { tag = { type = "Condition", var = "AffectedByHerald" } },
+	["while affected by an archon buff"] = { tag = { type = "Condition", var = "AffectedByArchonBuff" } },
+	["while you have archon of undeath"] = { tag = { type = "Condition", var = "ArchonOfUndeath" } },
 	["while fortified"] = { tag = { type = "Condition", var = "Fortified" } },
 	["while in blood stance"] = { tag = { type = "Condition", var = "BloodStance" } },
 	["while in sand stance"] = { tag = { type = "Condition", var = "SandStance" } },
@@ -4914,6 +4917,23 @@ local specialModList = {
 	["summoned skeleton warriors are permanent and follow you"] = { flag("RaisedSkeletonPermanentDuration", { type = "SkillName", skillName = "Summon Skeletons" }) },
 	["minions recoup (%d+)%% of damage taken as life"] = function(num) return { mod("MinionModifier", "LIST", { mod = mod("LifeRecoup", "BASE", num) }) } end,
 	["temporary minion skills have %+(%d+) to limit of minions summoned"] = function(num) return { mod("ActiveMinionLimit", "BASE", num, { type = "BaseFlag", baseFlag = "duration", neg = true }) } end,
+	["temporary minion skills have (%d+)%% more limit of minions summoned"] = function(num) return { mod("ActiveMinionLimit", "MORE", num, { type = "BaseFlag", baseFlag = "duration", neg = true }) } end,
+	-- Archon Buffs (applied in CalcPerform while the configured Archon Buff is active)
+	["(%d+)%% increased archon buff duration"] = function(num) return { mod("ArchonBuffDuration", "INC", num) } end,
+	["(%d+)%% reduced archon buff duration"] = function(num) return { mod("ArchonBuffDuration", "INC", -num) } end,
+	["(%d+)%% increased effect of archon buffs on you"] = function(num) return { mod("ArchonBuffEffect", "INC", num) } end,
+	["(%d+)%% reduced effect of archon buffs on you"] = function(num) return { mod("ArchonBuffEffect", "INC", -num) } end,
+	["archon recovery period expires (%d+)%% faster"] = function(num) return { mod("ArchonRecoveryRate", "INC", num) } end,
+	["archon recovery period expires (%d+)%% slower"] = function(num) return { mod("ArchonRecoveryRate", "INC", -num) } end,
+	["archon buffs have no recovery period after you lose one"] = { flag("ArchonNoRecoveryPeriod") },
+	["(%d+)%% chance to gain archon of undeath when you use a command skill"] = function(num) return { mod("ArchonOfUndeathChance", "BASE", num), flag("CanGainArchonOfUndeath") } end,
+	["(%d+)%% to gain archon of undeath when you create an offering"] = function(num) return { mod("ArchonOfUndeathChanceOnOffering", "BASE", num), flag("CanGainArchonOfUndeath"), flag("CanGainArchonOfUndeathOnOffering") } end,
+	-- Puppet Master (stacking buff gained from Command Skills, applied in CalcPerform)
+	["(%d+)%% surpassing chance to gain a puppet master stack whenever you use a command skill"] = function(num) return { mod("PuppetMasterChance", "BASE", num), flag("CanGainPuppetMaster") } end,
+	["%+(%d+) maximum stacks? of puppet master"] = function(num) return { mod("PuppetMasterStacksMax", "BASE", num) } end,
+	["(%d+)%% increased effect of puppet master"] = function(num) return { mod("PuppetMasterEffect", "INC", num) } end,
+	["(%d+)%% increased duration of each puppet master stack"] = function(num) return { mod("PuppetMasterDuration", "INC", num) } end,
+	["puppet master does not expire while you have archon of undeath"] = { flag("PuppetMasterNoExpireWithArchonOfUndeath") },
 	["every five rage also grants you (%d+)%% increased movement speed"] = function(num) return {mod("MovementSpeed", "INC", num, { type = "PerStat", stat = "Rage", div = 5 })} end,
 	["every rage also grants you (%d+)%% increased minion damage"] = function(num) return {
 		mod("MinionModifier", "LIST", { mod = mod("Damage", "INC", num, { type = "Multiplier", var = "RageEffect", actor = "player" }) }),
@@ -7035,6 +7055,11 @@ local function parseMod(line, order)
 				for i, effectMod in ipairs(modList) do
 					modList[i] = mod("ExtraAuraEffect", "LIST", { mod = effectMod })
 				end
+			end
+		elseif misc.addToArchon then
+			-- Modifiers that add extra effects to your Archon Buffs; applied (and scaled by Archon Buff effect) in CalcPerform
+			for i, effectMod in ipairs(modList) do
+				modList[i] = mod("ArchonBuffGrant", "LIST", { mod = effectMod })
 			end
 		elseif misc.newAura then
 			-- Modifiers that add extra auras

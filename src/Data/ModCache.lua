@@ -107,7 +107,7 @@ c["+1 Prefix Modifier allowed"]={{},nil}
 c["+1 Ring Slot"]={{[1]={flags=0,keywordFlags=0,name="AdditionalRingSlot",type="FLAG",value=true}},nil}
 c["+1 Suffix Modifier allowed"]={{},nil}
 c["+1 Weapon Range per 10% Quality"]={{[1]={flags=0,keywordFlags=0,name="AlternateQualityLocalWeaponRangePer10Quality",type="BASE",value=1}},nil}
-c["+1 maximum stacks of Puppet Master"]={{}," maximum stacks of Puppet Master "}
+c["+1 maximum stacks of Puppet Master"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterStacksMax",type="BASE",value=1}},nil}
 c["+1 metre to Dodge Roll distance"]={{}," metre to Dodge Roll distance "}
 c["+1 metre to Dodge Roll distance 50% increased Evasion Rating if you've Dodge Rolled Recently"]={{[1]={[1]={type="Condition",var="DodgeRolledRecently"},flags=0,keywordFlags=0,name="Evasion",type="BASE",value=1}}," metre to Dodge Roll distance 50% increased   "}
 c["+1 second to Summon Skeleton Cooldown"]={{}," second to Summon  Cooldown "}
@@ -970,7 +970,7 @@ c["+37% to Chaos Resistance while affected by Herald of Agony"]={{[1]={flags=0,k
 c["+38% Surpassing chance to fire an additional Projectile"]={{[1]={flags=0,keywordFlags=0,name="SurpassingProjectileChance",type="BASE",value=38}},nil}
 c["+39% to Chaos Resistance"]={{[1]={flags=0,keywordFlags=0,name="ChaosResist",type="BASE",value=39}},nil}
 c["+4 Accuracy Rating per 2 Intelligence"]={{[1]={[1]={div=2,stat="Int",type="PerStat"},flags=0,keywordFlags=0,name="Accuracy",type="BASE",value=4}},nil}
-c["+4 maximum stacks of Puppet Master"]={{}," maximum stacks of Puppet Master "}
+c["+4 maximum stacks of Puppet Master"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterStacksMax",type="BASE",value=4}},nil}
 c["+4 to Ailment Threshold per Dexterity"]={{[1]={[1]={stat="Dex",type="PerStat"},flags=0,keywordFlags=0,name="AilmentThreshold",type="BASE",value=4}},nil}
 c["+4 to Dexterity"]={{[1]={flags=0,keywordFlags=0,name="Dex",type="BASE",value=4}},nil}
 c["+4 to Level of Despair Skills"]={{[1]={[1]={skillName="Despair",type="SkillName"},flags=0,keywordFlags=0,name="SupportedGemProperty",type="LIST",value={key="level",keyword="grants_active_skill",value=4}}},nil}
@@ -1515,7 +1515,7 @@ c["10% increased Accuracy Rating while Dual Wielding"]={{[1]={[1]={type="Conditi
 c["10% increased Accuracy Rating while Shapeshifted"]={{[1]={[1]={type="Condition",var="Shapeshifted"},flags=0,keywordFlags=0,name="Accuracy",type="INC",value=10}},nil}
 c["10% increased Accuracy Rating with Bows"]={{[1]={flags=131076,keywordFlags=0,name="Accuracy",type="INC",value=10}},nil}
 c["10% increased Accuracy Rating with Spears"]={{[1]={flags=268435460,keywordFlags=0,name="Accuracy",type="INC",value=10}},nil}
-c["10% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=10}}," Archon Buff  "}
+c["10% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffDuration",type="INC",value=10}},nil}
 c["10% increased Area Damage"]={{[1]={flags=512,keywordFlags=0,name="Damage",type="INC",value=10}},nil}
 c["10% increased Area of Effect"]={{[1]={flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=10}},nil}
 c["10% increased Area of Effect for Attacks"]={{[1]={flags=1,keywordFlags=0,name="AreaOfEffect",type="INC",value=10}},nil}
@@ -1710,7 +1710,7 @@ c["10% increased amount of Mana Leeched"]={{[1]={flags=0,keywordFlags=0,name="Ma
 c["10% increased chance to Shock"]={{[1]={flags=0,keywordFlags=0,name="EnemyShockChance",type="INC",value=10}},nil}
 c["10% increased chance to inflict Ailments"]={{[1]={flags=0,keywordFlags=0,name="AilmentChance",type="INC",value=10}},nil}
 c["10% increased effect of Arcane Surge on you"]={{[1]={flags=0,keywordFlags=0,name="ArcaneSurgeEffect",type="INC",value=10}},nil}
-c["10% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=10}},"  of Archon Buffs on you "}
+c["10% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffEffect",type="INC",value=10}},nil}
 c["10% increased effect of Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="BuffEffectOnSelf",type="INC",value=10}},nil}
 c["10% increased effect of Fully Broken Armour"]={{[1]={flags=0,keywordFlags=0,name="FullyBrokenArmourEffect",type="INC",value=10}},nil}
 c["10% increased maximum Darkness"]={{[1]={flags=0,keywordFlags=0,name="Darkness",type="INC",value=10}},nil}
@@ -2195,7 +2195,7 @@ c["140% increased Evasion Rating"]={{[1]={flags=0,keywordFlags=0,name="Evasion",
 c["140% increased Physical Damage"]={{[1]={flags=0,keywordFlags=0,name="PhysicalDamage",type="INC",value=140}},nil}
 c["15 Life Regeneration per second"]={{[1]={flags=0,keywordFlags=0,name="LifeRegen",type="BASE",value=15}},nil}
 c["15 to 25 Physical Thorns damage"]={{[1]={flags=32,keywordFlags=0,name="PhysicalMin",type="BASE",value=15},[2]={flags=32,keywordFlags=0,name="PhysicalMax",type="BASE",value=25}},nil}
-c["15% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{},"% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill "}
+c["15% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterChance",type="BASE",value=15},[2]={flags=0,keywordFlags=0,name="CanGainPuppetMaster",type="FLAG",value=true}},nil}
 c["15% additional Physical Damage Reduction"]={{[1]={flags=0,keywordFlags=0,name="PhysicalDamageReduction",type="BASE",value=15}},nil}
 c["15% chance for Remnants you create to grant their effects twice"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="BASE",value=15}}," for Remnants you create to grant their s twice "}
 c["15% chance for Shapeshift Slam Skills you use yourself to cause an additional Aftershock"]={{}," for Shapeshift Slam Skills you use yourself to cause an additional Aftershock "}
@@ -2214,7 +2214,7 @@ c["15% chance to Shock"]={{[1]={flags=0,keywordFlags=0,name="EnemyShockChance",t
 c["15% chance to cause Bleeding on Hit"]={{[1]={flags=0,keywordFlags=0,name="BleedChance",type="BASE",value=15}},nil}
 c["15% chance to create Chilled Ground when Hit with an Attack"]={{}," to create Chilled Ground when Hit with an Attack "}
 c["15% chance to create Chilled Ground when you Freeze an Enemy"]={{}," to create Chilled Ground when you Freeze an Enemy "}
-c["15% chance to gain Archon of Undeath when you use a Command skill"]={nil,"Archon of Undeath when you use a Command skill "}
+c["15% chance to gain Archon of Undeath when you use a Command skill"]={{[1]={flags=0,keywordFlags=0,name="ArchonOfUndeathChance",type="BASE",value=15},[2]={flags=0,keywordFlags=0,name="CanGainArchonOfUndeath",type="FLAG",value=true}},nil}
 c["15% chance to gain Onslaught for 3 seconds when you kill an  enemy affected by Abyssal Wasting"]={{[1]={flags=0,keywordFlags=0,name="Condition:Onslaught",type="FLAG",value=true}},"  when you kill an  enemy affected by Abyssal Wasting "}
 c["15% chance to gain Onslaught for 4 seconds on Hit"]={{[1]={flags=4,keywordFlags=0,name="Condition:Onslaught",type="FLAG",value=true}},nil}
 c["15% chance to gain a Frenzy Charge on kill"]={nil,"a Frenzy Charge  "}
@@ -2232,7 +2232,7 @@ c["15% faster Curse Activation"]={{[1]={flags=0,keywordFlags=0,name="CurseActiva
 c["15% faster start of Energy Shield Recharge"]={{[1]={flags=0,keywordFlags=0,name="EnergyShieldRechargeFaster",type="INC",value=15}},nil}
 c["15% increased Accuracy Rating"]={{[1]={flags=0,keywordFlags=0,name="Accuracy",type="INC",value=15}},nil}
 c["15% increased Accuracy Rating with One Handed Melee Weapons"]={{[1]={flags=21474836484,keywordFlags=0,name="Accuracy",type="INC",value=15}},nil}
-c["15% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=15}}," Archon Buff  "}
+c["15% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffDuration",type="INC",value=15}},nil}
 c["15% increased Area Damage"]={{[1]={flags=512,keywordFlags=0,name="Damage",type="INC",value=15}},nil}
 c["15% increased Area of Effect"]={{[1]={flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=15}},nil}
 c["15% increased Area of Effect during Effect"]={{[1]={[1]={type="Condition",var="UsingFlask"},flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=15}},nil}
@@ -2317,7 +2317,7 @@ c["15% increased Duration of Ailments on Enemies"]={{[1]={flags=0,keywordFlags=0
 c["15% increased Duration of Damaging Ailments on Enemies"]={{[1]={flags=0,keywordFlags=0,name="EnemyIgniteDuration",type="INC",value=15},[2]={flags=0,keywordFlags=0,name="EnemyBleedDuration",type="INC",value=15},[3]={flags=0,keywordFlags=0,name="EnemyPoisonDuration",type="INC",value=15}},nil}
 c["15% increased Duration of Elemental Ailments on Enemies"]={{[1]={flags=0,keywordFlags=0,name="EnemyElementalAilmentDuration",type="INC",value=15}},nil}
 c["15% increased Duration of Ignite, Shock and Chill on Enemies"]={{[1]={flags=0,keywordFlags=0,name="EnemyShockDuration",type="INC",value=15},[2]={flags=0,keywordFlags=0,name="EnemyChillDuration",type="INC",value=15},[3]={flags=0,keywordFlags=0,name="EnemyIgniteDuration",type="INC",value=15}},nil}
-c["15% increased Effect of Puppet Master"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=15}},"  of Puppet Master "}
+c["15% increased Effect of Puppet Master"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterEffect",type="INC",value=15}},nil}
 c["15% increased Effect of your Mark Skills"]={{[1]={[1]={skillType=99,type="SkillType"},flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=15}},nil}
 c["15% increased Electrocute Buildup"]={{[1]={flags=0,keywordFlags=0,name="EnemyElectrocuteBuildup",type="INC",value=15}},nil}
 c["15% increased Elemental Ailment Threshold"]={{[1]={flags=0,keywordFlags=0,name="AilmentThreshold",type="INC",value=15}},nil}
@@ -2442,7 +2442,7 @@ c["15% increased chance to Shock"]={{[1]={flags=0,keywordFlags=0,name="EnemyShoc
 c["15% increased chance to inflict Ailments"]={{[1]={flags=0,keywordFlags=0,name="AilmentChance",type="INC",value=15}},nil}
 c["15% increased chance to inflict Bleeding"]={{[1]={flags=0,keywordFlags=0,name="BleedChance",type="INC",value=15}}," chance  "}
 c["15% increased effect of Arcane Surge on you"]={{[1]={flags=0,keywordFlags=0,name="ArcaneSurgeEffect",type="INC",value=15}},nil}
-c["15% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=15}},"  of Archon Buffs on you "}
+c["15% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffEffect",type="INC",value=15}},nil}
 c["15% increased effect of Fully Broken Armour"]={{[1]={flags=0,keywordFlags=0,name="FullyBrokenArmourEffect",type="INC",value=15}},nil}
 c["15% increased effect of Socketed Soul Cores"]={{[1]={flags=0,keywordFlags=0,name="SocketedSoulCoreEffect",type="INC",value=15}},nil}
 c["15% increased maximum Energy Shield"]={{[1]={[1]={type="Global"},flags=0,keywordFlags=0,name="EnergyShield",type="INC",value=15}},nil}
@@ -2791,7 +2791,7 @@ c["20% faster Curse Activation"]={{[1]={flags=0,keywordFlags=0,name="CurseActiva
 c["20% faster start of Energy Shield Recharge"]={{[1]={flags=0,keywordFlags=0,name="EnergyShieldRechargeFaster",type="INC",value=20}},nil}
 c["20% faster start of Energy Shield Recharge when not on Full Life"]={{[1]={[1]={neg=true,type="Condition",var="FullLife"},flags=0,keywordFlags=0,name="EnergyShieldRechargeFaster",type="INC",value=20}},nil}
 c["20% faster start of Energy Shield Recharge while Shapeshifted"]={{[1]={[1]={type="Condition",var="Shapeshifted"},flags=0,keywordFlags=0,name="EnergyShieldRechargeFaster",type="INC",value=20}},nil}
-c["20% faster start of Energy Shield Recharge while affected by an Archon Buff"]={{[1]={flags=0,keywordFlags=0,name="EnergyShieldRechargeFaster",type="INC",value=20}},"  while affected by an Archon Buff "}
+c["20% faster start of Energy Shield Recharge while affected by an Archon Buff"]={{[1]={[1]={type="Condition",var="AffectedByArchonBuff"},flags=0,keywordFlags=0,name="EnergyShieldRechargeFaster",type="INC",value=20}},nil}
 c["20% increased Accuracy Rating"]={{[1]={flags=0,keywordFlags=0,name="Accuracy",type="INC",value=20}},nil}
 c["20% increased Accuracy Rating against Rare or Unique Enemies"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="RareOrUnique"},flags=0,keywordFlags=0,name="Accuracy",type="INC",value=20}},nil}
 c["20% increased Accuracy Rating while Dual Wielding"]={{[1]={[1]={type="Condition",var="DualWielding"},flags=0,keywordFlags=0,name="Accuracy",type="INC",value=20}},nil}
@@ -2868,7 +2868,7 @@ c["20% increased Duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="
 c["20% increased Duration of Damaging Ailments on Enemies"]={{[1]={flags=0,keywordFlags=0,name="EnemyIgniteDuration",type="INC",value=20},[2]={flags=0,keywordFlags=0,name="EnemyBleedDuration",type="INC",value=20},[3]={flags=0,keywordFlags=0,name="EnemyPoisonDuration",type="INC",value=20}},nil}
 c["20% increased Duration of Elemental Ailments on Enemies"]={{[1]={flags=0,keywordFlags=0,name="EnemyElementalAilmentDuration",type="INC",value=20}},nil}
 c["20% increased Effect of Arcane Surge on you per ten percent missing Mana"]={{[1]={flags=0,keywordFlags=0,name="ArcaneSurgeEffect",type="INC",value=20}},"  per ten percent missing Mana "}
-c["20% increased Effect of Puppet Master"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=20}},"  of Puppet Master "}
+c["20% increased Effect of Puppet Master"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterEffect",type="INC",value=20}},nil}
 c["20% increased Effect of your Mark Skills"]={{[1]={[1]={skillType=99,type="SkillType"},flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=20}},nil}
 c["20% increased Elemental Ailment Application if you have Shapeshifted to an Animal form Recently"]={{}," Elemental Ailment Application  "}
 c["20% increased Elemental Ailment Threshold"]={{[1]={flags=0,keywordFlags=0,name="AilmentThreshold",type="INC",value=20}},nil}
@@ -3179,7 +3179,7 @@ c["25% Chance to gain a Charge when you kill an enemy Creates Ignited Ground for
 c["25% Chance to gain a Charge when you kill an enemy Energy Shield Recharge starts on use"]={nil,"a Charge  Energy Shield Recharge starts on use "}
 c["25% Chance to revive a random Permanent Minion whenever you use a Command Skill"]={{}," to revive a random Permanent  whenever you use a Command Skill "}
 c["25% Chance to revive a random Permanent Minion whenever you use a Command Skill 25% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{}," to revive a random Permanent  whenever you use a Command Skill 25% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill "}
-c["25% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{},"% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill "}
+c["25% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterChance",type="BASE",value=25},[2]={flags=0,keywordFlags=0,name="CanGainPuppetMaster",type="FLAG",value=true}},nil}
 c["25% chance for Attacks to Maim on Hit against Poisoned Enemies"]={{},"  to Maim on Hit  "}
 c["25% chance for Attacks to Maim on Hit against Poisoned Enemies 25% increased Magnitude of Poison you inflict"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="Poisoned"},flags=1,keywordFlags=2097152,name="AilmentMagnitude",type="BASE",value=25}},"  to Maim on Hit  25% increased  "}
 c["25% chance for Lightning Damage with Hits to be Lucky"]={{[1]={flags=0,keywordFlags=0,name="LightningLuckyHitsChance",type="BASE",value=25}},nil}
@@ -3301,7 +3301,7 @@ c["25% increased Daze Duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",t
 c["25% increased Deflection Rating"]={{[1]={flags=0,keywordFlags=0,name="DeflectionRating",type="INC",value=25}},nil}
 c["25% increased Duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=25}},nil}
 c["25% increased Duration of Elemental Ailments on Enemies"]={{[1]={flags=0,keywordFlags=0,name="EnemyElementalAilmentDuration",type="INC",value=25}},nil}
-c["25% increased Duration of each Puppet Master stack"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=25}},"  of each Puppet Master stack "}
+c["25% increased Duration of each Puppet Master stack"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterDuration",type="INC",value=25}},nil}
 c["25% increased Electrocute Buildup"]={{[1]={flags=0,keywordFlags=0,name="EnemyElectrocuteBuildup",type="INC",value=25}},nil}
 c["25% increased Elemental Ailment Threshold"]={{[1]={flags=0,keywordFlags=0,name="AilmentThreshold",type="INC",value=25}},nil}
 c["25% increased Elemental Damage"]={{[1]={flags=0,keywordFlags=0,name="ElementalDamage",type="INC",value=25}},nil}
@@ -3633,8 +3633,7 @@ c["30% increased Accuracy Rating"]={{[1]={flags=0,keywordFlags=0,name="Accuracy"
 c["30% increased Accuracy Rating against Rare or Unique Enemies"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="RareOrUnique"},flags=0,keywordFlags=0,name="Accuracy",type="INC",value=30}},nil}
 c["30% increased Accuracy Rating at Close Range"]={{[1]={[1]={type="Condition",var="AtCloseRange"},flags=0,keywordFlags=0,name="AccuracyVsEnemy",type="INC",value=30}},nil}
 c["30% increased Accuracy Rating while moving"]={{[1]={[1]={type="Condition",var="Moving"},flags=0,keywordFlags=0,name="Accuracy",type="INC",value=30}},nil}
-c["30% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=30}}," Archon Buff  "}
-c["30% increased Archon Buff duration 20% faster start of Energy Shield Recharge while affected by an Archon Buff"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=30}}," Archon Buff  20% faster start of Energy Shield Recharge while affected by an Archon Buff "}
+c["30% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffDuration",type="INC",value=30}},nil}
 c["30% increased Area Damage"]={{[1]={flags=512,keywordFlags=0,name="Damage",type="INC",value=30}},nil}
 c["30% increased Area of Effect for Attacks"]={{[1]={flags=1,keywordFlags=0,name="AreaOfEffect",type="INC",value=30}},nil}
 c["30% increased Area of Effect of Ancestrally Boosted Attacks"]={{[1]={flags=1,keywordFlags=0,name="AncestralBoostAreaOfEffect",type="INC",value=30}},nil}
@@ -3795,7 +3794,7 @@ c["30% increased chance to Shock"]={{[1]={flags=0,keywordFlags=0,name="EnemyShoc
 c["30% increased chance to inflict Ailments against Rare or Unique Enemies"]={{[1]={[1]={actor="enemy",type="ActorCondition",var="RareOrUnique"},flags=0,keywordFlags=0,name="AilmentChance",type="INC",value=30}},nil}
 c["30% increased damage against Undead Enemies"]={{[1]={flags=0,keywordFlags=0,name="Damage",type="INC",value=30}},"  against Undead Enemies "}
 c["30% increased effect of Arcane Surge on you"]={{[1]={flags=0,keywordFlags=0,name="ArcaneSurgeEffect",type="INC",value=30}},nil}
-c["30% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=30}},"  of Archon Buffs on you "}
+c["30% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffEffect",type="INC",value=30}},nil}
 c["30% increased effect of Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="BuffEffectOnSelf",type="INC",value=30}},nil}
 c["30% increased effect of Fully Broken Armour"]={{[1]={flags=0,keywordFlags=0,name="FullyBrokenArmourEffect",type="INC",value=30}},nil}
 c["30% increased maximum Energy Shield"]={{[1]={[1]={type="Global"},flags=0,keywordFlags=0,name="EnergyShield",type="INC",value=30}},nil}
@@ -3913,7 +3912,7 @@ c["333% increased effect of Socketed Soul Cores"]={{[1]={flags=0,keywordFlags=0,
 c["340% increased Armour and Energy Shield"]={{[1]={flags=0,keywordFlags=0,name="ArmourAndEnergyShield",type="INC",value=340}},nil}
 c["35 Life Regeneration per second"]={{[1]={flags=0,keywordFlags=0,name="LifeRegen",type="BASE",value=35}},nil}
 c["35 to 53 Physical Thorns damage"]={{[1]={flags=32,keywordFlags=0,name="PhysicalMin",type="BASE",value=35},[2]={flags=32,keywordFlags=0,name="PhysicalMax",type="BASE",value=53}},nil}
-c["35% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{},"% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill "}
+c["35% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterChance",type="BASE",value=35},[2]={flags=0,keywordFlags=0,name="CanGainPuppetMaster",type="FLAG",value=true}},nil}
 c["35% chance to Chain an additional time"]={{[1]={flags=0,keywordFlags=0,name="ChainChance",type="BASE",value=35}},nil}
 c["35% chance to Chill Attackers for 4 seconds on Block"]={{}," to Chill Attackers  on Block "}
 c["35% chance to Daze on Hit"]={{[1]={flags=4,keywordFlags=0,name="DazeChance",type="BASE",value=35}},nil}
@@ -4294,14 +4293,14 @@ c["43% increased Recovery rate"]={{[1]={flags=0,keywordFlags=0,name="FlaskRecove
 c["43% reduced Effect of Chill on you"]={{[1]={flags=0,keywordFlags=0,name="SelfChillEffect",type="INC",value=-43}},nil}
 c["43% reduced Magnitude of Ignite on you"]={{[1]={flags=0,keywordFlags=0,name="SelfIgniteEffect",type="INC",value=-43}},nil}
 c["43% reduced effect of Shock on you"]={{[1]={flags=0,keywordFlags=0,name="SelfShockEffect",type="INC",value=-43}},nil}
-c["43% to gain Archon of Undeath when you create an Offering"]={{},"% to gain Archon of Undeath when you create an Offering "}
+c["43% to gain Archon of Undeath when you create an Offering"]={{[1]={flags=0,keywordFlags=0,name="ArchonOfUndeathChanceOnOffering",type="BASE",value=43},[2]={flags=0,keywordFlags=0,name="CanGainArchonOfUndeath",type="FLAG",value=true},[3]={flags=0,keywordFlags=0,name="CanGainArchonOfUndeathOnOffering",type="FLAG",value=true}},nil}
 c["45 Life Regeneration per second"]={{[1]={flags=0,keywordFlags=0,name="LifeRegen",type="BASE",value=45}},nil}
 c["45 to 90 added Physical Thorns damage per Runic Plate"]={{[1]={flags=32,keywordFlags=0,name="Damage",type="BASE",value=45}}," to 90 added Physical  per Runic Plate "}
-c["45% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{},"% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill "}
+c["45% Surpassing Chance to gain a Puppet Master stack whenever you use a Command Skill"]={{[1]={flags=0,keywordFlags=0,name="PuppetMasterChance",type="BASE",value=45},[2]={flags=0,keywordFlags=0,name="CanGainPuppetMaster",type="FLAG",value=true}},nil}
 c["45% additional Physical Damage Reduction during Effect"]={{[1]={[1]={type="Condition",var="UsingFlask"},flags=0,keywordFlags=0,name="PhysicalDamageReduction",type="BASE",value=45}},nil}
 c["45% chance to Blind Enemies on Critical Hit"]={{}," to Blind Enemies "}
 c["45% faster start of Energy Shield Recharge"]={{[1]={flags=0,keywordFlags=0,name="EnergyShieldRechargeFaster",type="INC",value=45}},nil}
-c["45% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=45}}," Archon Buff  "}
+c["45% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffDuration",type="INC",value=45}},nil}
 c["45% increased Area Damage"]={{[1]={flags=512,keywordFlags=0,name="Damage",type="INC",value=45}},nil}
 c["45% increased Armour"]={{[1]={flags=0,keywordFlags=0,name="Armour",type="INC",value=45}},nil}
 c["45% increased Armour and Energy Shield"]={{[1]={flags=0,keywordFlags=0,name="ArmourAndEnergyShield",type="INC",value=45}},nil}
@@ -4428,7 +4427,7 @@ c["5% increased Stun Threshold"]={{[1]={flags=0,keywordFlags=0,name="StunThresho
 c["5% increased Stun Threshold per 25 Tribute"]={{[1]={[1]={actor="parent",div=25,stat="Tribute",type="PerStat"},flags=0,keywordFlags=0,name="StunThreshold",type="INC",value=5}},nil}
 c["5% increased Withered Magnitude"]={{[1]={flags=0,keywordFlags=0,name="WitherEffect",type="INC",value=5}},nil}
 c["5% increased bonuses gained from Equipped Quiver"]={{[1]={flags=0,keywordFlags=0,name="EffectOfBonusesFromQuiver",type="INC",value=5}},nil}
-c["5% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=5}},"  of Archon Buffs on you "}
+c["5% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffEffect",type="INC",value=5}},nil}
 c["5% increased maximum Life"]={{[1]={flags=0,keywordFlags=0,name="Life",type="INC",value=5}},nil}
 c["5% increased maximum Mana"]={{[1]={flags=0,keywordFlags=0,name="Mana",type="INC",value=5}},nil}
 c["5% increased total Power counted by Warcries"]={{[1]={flags=0,keywordFlags=0,name="WarcryPower",type="INC",value=5}},nil}
@@ -4694,8 +4693,7 @@ c["50% reduced Shock duration on you"]={{[1]={flags=0,keywordFlags=0,name="SelfS
 c["50% reduced Slowing Potency of Debuffs on You"]={{}," Slowing Potency of Debuffs on You "}
 c["50% reduced Slowing Potency of Debuffs on You 20 to 30 Physical Thorns damage"]={{[1]={flags=32,keywordFlags=0,name="Damage",type="INC",value=-50}}," Slowing Potency of Debuffs on You 20 to 30 Physical  "}
 c["50% reduced bonuses gained from Equipped Focus"]={{[1]={flags=0,keywordFlags=0,name="EffectOfBonusesFromFocus",type="INC",value=-50}},nil}
-c["50% reduced effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=-50}},"  of Archon Buffs on you "}
-c["50% reduced effect of Archon Buffs on you Archon Buffs have no recovery period after you lose one"]={{[1]={flags=0,keywordFlags=0,name="LocalEffect",type="INC",value=-50}},"  of Archon Buffs on you Archon Buffs have no recovery period after you lose one "}
+c["50% reduced effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffEffect",type="INC",value=-50}},nil}
 c["50% reduced effect of Curses on you"]={{[1]={flags=0,keywordFlags=0,name="CurseEffectOnSelf",type="INC",value=-50}},nil}
 c["50% reduced effect of Shock on you"]={{[1]={flags=0,keywordFlags=0,name="SelfShockEffect",type="INC",value=-50}},nil}
 c["50% reduced effect of Withered on you"]={{[1]={flags=0,keywordFlags=0,name="WitherEffectOnSelf",type="INC",value=-50}},nil}
@@ -5001,9 +4999,9 @@ c["75% increased Energy Shield Recovery rate"]={{[1]={flags=0,keywordFlags=0,nam
 c["75% increased Energy Shield from Equipped Focus"]={{[1]={[1]={slotName="Weapon 2",type="SlotName"},[2]={type="Condition",var="UsingFocus"},flags=0,keywordFlags=0,name="EnergyShield",type="INC",value=75}},nil}
 c["75% increased Evasion Rating"]={{[1]={flags=0,keywordFlags=0,name="Evasion",type="INC",value=75}},nil}
 c["75% increased Mana Regeneration Rate"]={{[1]={flags=0,keywordFlags=0,name="ManaRegen",type="INC",value=75}},nil}
-end)();(function()
 c["75% increased Melee Damage with Spears while Surrounded"]={{[1]={[1]={type="Condition",var="Surrounded"},flags=268435716,keywordFlags=0,name="Damage",type="INC",value=75}},nil}
 c["75% increased Physical Damage"]={{[1]={flags=0,keywordFlags=0,name="PhysicalDamage",type="INC",value=75}},nil}
+end)();(function()
 c["75% increased Spell Damage"]={{[1]={flags=2,keywordFlags=0,name="Damage",type="INC",value=75}},nil}
 c["75% increased Spirit"]={{[1]={flags=0,keywordFlags=0,name="Spirit",type="INC",value=75}},nil}
 c["75% increased Thorns damage if you've Blocked Recently"]={{[1]={[1]={type="Condition",var="BlockedRecently"},flags=32,keywordFlags=0,name="Damage",type="INC",value=75}},nil}
@@ -5042,8 +5040,7 @@ c["8% faster start of Energy Shield Recharge"]={{[1]={flags=0,keywordFlags=0,nam
 c["8% increased Accuracy Rating"]={{[1]={flags=0,keywordFlags=0,name="Accuracy",type="INC",value=8}},nil}
 c["8% increased Accuracy Rating with One Handed Melee Weapons"]={{[1]={flags=21474836484,keywordFlags=0,name="Accuracy",type="INC",value=8}},nil}
 c["8% increased Accuracy Rating with Two Handed Melee Weapons"]={{[1]={flags=38654705668,keywordFlags=0,name="Accuracy",type="INC",value=8}},nil}
-c["8% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=8}}," Archon Buff  "}
-c["8% increased Archon Buff duration 5% increased effect of Archon Buffs on you"]={{[1]={flags=0,keywordFlags=0,name="Duration",type="INC",value=8}}," Archon Buff  5% increased effect of Archon Buffs on you "}
+c["8% increased Archon Buff duration"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffDuration",type="INC",value=8}},nil}
 c["8% increased Area of Effect"]={{[1]={flags=0,keywordFlags=0,name="AreaOfEffect",type="INC",value=8}},nil}
 c["8% increased Area of Effect for Attacks"]={{[1]={flags=1,keywordFlags=0,name="AreaOfEffect",type="INC",value=8}},nil}
 c["8% increased Armour"]={{[1]={flags=0,keywordFlags=0,name="Armour",type="INC",value=8}},nil}
@@ -6575,20 +6572,15 @@ c["Any number of Poisons from this Weapon can affect a target at the same time"]
 c["Apply 10 Critical Weakness to Enemies when Consuming a Mark on them"]={{[1]={flags=0,keywordFlags=0,name="ApplyCriticalWeakness",type="FLAG",value=true}},nil}
 c["Apply Debilitate to Enemies 30 Metres in front of you while your Shield is raised"]={nil,"Apply Debilitate to Enemies 30 Metres in front of you while your Shield is raised "}
 c["Arcane Surge grants more Life Regeneration Rate instead of Mana Regeneration Rate"]={{[1]={flags=0,keywordFlags=0,name="ArcaneSurgeLifeRegen",type="FLAG",value=true}},nil}
-c["Archon Buffs also grant +20% to all Elemental Resistances"]={nil,"Archon Buffs also grant +20% to all Elemental Resistances "}
-c["Archon Buffs also grant +20% to all Elemental Resistances Archon Buffs also grant 10% increased Movement Speed"]={nil,"Archon Buffs also grant +20% to all Elemental Resistances Archon Buffs also grant 10% increased Movement Speed "}
-c["Archon Buffs also grant 10% increased Movement Speed"]={nil,"Archon Buffs also grant 10% increased Movement Speed "}
-c["Archon Buffs also grant 30% increased Critical Hit Chance"]={nil,"Archon Buffs also grant 30% increased Critical Hit Chance "}
-c["Archon Buffs also grant 50% increased Critical Damage Bonus"]={nil,"Archon Buffs also grant 50% increased Critical Damage Bonus "}
-c["Archon Buffs also grant 50% increased Critical Damage Bonus Archon Buffs also grant 30% increased Critical Hit Chance"]={nil,"Archon Buffs also grant 50% increased Critical Damage Bonus Archon Buffs also grant 30% increased Critical Hit Chance "}
-c["Archon Buffs have no recovery period after you lose one"]={nil,"Archon Buffs have no recovery period after you lose one "}
-c["Archon recovery period expires 10% faster"]={nil,"Archon recovery period expires 10% faster "}
-c["Archon recovery period expires 10% faster 10% increased effect of Archon Buffs on you"]={nil,"Archon recovery period expires 10% faster 10% increased effect of Archon Buffs on you "}
-c["Archon recovery period expires 25% faster"]={nil,"Archon recovery period expires 25% faster "}
-c["Archon recovery period expires 30% faster"]={nil,"Archon recovery period expires 30% faster "}
-c["Archon recovery period expires 30% slower"]={nil,"Archon recovery period expires 30% slower "}
-c["Archon recovery period expires 30% slower Archon Buffs also grant 50% increased Critical Damage Bonus"]={nil,"Archon recovery period expires 30% slower Archon Buffs also grant 50% increased Critical Damage Bonus "}
-c["Archon recovery period expires 30% slower Archon Buffs also grant 50% increased Critical Damage Bonus Archon Buffs also grant 30% increased Critical Hit Chance"]={nil,"Archon recovery period expires 30% slower Archon Buffs also grant 50% increased Critical Damage Bonus Archon Buffs also grant 30% increased Critical Hit Chance "}
+c["Archon Buffs also grant +20% to all Elemental Resistances"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffGrant",type="LIST",value={mod={flags=0,keywordFlags=0,name="ElementalResist",type="BASE",value=20}}}},nil}
+c["Archon Buffs also grant 10% increased Movement Speed"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffGrant",type="LIST",value={mod={flags=0,keywordFlags=0,name="MovementSpeed",type="INC",value=10}}}},nil}
+c["Archon Buffs also grant 30% increased Critical Hit Chance"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffGrant",type="LIST",value={mod={flags=0,keywordFlags=0,name="CritChance",type="INC",value=30}}}},nil}
+c["Archon Buffs also grant 50% increased Critical Damage Bonus"]={{[1]={flags=0,keywordFlags=0,name="ArchonBuffGrant",type="LIST",value={mod={flags=0,keywordFlags=0,name="CritMultiplier",type="INC",value=50}}}},nil}
+c["Archon Buffs have no recovery period after you lose one"]={{[1]={flags=0,keywordFlags=0,name="ArchonNoRecoveryPeriod",type="FLAG",value=true}},nil}
+c["Archon recovery period expires 10% faster"]={{[1]={flags=0,keywordFlags=0,name="ArchonRecoveryRate",type="INC",value=10}},nil}
+c["Archon recovery period expires 25% faster"]={{[1]={flags=0,keywordFlags=0,name="ArchonRecoveryRate",type="INC",value=25}},nil}
+c["Archon recovery period expires 30% faster"]={{[1]={flags=0,keywordFlags=0,name="ArchonRecoveryRate",type="INC",value=30}},nil}
+c["Archon recovery period expires 30% slower"]={{[1]={flags=0,keywordFlags=0,name="ArchonRecoveryRate",type="INC",value=-30}},nil}
 c["Arctic Armour has no Reservation"]={{[1]={[1]={skillId="ArcticArmourPlayer",type="SkillId"},[2]={neg=true,skillType=109,type="SkillType"},flags=0,keywordFlags=0,name="SkillData",type="LIST",value={key="manaReservationFlat",value=0}},[2]={[1]={skillId="ArcticArmourPlayer",type="SkillId"},[2]={neg=true,skillType=109,type="SkillType"},flags=0,keywordFlags=0,name="SkillData",type="LIST",value={key="lifeReservationFlat",value=0}},[3]={[1]={skillId="ArcticArmourPlayer",type="SkillId"},[2]={neg=true,skillType=109,type="SkillType"},flags=0,keywordFlags=0,name="SkillData",type="LIST",value={key="manaReservationPercent",value=0}},[4]={[1]={skillId="ArcticArmourPlayer",type="SkillId"},[2]={neg=true,skillType=109,type="SkillType"},flags=0,keywordFlags=0,name="SkillData",type="LIST",value={key="lifeReservationPercent",value=0}}},nil}
 c["Area Skills have 20% chance to Knock Enemies Back on Hit"]={{[1]={[1]={skillType=8,type="SkillType"},flags=0,keywordFlags=0,name="EnemyKnockbackChance",type="BASE",value=20}},nil}
 c["Area contains a Summoning Circle Area contains 10 Reactivation Runes"]={nil,"Area contains a Summoning Circle Area contains 10 Reactivation Runes "}
@@ -8286,7 +8278,7 @@ c["Ignore all Movement Penalties from Armour"]={{[1]={flags=0,keywordFlags=0,nam
 c["Immobilise enemies at 50% buildup instead of 100%"]={{[1]={flags=0,keywordFlags=0,name="EnemyModifier",type="LIST",value={mod={flags=0,keywordFlags=0,name="PoiseThreshold",type="MORE",value=-50}}}},nil}
 c["Immune to Bleeding if Equipped Helmet has higher Armour than Evasion Rating"]={{[1]={[1]={type="Condition",var="HelmetArmourHigherThanEvasion"},flags=0,keywordFlags=0,name="BleedImmune",type="FLAG",value=true}},nil}
 c["Immune to Bleeding while Shapeshifted"]={{[1]={[1]={type="Condition",var="Shapeshifted"},flags=0,keywordFlags=0,name="BleedImmune",type="FLAG",value=true}},nil}
-c["Immune to Bleeding while affected by an Archon Buff"]={{},"Bleeding while affected by an Archon Buff "}
+c["Immune to Bleeding while affected by an Archon Buff"]={{[1]={[1]={type="Condition",var="AffectedByArchonBuff"},flags=0,keywordFlags=0,name="BleedImmune",type="FLAG",value=true}},nil}
 c["Immune to Burning Ground, Shocked Ground and Chilled Ground"]={{},"Burning Ground, Shocked Ground and Chilled Ground "}
 c["Immune to Chaos Damage and Bleeding"]={{[1]={flags=0,keywordFlags=0,name="ChaosInoculation",type="FLAG",value=true},[2]={flags=0,keywordFlags=0,name="ChaosDamageTaken",type="MORE",value=-100},[3]={flags=0,keywordFlags=0,name="BleedImmune",type="FLAG",value=true}},nil}
 c["Immune to Chill if a majority of your Socketed Support Gems are Blue"]={{[1]={[1]={type="Condition",var="MajorityBlueSocketedSupports"},flags=0,keywordFlags=0,name="ChillImmune",type="FLAG",value=true}},nil}
@@ -8295,7 +8287,7 @@ c["Immune to Elemental Ailments while on Consecrated Ground if you have at least
 c["Immune to Exposure"]={{[1]={flags=0,keywordFlags=0,name="ExposureImmune",type="FLAG",value=true}},nil}
 c["Immune to Freeze"]={{[1]={flags=0,keywordFlags=0,name="FreezeImmune",type="FLAG",value=true}},nil}
 c["Immune to Freeze and Chill while Ignited"]={{[1]={[1]={type="Condition",var="Ignited"},flags=0,keywordFlags=0,name="FreezeImmune",type="FLAG",value=true},[2]={[1]={type="Condition",var="Ignited"},flags=0,keywordFlags=0,name="ChillImmune",type="FLAG",value=true}},nil}
-c["Immune to Freeze and Chill while affected by an Archon Buff"]={{},"Freeze and Chill while affected by an Archon Buff "}
+c["Immune to Freeze and Chill while affected by an Archon Buff"]={{[1]={[1]={type="Condition",var="AffectedByArchonBuff"},flags=0,keywordFlags=0,name="FreezeImmune",type="FLAG",value=true},[2]={[1]={type="Condition",var="AffectedByArchonBuff"},flags=0,keywordFlags=0,name="ChillImmune",type="FLAG",value=true}},nil}
 c["Immune to Hinder"]={{[1]={flags=0,keywordFlags=0,name="HinderImmune",type="FLAG",value=true}},nil}
 c["Immune to Ignite"]={{[1]={flags=0,keywordFlags=0,name="IgniteImmune",type="FLAG",value=true}},nil}
 c["Immune to Ignite if a majority of your Socketed Support Gems are Red"]={{[1]={[1]={type="Condition",var="MajorityRedSocketedSupports"},flags=0,keywordFlags=0,name="IgniteImmune",type="FLAG",value=true}},nil}
@@ -8305,7 +8297,7 @@ c["Immune to Poison"]={{[1]={flags=0,keywordFlags=0,name="PoisonImmune",type="FL
 c["Immune to Poison if Equipped Helmet has higher Evasion Rating than Armour"]={{[1]={[1]={type="Condition",var="HelmetEvasionHigherThanArmour"},flags=0,keywordFlags=0,name="PoisonImmune",type="FLAG",value=true}},nil}
 c["Immune to Shock"]={{[1]={flags=0,keywordFlags=0,name="ShockImmune",type="FLAG",value=true}},nil}
 c["Immune to Shock if a majority of your Socketed Support Gems are Green"]={{[1]={[1]={type="Condition",var="MajorityGreenSocketedSupports"},flags=0,keywordFlags=0,name="ShockImmune",type="FLAG",value=true}},nil}
-c["Immune to Shock while affected by an Archon Buff"]={{},"Shock while affected by an Archon Buff "}
+c["Immune to Shock while affected by an Archon Buff"]={{[1]={[1]={type="Condition",var="AffectedByArchonBuff"},flags=0,keywordFlags=0,name="ShockImmune",type="FLAG",value=true}},nil}
 c["Immunity to Bleeding and Corrupted Blood during Effect"]={{[1]={[1]={type="Condition",var="UsingFlask"},flags=0,keywordFlags=0,name="BleedImmune",type="FLAG",value=true}},nil}
 c["Immunity to Damage during Effect"]={{},"  "}
 c["Immunity to Freeze and Chill during Effect"]={{[1]={[1]={type="Condition",var="UsingFlask"},flags=0,keywordFlags=0,name="FreezeImmune",type="FLAG",value=true},[2]={[1]={type="Condition",var="UsingFlask"},flags=0,keywordFlags=0,name="ChillImmune",type="FLAG",value=true}},nil}
@@ -10003,7 +9995,6 @@ c["Your other Modifiers to Rarity of Items found do not apply"]={nil,"Your other
 c["Your other Modifiers to Rarity of Items found do not apply +15% to Cold Resistance"]={nil,"Your other Modifiers to Rarity of Items found do not apply +15% to Cold Resistance "}
 c["Your speed is Unaffected by Slows while Sprinting"]={nil,"Your speed is Unaffected by Slows while Sprinting "}
 c["Your speed is Unaffected by Slows while Sprinting 10% less Movement and Skill Speed per Dodge Roll in the past 20 seconds"]={nil,"Your speed is Unaffected by Slows while Sprinting 10% less Movement and Skill Speed per Dodge Roll in the past 20 seconds "}
-end)();(function()
 c["Your speed is unaffected by Slows"]={{[1]={flags=0,keywordFlags=0,name="UnaffectedBySlows",type="FLAG",value=true}},nil}
 c["Your spells have 100% chance to Shock against Frozen Enemies"]={nil,"Your spells have 100% chance to Shock against Frozen Enemies "}
 c["Zealot's Oath"]={{[1]={flags=0,keywordFlags=0,name="Keystone",type="LIST",value="Zealot's Oath"},[2]={flags=0,keywordFlags=0,name="Condition:HaveZealot'sOath",type="FLAG",value=true}},nil}
@@ -10012,6 +10003,7 @@ c["additional Elemental Infusion of the same type"]={nil,"additional Elemental I
 c["additional Rune-only sockets:"]={{},nil}
 c["as being boosted by Chilled Ground"]={nil,"as being boosted by Chilled Ground "}
 c["as being boosted by Ignited Ground"]={nil,"as being boosted by Ignited Ground "}
+end)();(function()
 c["as being boosted by Ignited, Shocked, and Chilled Ground"]={nil,"as being boosted by Ignited, Shocked, and Chilled Ground "}
 c["as being boosted by Shocked Ground"]={nil,"as being boosted by Shocked Ground "}
 c["being Shapeshifted for at least 8 seconds"]={nil,"being Shapeshifted for at least 8 seconds "}

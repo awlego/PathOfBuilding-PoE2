@@ -872,6 +872,24 @@ Huge sets the radius to 11.
 	{ var = "nebulochCritUptime", type = "countAllowZero", label = "Nebuloch Crit Uptime %:", ifFlag = "Condition:HaveNebulochCrit", defaultPlaceholderState = 100, tooltip = "Nebuloch's \"Attacks consume an Endurance Charge to Critically Hit\".\nPercentage of Attacks for which an Endurance Charge is available to be consumed.\nDefaults to 100% (always available); set to 0 to disable. While active, replaces normal Crit Chance with this value for Attacks made with Nebuloch.", apply = function(val, modList, enemyModList)
 		modList:NewMod("Multiplier:NebulochCritUptime", "BASE", m_max(m_min(val, 100), 0), "Config")
 	end },
+	{ var = "conditionArchonOfUndeath", type = "check", label = "Do you gain Archon of Undeath?", ifFlag = "CanGainArchonOfUndeath", tooltip = "Archon of Undeath is an Archon Buff:\n\t25% more Minion Damage\n\t200% more Cooldown Recovery Rate for Command Skills\n\tTemporary Minion Skills have 100% more Limit of Minions summoned\nScaled by increased effect of Archon Buffs on you, and also applies your \"Archon Buffs also grant\" modifiers.\nIt lasts 10 seconds (modified by Archon Buff duration), followed by a 20 second recovery period.\nThe buff is averaged over its uptime: duration / (duration + recovery period + expected time to regain it).\n\"While affected by an Archon Buff\" modifiers only apply at 100% uptime.", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:ArchonOfUndeath", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
+	end },
+	{ var = "archonCommandUsesPerSecond", type = "float", label = "Command Skill uses per second:", ifOption = "conditionArchonOfUndeath", defaultPlaceholderState = 0.5, tooltip = "How often you use Command Skills, used with your chance to gain Archon of Undeath\nwhen you use a Command Skill to estimate how long it takes to regain it.\nDefaults to 0.5.", apply = function(val, modList, enemyModList)
+		modList:NewMod("ArchonCommandUsesPerSecond", "OVERRIDE", val, "Config", { type = "Condition", var = "Combat" })
+	end },
+	{ var = "archonOfferingsPerSecond", type = "float", label = "Offerings created per second:", ifOption = "conditionArchonOfUndeath", ifFlag = "CanGainArchonOfUndeathOnOffering", tooltip = "How often you create Offerings, used with your chance to gain Archon of Undeath\nwhen you create an Offering to estimate how long it takes to regain it.", apply = function(val, modList, enemyModList)
+		modList:NewMod("ArchonOfferingsPerSecond", "OVERRIDE", val, "Config", { type = "Condition", var = "Combat" })
+	end },
+	{ var = "overrideArchonUptime", type = "countAllowZero", label = "Archon of Undeath uptime % (if not calculated):", ifOption = "conditionArchonOfUndeath", tooltip = "Set to 100 to treat Archon of Undeath as always active.", apply = function(val, modList, enemyModList)
+		modList:NewMod("ArchonBuffUptime", "OVERRIDE", m_max(m_min(val, 100), 0), "Config", { type = "Condition", var = "Combat" })
+	end },
+	{ var = "usePuppetMaster", type = "check", label = "Do you have Puppet Master stacks?", ifFlag = "CanGainPuppetMaster", tooltip = "Each Puppet Master stack grants:\n\tMinions deal 10% increased Damage with Command Skills\n\tMinions have 3% increased Skill Speed\n\tMinions have 2% increased Movement Speed\n\t10% increased Skill Speed with Command Skills\nScaled by increased effect of Puppet Master. Maximum 5 stacks, each lasting 8 seconds.", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:HavePuppetMaster", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
+	end },
+	{ var = "overridePuppetMasterStacks", type = "count", label = "# of Puppet Master stacks (if not maximum):", ifOption = "usePuppetMaster", apply = function(val, modList, enemyModList)
+		modList:NewMod("PuppetMasterStacks", "OVERRIDE", val, "Config", { type = "Condition", var = "Combat" })
+	end },
 	{ var = "useSiphoningCharges", type = "check", label = "Do you use Siphoning Charges?", ifMult = "SiphoningCharge", apply = function(val, modList, enemyModList)
 		modList:NewMod("UseSiphoningCharges", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
 	end },

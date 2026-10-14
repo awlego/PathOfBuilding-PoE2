@@ -313,7 +313,30 @@ data.misc = { -- magic numbers
 	PvpElemental2 = 150,
 	PvpNonElemental1 = 0.57,
 	PvpNonElemental2 = 90,
-	SpectreBeastDamageFixup = 1.25 -- 25% more damage server side mod added in 0.3
+	SpectreBeastDamageFixup = 1.25, -- 25% more damage server side mod added in 0.3
+	-- Archon Buffs: base duration and the recovery period after losing one (seconds)
+	ArchonBuffBaseDuration = 10,
+	ArchonBuffBaseRecoveryPeriod = 20,
+	-- Assumed rate of Command Skill uses for regaining Archon of Undeath, unless configured
+	ArchonCommandUsesPerSecond = 0.5,
+	-- Puppet Master: base maximum stacks and per-stack duration (seconds)
+	PuppetMasterBaseMaxStacks = 5,
+	PuppetMasterBaseDuration = 8,
+}
+
+-- Buff stat lines, parsed at calc time and scaled by buff effect (and Puppet Master stack count)
+data.archonOfUndeathStats = {
+	"Minions deal 25% more Damage",
+	"Minions have 200% more Cooldown Recovery Rate for Command Skills",
+	"200% more Cooldown Recovery Rate for Command Skills",
+	"Temporary Minion Skills have 100% more Limit of Minions summoned",
+}
+-- The buff also has "10% reduced Movement Speed Penalty with Command Skills", which has no calculation
+data.puppetMasterStackStats = {
+	"Minions deal 10% increased Damage with Command Skills",
+	"Minions have 3% increased Skill Speed",
+	"Minions have 2% increased Movement Speed",
+	"10% increased Skill Speed with Command Skills",
 }
 
 data.skillColorMap = { colorCodes.STRENGTH, colorCodes.DEXTERITY, colorCodes.INTELLIGENCE, colorCodes.NORMAL }
