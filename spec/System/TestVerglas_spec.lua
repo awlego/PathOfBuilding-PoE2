@@ -24,62 +24,63 @@ describe("TestVerglas", function()
 		runCallback("OnFrame")
 	end
 
-	it("does not grant Cold when the Verglas buff is inactive", function()
-		setupVerglasBuild()
-		build.calcsTab:BuildOutput()
-		runCallback("OnFrame")
-		assert.is_nil(build.calcsTab.mainOutput.VerglasColdGain)
-
-		local mainSkill = build.calcsTab.calcsEnv.player.mainSkill
-		assert.are.equals(0, mainSkill.skillModList:Sum("BASE", mainSkill.skillCfg, "DamageGainAsCold"))
-	end)
-
-	it("grants Cold based on destroyed Ice Crystal Life when the buff is active", function()
-		setupVerglasBuild()
-
-		-- Enable the Verglas buff via the Configuration toggle
-		build.configTab.input.conditionDestroyedIceCrystalRecently = true
-		build.configTab:BuildModList()
-		build.buildFlag = true
-		runCallback("OnFrame")
-		build.calcsTab:BuildOutput()
-		runCallback("OnFrame")
-
-		local output = build.calcsTab.mainOutput
-		assert.is_not_nil(output.VerglasCrystalLife)
-		assert.is_true(output.VerglasCrystalLife > 0)
-
-		-- Verglas grants 1% of Damage as extra Cold per 2000 Ice Crystal Life
-		local expectedGain = output.VerglasCrystalLife / 2000
-		assert.is_true(math.abs(expectedGain - output.VerglasColdGain) < 1e-6)
-
-		-- The gain is applied as a DamageGainAsCold modifier on the supported skill
-		local mainSkill = build.calcsTab.calcsEnv.player.mainSkill
-		assert.is_true(math.abs(expectedGain - mainSkill.skillModList:Sum("BASE", mainSkill.skillCfg, "DamageGainAsCold")) < 1e-6)
-	end)
-
 	local function enableVerglasBuff()
-		build.configTab.input.conditionDestroyedIceCrystalRecently = true
+		build.configTab.input.conditionDestroyedIceCrystalPast6Seconds = true
 		build.configTab:BuildModList()
 		build.buildFlag = true
-		runCallback("OnFrame")
-		build.calcsTab:BuildOutput()
 		runCallback("OnFrame")
 	end
 
+	local function findSkill(name)
+		for _, activeSkill in ipairs(build.calcsTab.mainEnv.player.activeSkillList) do
+			if activeSkill.activeEffect.grantedEffect.name == name then
+				return activeSkill
+			end
+		end
+	end
+
+	local function coldGain(skill)
+		return skill.skillModList:Sum("BASE", skill.skillCfg, "DamageGainAsCold")
+	end
+
+	it("does not grant Cold when the Verglas buff is inactive", function()
+		setupVerglasBuild()
+		assert.are.equals(0, coldGain(findSkill("Fireball")))
+	end)
+
+	it("grants 1% Cold per full 2000 destroyed Ice Crystal Life when the buff is active", function()
+		setupVerglasBuild()
+		build.configTab.input.customMods = "1000% increased Ice Crystal Life"
+		enableVerglasBuff()
+
+		local crystalLife = build.calcsTab.mainEnv.player.destroyedIceCrystalLife
+		assert.is_true(crystalLife >= 2000)
+		assert.are.equals(math.floor(crystalLife / 2000), coldGain(findSkill("Fireball")))
+		-- Only the supported skill gains Cold
+		assert.are.equals(0, coldGain(findSkill("Frost Wall")))
+	end)
+
 	it("scales the Verglas buff with increased Ice Crystal Life", function()
 		setupVerglasBuild()
+		build.configTab.input.customMods = "1000% increased Ice Crystal Life"
 		enableVerglasBuff()
-		local baseLife = build.calcsTab.mainOutput.VerglasCrystalLife
-		local baseGain = build.calcsTab.mainOutput.VerglasColdGain
-		assert.is_true(baseLife > 0)
+		local baseLife = build.calcsTab.mainEnv.player.destroyedIceCrystalLife
 
-		build.configTab.input.customMods = "100% increased Ice Crystal Life"
+		build.configTab.input.customMods = "2100% increased Ice Crystal Life"
 		enableVerglasBuff()
+		local crystalLife = build.calcsTab.mainEnv.player.destroyedIceCrystalLife
+		assert.is_true(math.abs(crystalLife - baseLife * 2) < 1)
+		assert.are.equals(math.floor(crystalLife / 2000), coldGain(findSkill("Fireball")))
+	end)
 
-		-- 100% increased Ice Crystal Life doubles both the crystal life and the cold gain
-		assert.is_true(math.abs(build.calcsTab.mainOutput.VerglasCrystalLife - baseLife * 2) < 1)
-		assert.is_true(math.abs(build.calcsTab.mainOutput.VerglasColdGain - baseGain * 2) < 1e-4)
+	it("does not change other skills' duration when the buff is active", function()
+		setupVerglasBuild()
+		local frostWall = findSkill("Frost Wall")
+		local baseDuration = frostWall.skillModList:Sum("BASE", frostWall.skillCfg, "Duration")
+
+		enableVerglasBuff()
+		frostWall = findSkill("Frost Wall")
+		assert.are.equals(baseDuration, frostWall.skillModList:Sum("BASE", frostWall.skillCfg, "Duration"))
 	end)
 
 	it("maps the Frost Wall ice_crystal_maximum_life_+% quality stat to IceCrystalLife", function()

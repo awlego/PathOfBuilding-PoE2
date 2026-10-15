@@ -8573,7 +8573,7 @@ skills["SupportVerglasPlayer"] = {
 	color = 3,
 	support = true,
 	requireSkillTypes = { SkillType.Damage, SkillType.Attack, SkillType.CrossbowSkill, SkillType.CrossbowAmmoSkill, },
-	addSkillTypes = { SkillType.Duration, },
+	addSkillTypes = { },
 	excludeSkillTypes = { SkillType.UsedByProxy, SkillType.Triggered, SkillType.Persistent, },
 	gemFamily = { "Verglas",},
 	ignoreMinionTypes = true,
@@ -8586,13 +8586,11 @@ skills["SupportVerglasPlayer"] = {
 			incrementalEffectiveness = 0.054999999701977,
 			statDescriptionScope = "gem_stat_descriptions",
 			statMap = {
-				-- The actual "gain as extra Cold" is scaled by the destroyed Ice Crystal's Life in CalcOffence
 				["support_crystalshatter_buff_damage_%_gained_as_extra_cold_per_2000_crystal_life"] = {
-					mod("VerglasColdGainPer2000CrystalLife", "BASE", nil, 0, 0, { type = "Condition", var = "DestroyedIceCrystalRecently" }, { type = "GlobalEffect", effectType = "Buff", effectName = "Verglas" }),
+					mod("DamageGainAsCold", "BASE", nil, 0, 0, { type = "Condition", var = "DestroyedIceCrystalPast6Seconds" }, { type = "Multiplier", var = "DestroyedIceCrystalLife", div = 2000 }),
 				},
 				["support_crystalshatter_buff_duration"] = {
-					mod("Duration", "BASE", nil, 0, 0, { type = "Condition", var = "DestroyedIceCrystalRecently" }, { type = "GlobalEffect", effectType = "Buff" }),
-					div = 1000,
+					-- Display only
 				},
 			},
 			baseFlags = {

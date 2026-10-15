@@ -746,10 +746,6 @@ local configSettings = {
 	}, apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:"..val.."Unravel", "FLAG", true, "Config")
 	end },
-	{ label = "Verglas:", ifSkill = "Verglas" },
-	{ var = "conditionDestroyedIceCrystalRecently", type = "check", label = "Destroyed an Ice Crystal Recently?", ifSkill = "Verglas", tooltip = "Verglas grants a buff for 6 seconds when you destroy Ice Crystals,\ncausing supported skills to gain a percentage of their Damage as extra ^x3F6DB3Cold ^7Damage\nbased on the maximum Life of the destroyed Ice Crystal.", apply = function(val, modList, enemyModList)
-		modList:NewMod("Condition:DestroyedIceCrystalRecently", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
-	end },
 	{ label = "Vigilant Strike:", ifSkill = "Vigilant Strike" },
 	{ var = "VigilantStrikeBypassCD", type = "check", label = "Bypass CD?", ifSkill = "Vigilant Strike", defaultState = true, apply = function(val, modList, enemyModList)
 		modList:NewMod("CooldownRecovery", "OVERRIDE", 0, "Config", { type = "SkillName", skillName = "Vigilant Strike" })
@@ -1249,6 +1245,12 @@ Huge sets the radius to 11.
 	end },
 	{ var = "conditionKilledLast3Seconds", type = "check", label = "Have you Killed in the last 3 Seconds?", ifCond = "KilledLast3Seconds", implyCond = "KilledRecently", tooltip = "This also implies that you have Killed Recently.", apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:KilledLast3Seconds", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
+	end },
+	{ var = "conditionDestroyedIceCrystalPast6Seconds", type = "check", label = "Ice Crystal destroyed (past 6s)?", ifCond = "DestroyedIceCrystalPast6Seconds", apply = function(val, modList, enemyModList)
+		modList:NewMod("Condition:DestroyedIceCrystalPast6Seconds", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
+	end },
+	{ var = "multiplierDestroyedIceCrystalLife", type = "count", label = "Ice Crystal Life override:", ifOption = "conditionDestroyedIceCrystalPast6Seconds", ifMult = "DestroyedIceCrystalLife", tooltip = "Automatically uses the highest maximum Life from enabled Ice Crystal skills.\nEnter a value to override it for another Ice Crystal source.", apply = function(val, modList, enemyModList)
+		modList:NewMod("Multiplier:DestroyedIceCrystalLife", "BASE", val, "Config", { type = "Condition", var = "Combat" })
 	end },
 	{ var = "conditionKilledPoisonedLast2Seconds", type = "check", label = "Killed a poisoned enemy in the last 2 Seconds?", ifCond = "KilledPoisonedLast2Seconds", implyCond = "KilledRecently", tooltip = "This also implies that you have Killed Recently.", apply = function(val, modList, enemyModList)
 		modList:NewMod("Condition:KilledPoisonedLast2Seconds", "FLAG", true, "Config", { type = "Condition", var = "Combat" })
