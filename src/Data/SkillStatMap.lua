@@ -591,8 +591,12 @@ return function(mod, flag, skill)
 	-- handled around 700 of CalcActiveSkill, search for level.cooldown
 },
 ["base_cooldown_modifiable_repeat_interval_ms"] = {
-	mod("CooldownRecovery", "BASE", nil),
+	-- Interval of a periodic effect (e.g. "A Mirror appears in your Presence every X seconds"), not a skill cooldown
+	skill("repeatInterval", nil),
 	div = 1000,
+},
+["cooldown_recovery_modifiers_also_apply_to_repeat_interval"] = {
+	skill("repeatIntervalUsesCooldownRecovery", true),
 },
 ["base_cooldown_speed_+%_final"] = {
 	mod("CooldownRecovery", "MORE", nil),

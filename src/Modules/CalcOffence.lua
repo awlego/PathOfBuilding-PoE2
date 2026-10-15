@@ -1859,6 +1859,26 @@ function calcs.offence(env, actor, activeSkill)
 			t_insert(breakdown.Cooldown, s_format("= %.3fs", output.Cooldown))
 		end
 	end
+	if (skillData.repeatInterval or 0) > 0 then
+		-- Periodic effect of the skill (e.g. Mirror of Refraction's mirrors), which is not a cooldown on using the skill
+		-- Cooldown recovery only applies with "Modifiers to Cooldown Recovery Rate also apply to ..."
+		local usesCooldownRecovery = skillData.repeatIntervalUsesCooldownRecovery
+		local incCooldownRecovery = usesCooldownRecovery and skillModList:Sum("INC", skillCfg, "CooldownRecovery") or 0
+		local moreCooldownRecovery = usesCooldownRecovery and skillModList:More(skillCfg, "CooldownRecovery") or 1
+		local interval = skillData.repeatInterval / m_max(0, (1 + incCooldownRecovery / 100) * moreCooldownRecovery)
+		output.RepeatInterval = m_ceil(interval * data.misc.ServerTickRate) / data.misc.ServerTickRate
+		if breakdown then
+			breakdown.RepeatInterval = { s_format("%.2fs ^8(base)", skillData.repeatInterval) }
+			if usesCooldownRecovery then
+				t_insert(breakdown.RepeatInterval, s_format("/ %.2f ^8(increased/reduced cooldown recovery)", 1 + incCooldownRecovery / 100))
+				if moreCooldownRecovery ~= 1 then
+					t_insert(breakdown.RepeatInterval, s_format("/ %.2f ^8(more/less cooldown recovery)", moreCooldownRecovery))
+				end
+			end
+			t_insert(breakdown.RepeatInterval, "rounded up to nearest server tick")
+			t_insert(breakdown.RepeatInterval, s_format("= %.3fs", output.RepeatInterval))
+		end
+	end
 	if skillData.storedUses then
 		local baseUses = skillData.storedUses
 		local additionalUses = skillModList:Sum("BASE", skillCfg, "AdditionalCooldownUses")
