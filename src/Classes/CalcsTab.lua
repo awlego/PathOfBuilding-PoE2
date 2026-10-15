@@ -549,6 +549,18 @@ function CalcsTabClass:BuildPower()
 	end
 end
 
+-- Nodes with the same modKey can still calculate differently: radius jewels only apply to the nodes
+-- in their radius, small and notable passives are scaled separately, and weapon set nodes add a condition
+local function powerCacheKey(env, node)
+	local key = node.modKey .. "|" .. (node.type or "") .. (node.isAttribute and "|attribute" or "") .. "|" .. (node.allocMode or 0)
+	for index, rad in ipairs(env.radiusJewelList) do
+		if rad.nodes[node.id] then
+			key = key .. "|" .. index
+		end
+	end
+	return key
+end
+
 -- Estimate the offensive and defensive power of all unallocated nodes
 function CalcsTabClass:PowerBuilder()
 	local profile_powerStart = GetTime()
@@ -586,15 +598,14 @@ function CalcsTabClass:PowerBuilder()
 		local keys = {}
 		for n in pairs(nodeSet) do
 			if n.modKey and n.modKey ~= "" then
-				-- modKey already encapsulates mod content. The other fields are
-				-- the per-node properties initEnv reads when building allocNodes
-				-- counters and the WeaponSet conditional in buildModListForNode.
-				t_insert(keys, string.format("%s\30%s\30%s\30%s\30%s",
-					n.modKey,
-					n.type or "",
+				-- modKey already encapsulates mod content. powerCacheKey adds the
+				-- per-node properties buildModListForNode reads (type, attribute
+				-- flag, WeaponSet conditional, covering radius jewels); the rest
+				-- are what initEnv reads when building allocNodes counters.
+				t_insert(keys, string.format("%s\30%s\30%s",
+					powerCacheKey(self.mainEnv, n),
 					(n.type == "Mastery") and (n.name or "") or "",
-					n.applyToArmour and "A" or "",
-					tostring(n.allocMode or 0)))
+					n.applyToArmour and "A" or ""))
 			end
 		end
 		t_sort(keys)
@@ -669,12 +680,13 @@ function CalcsTabClass:PowerBuilder()
 		end
 		for nodeId, node in pairs(nodes) do
 			if not node.alloc and node.modKey ~= "" and not self.mainEnv.grantedPassives[nodeId] then
-				if not cache[node.modKey] then
-					cache[node.modKey] = timedCalcFunc({ addNodes = { [node] = true } }, "addSingle")
+				local key = powerCacheKey(self.mainEnv, node)
+				if not cache[key] then
+					cache[key] = timedCalcFunc({ addNodes = { [node] = true } }, "addSingle")
 				else
 					profile_counts.cacheHit = profile_counts.cacheHit + 1
 				end
-				local output = cache[node.modKey]
+				local output = cache[key]
 				if self.powerStat and self.powerStat.stat and not self.powerStat.ignoreForNodes then
 					node.power.singleStat = self:CalculatePowerStat(self.powerStat, output, calcBase)
 					if node.path and not node.ascendancyName then
@@ -707,12 +719,13 @@ function CalcsTabClass:PowerBuilder()
 					end
 				end
 			elseif node.alloc and node.modKey ~= "" and not self.mainEnv.grantedPassives[nodeId] then
-				if not cache[node.modKey.."_remove"] then
-					cache[node.modKey.."_remove"] = timedCalcFunc({ removeNodes = { [node] = true } }, "removeSingle")
+				local key = powerCacheKey(self.mainEnv, node).."_remove"
+				if not cache[key] then
+					cache[key] = timedCalcFunc({ removeNodes = { [node] = true } }, "removeSingle")
 				else
 					profile_counts.cacheHit = profile_counts.cacheHit + 1
 				end
-				local output = cache[node.modKey.."_remove"]
+				local output = cache[key]
 				if self.powerStat and self.powerStat.stat and not self.powerStat.ignoreForNodes then
 					node.power.singleStat = self:CalculatePowerStat(self.powerStat, output, calcBase)
 					if node.depends and not node.ascendancyName then
