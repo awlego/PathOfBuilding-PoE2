@@ -1986,6 +1986,9 @@ Huge sets the radius to 11.
 	{ var = "conditionEnemyCoveredInFrost", type = "check", label = "Is the enemy covered in Frost?", tooltip = "Covered in Frost applies the following to the enemy:\n\t20% increased ^x3F6DB3Cold ^7Damage taken\n\t50% less Critical Strike Chance", apply = function(val, modList, enemyModList)
 		modList:NewMod("CoveredInFrostEffect", "BASE", 20, "Covered in Frost")
 	end },
+	{ var = "enemyConcentration", type = "count", label = "% Enemy Concentration missing:", ifFlag = "MoreDamageFromEnemyMissingConcentration", defaultState = 50, tooltip = "Average percentage of the enemy's Concentration that is missing, used by No Mercy.", apply = function(val, modList, enemyModList)
+		modList:NewMod("Multiplier:EnemyConcentrationMissingPercent", "BASE", m_max(m_min(val, 100), 0), "Config", { type = "Condition", var = "Combat" })
+	end },
 	{ var = "conditionEnemyHasOpenWeakness", type = "check", label = "Does enemy have Open Weakness?", ifCond = "EnemyHasOpenWeakness", apply = function(val, modList, enemyModList)
 		-- This one means the enemy you're targeting has open weakness
 		modList:NewMod("Condition:EnemyHasOpenWeakness", "FLAG", true, "Config", { type = "Condition", var = "Combat" })

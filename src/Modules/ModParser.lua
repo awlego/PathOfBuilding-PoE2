@@ -3384,6 +3384,11 @@ local specialModList = {
 		mod("PhysicalMax", "BASE", 1, { type = "PercentStat", stat = "LifeCost", percent = num, floor = true }, { type = "StatThreshold", stat = "LifeUnreserved", thresholdStat = "LifeCost" }),
 	} end,
 	["gain maximum life instead of maximum energy shield from equipped armour items"] = { flag("ConvertArmourESToLife") },
+	-- Mercenary - Witchhunter
+	["deal up to (%d+)%% more damage to enemies based on their missing concentration"] = function(num) return {
+		flag("MoreDamageFromEnemyMissingConcentration"),
+		mod("Damage", "MORE", num / 100, { type = "Multiplier", var = "EnemyConcentrationMissingPercent", limit = 100 }),
+	} end,
 	-- Mercenary - Gemling
 	["attribute requirements of gems can be satisi?fied by your highest attribute"] = { flag("GemAttributeRequirementsSatisfiedByHighestAttribute") },
 	["gem quality grants socketed skills an additional effect"] = { flag("GemlingQuality") },
@@ -3407,6 +3412,11 @@ local specialModList = {
 	} end,
 	["green: (%d+)%% less movement speed penalty from using skills while moving"] = function(num) return {
 		mod("MovementSpeedPenalty", "MORE", -num, { type = "Condition", var = "MostNumerousGreenSocketedSupports" })
+	} end,
+	-- Huntress - Ritualist
+	-- Blood Boils applies to every nearby non-Unique enemy
+	["(%d+)%% more damage against enemies affected by blood boils"] = function(num) return {
+		mod("Damage", "MORE", num, { type = "ActorCondition", actor = "enemy", var = "Unique", neg = true }),
 	} end,
 	-- Monk - Stormweaver
 	["targets can be affected by two of your shocks at the same time"] = { flag("ShockCanStack"), mod("ShockStacksMax", "OVERRIDE", 2) },
