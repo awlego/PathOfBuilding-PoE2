@@ -771,7 +771,7 @@ local function incomingDamageBreakdown(breakdownTable, poolsRemaining, output)
 	return breakdownTable
 end
 
-local function calcRecoup(output, breakdown, modDB, recoup, recoupType, damageType)
+local function calcRecoup(output, breakdown, recoupTime, recoup, recoupType, damageType)
 	output[damageType .. recoupType .. "Recoup"] = recoup * output[recoupType .. "RecoveryRateMod"]
 	output["anyRecoup"] = output["anyRecoup"] + output[damageType .. recoupType .. "Recoup"]
 	if breakdown then
@@ -779,10 +779,10 @@ local function calcRecoup(output, breakdown, modDB, recoup, recoupType, damageTy
 			breakdown[damageType .. recoupType .. "Recoup"] = {
 				s_format("%d%% ^8(base)", recoup),
 				s_format("* %.2f ^8(recovery rate modifier)", output[recoupType .. "RecoveryRateMod"]),
-				s_format("= %.1f%% over %d seconds", output[damageType .. recoupType .. "Recoup"], (modDB:Flag(nil, "4Second" .. recoupType .. "Recoup") or modDB:Flag(nil, "4SecondRecoup")) and 4 or 8)
+				s_format("= %.1f%% over %.2f seconds", output[damageType .. recoupType .. "Recoup"], recoupTime)
 			}
 		else
-			breakdown[damageType .. recoupType .. "Recoup"] = { s_format("%d%% over %d seconds", output[damageType .. recoupType .. "Recoup"], (modDB:Flag(nil, "4Second" .. recoupType .. "Recoup") or modDB:Flag(nil, "4SecondRecoup")) and 4 or 8) }
+			breakdown[damageType .. recoupType .. "Recoup"] = { s_format("%d%% over %.2f seconds", output[damageType .. recoupType .. "Recoup"], recoupTime) }
 		end
 	end
 end
@@ -797,6 +797,8 @@ function calcs.defence(env, actor)
 	local breakdown = actor.breakdown
 
 	local condList = modDB.conditions
+
+	local effectiveRecoupTime = ((modDB:Flag(nil, "4SecondRecoup")) and 4 or 8) / (1 + modDB:Sum("INC", nil, "RecoupSpeed") / 100)
 
 	-- Action Speed
 	output.ActionSpeedMod = calcs.actionSpeedMod(actor)
@@ -1820,7 +1822,7 @@ function calcs.defence(env, actor)
 		local recoupTypeList = {"Life", "Mana", "EnergyShield"}
 		for _, recoupType in ipairs(recoupTypeList) do
 			local recoup = modDB:Sum("BASE", nil, recoupType.."Recoup")
-			calcRecoup(output, breakdown, modDB, recoup, recoupType, "")
+			calcRecoup(output, breakdown, effectiveRecoupTime, recoup, recoupType, "")
 
 			if modDB:Flag(nil, "Add"..recoupType.."RecoupToEnergyShieldRecoup") then -- Sacrosanctum
 				local mod = modDB:Tabulate("FLAG", nil, "Add"..recoupType.."RecoupToEnergyShieldRecoup")[1].mod
@@ -1831,7 +1833,7 @@ function calcs.defence(env, actor)
 		for _, recoupType in ipairs(recoupTypeList) do
 			for _, damageType in ipairs(dmgTypeList) do
 				local recoup = modDB:Sum("BASE", nil, damageType..recoupType.."Recoup")
-				calcRecoup(output, breakdown, modDB, recoup, recoupType, damageType)
+				calcRecoup(output, breakdown, effectiveRecoupTime, recoup, recoupType, damageType)
 
 				if modDB:Flag(nil, "Add"..recoupType.."RecoupToEnergyShieldRecoup") then -- Sacrosanctum
 					local mod = modDB:Tabulate("FLAG", nil, "Add"..recoupType.."RecoupToEnergyShieldRecoup")[1].mod
@@ -1839,31 +1841,20 @@ function calcs.defence(env, actor)
 				end
 			end
 		end
-		-- pseudo recoup (eg %physical damage prevented from hits regenerated)
+		-- mitigation recoup (eg % physical damage prevented from hits recouped)
 		for _, resource in ipairs(recoupTypeList) do
+			-- note: tested NoLifeRegen effect on mitigation recoup in PoE2 (using Titanrot Cataphract) on Jan 18 2025
+			-- it does indeed block mitigation recoup - but not normal recoup...
 			if not modDB:Flag(nil, "No"..resource.."Regen") and not modDB:Flag(nil, "CannotGain"..resource) then
-				local PhysicalDamageMitigatedPseudoRecoup = modDB:Sum("BASE", nil, "PhysicalDamageMitigated"..resource.."PseudoRecoup")
-				if PhysicalDamageMitigatedPseudoRecoup > 0 then
-					output["PhysicalDamageMitigated"..resource.."PseudoRecoupDuration"] = modDB:Sum("BASE", nil, "PhysicalDamageMitigated"..resource.."PseudoRecoupDuration")
-					if output["PhysicalDamageMitigated"..resource.."PseudoRecoupDuration"] == 0 then
-						output["PhysicalDamageMitigated"..resource.."PseudoRecoupDuration"] = 4
-					end
-					local inc = modDB:Sum("INC", nil, resource.."Regen")
-					local more = modDB:More(nil, resource.."Regen")
-					output["PhysicalDamageMitigated"..resource.."PseudoRecoup"] = PhysicalDamageMitigatedPseudoRecoup * (1 + inc/100) * more * output[resource.."RecoveryRateMod"]
-					output["anyRecoup"] = output["anyRecoup"] + output["PhysicalDamageMitigated"..resource.."PseudoRecoup"]
+				-- phys prevented from hits recouped
+				local PhysicalDamageMitigatedRecoup = modDB:Sum("BASE", nil, "PhysicalDamageMitigated"..resource.."Recoup")
+				if PhysicalDamageMitigatedRecoup > 0 then
+					output["PhysicalDamageMitigated"..resource.."Recoup"] = PhysicalDamageMitigatedRecoup * output[resource.."RecoveryRateMod"]
+					output["anyRecoup"] = output["anyRecoup"] + output["PhysicalDamageMitigated"..resource.."Recoup"]
 					if breakdown then
-						breakdown["PhysicalDamageMitigated"..resource.."PseudoRecoup"] = { }
-						if output[resource.."RecoveryRateMod"] ~= 1 or inc ~= 0 or more ~= 1 then
-							t_insert(breakdown["PhysicalDamageMitigated"..resource.."PseudoRecoup"], s_format("%d%% ^8(base)", PhysicalDamageMitigatedPseudoRecoup))
-							if inc ~= 0 or more ~= 1 then
-								t_insert(breakdown["PhysicalDamageMitigated"..resource.."PseudoRecoup"], s_format("* %.2f ^8(regeneration rate modifier)", (1 + inc/100) * more))
-							end
-							if output[resource.."RecoveryRateMod"] ~= 1 then
-								t_insert(breakdown["PhysicalDamageMitigated"..resource.."PseudoRecoup"], s_format("* %.2f ^8(recovery rate modifier)", output[resource.."RecoveryRateMod"]))
-							end
-						end
-						t_insert(breakdown["PhysicalDamageMitigated"..resource.."PseudoRecoup"], s_format("= %.1f%% over %d seconds", output["PhysicalDamageMitigated"..resource.."PseudoRecoup"], output["PhysicalDamageMitigated"..resource.."PseudoRecoupDuration"]))
+						breakdown["PhysicalDamageMitigated"..resource.."Recoup"] = { }
+						t_insert(breakdown["PhysicalDamageMitigated"..resource.."Recoup"], s_format("%d%% ^8(base)", PhysicalDamageMitigatedRecoup))
+						t_insert(breakdown["PhysicalDamageMitigated"..resource.."Recoup"], s_format("= %.1f%% over %.2f seconds", output["PhysicalDamageMitigated"..resource.."Recoup"], effectiveRecoupTime))
 					end
 				end
 			end
@@ -2195,6 +2186,7 @@ function calcs.buildDefenceEstimations(env, actor)
 	local condList = modDB.conditions
 
 	local damageCategoryConfig = env.configInput.enemyDamageType or "Average"
+	local effectiveRecoupTime = ((modDB:Flag(nil, "4SecondRecoup")) and 4 or 8) / (1 + modDB:Sum("INC", nil, "RecoupSpeed") / 100)
 
 	-- chance to not be hit calculations
 	if damageCategoryConfig ~= "DamageOverTime" then
@@ -3403,45 +3395,47 @@ function calcs.buildDefenceEstimations(env, actor)
 		end
 	end
 
-	-- recoup
+	-- recoup value and breakdown
 	if output["anyRecoup"] > 0 and damageCategoryConfig ~= "DamageOverTime" then
 		local totalDamage = 0
 		local totalElementalDamage = 0
 		local totalPhysicalDamageMitigated = output["NumberOfMitigatedDamagingHits"] * (output.PhysicalTakenDamage - output.PhysicalTakenHit)
-		local extraPseudoRecoup = {}
+		local recoupAvgTime = output["EHPSurvivalTime"] + effectiveRecoupTime
+
 		for _, damageType in ipairs(dmgTypeList) do
 			totalDamage = totalDamage + output[damageType.."RecoupableDamageTaken"]
 			if isElemental[damageType] then
 				totalElementalDamage = totalElementalDamage + output[damageType.."RecoupableDamageTaken"]
 			end
 		end
+
 		local recoupTypeList = {"Life", "Mana", "EnergyShield"}
 		for i, recoupType in ipairs(recoupTypeList) do
-			local recoupTime = (modDB:Flag(nil, "4Second"..recoupType.."Recoup") or modDB:Flag(nil, "4SecondRecoup")) and 4 or 8
 			output["Total"..recoupType.."RecoupRecovery"] = (output[recoupType.."Recoup"] or 0) / 100 * totalDamage
 			if (output["Elemental"..recoupType.."Recoup"] or 0) > 0 and totalElementalDamage > 0 then
 				output["Total"..recoupType.."RecoupRecovery"] = output["Total"..recoupType.."RecoupRecovery"] + output["Elemental"..recoupType.."Recoup"] / 100 * totalElementalDamage
 			end
+			-- eg FireLifeRecoup
 			for _, damageType in ipairs(dmgTypeList) do
 				if (output[damageType..recoupType.."Recoup"] or 0) > 0 and output[damageType.."RecoupableDamageTaken"] > 0 then
 					output["Total"..recoupType.."RecoupRecovery"] = output["Total"..recoupType.."RecoupRecovery"] + output[damageType..recoupType.."Recoup"] / 100 * output[damageType.."RecoupableDamageTaken"]
 				end
 			end
-			output["Total"..recoupType.."PseudoRecoup"] = (output["PhysicalDamageMitigated"..recoupType.."PseudoRecoup"] or 0) / 100 * totalPhysicalDamageMitigated
-			local PseudoRecoupDuration = (output["PhysicalDamageMitigated"..recoupType.."PseudoRecoupDuration"] or 4)
-			-- Pious Path
-			if output["Total"..recoupType.."PseudoRecoup"] ~= 0 then
-				for j=i+1,#recoupTypeList do
-					if modDB:Flag(nil, recoupType.."RegenerationRecovers"..recoupTypeList[j]) and not modDB:Flag(nil, "UnaffectedBy"..recoupTypeList[j].."Regen") and not modDB:Flag(nil, "No"..recoupTypeList[j].."Regen") and not modDB:Flag(nil, "CannotGain"..recoupTypeList[j]) then
-						extraPseudoRecoup[recoupTypeList[j]] = { output["Total"..recoupType.."PseudoRecoup"] * output[recoupTypeList[j].."RecoveryRateMod"] / output[recoupType.."RecoveryRateMod"], PseudoRecoupDuration }
-					end
-				end
+
+			output["Total"..recoupType.."Recoup"] = (output["PhysicalDamageMitigated"..recoupType.."Recoup"] or 0) / 100 * totalPhysicalDamageMitigated
+
+			local totalRecoup = output["Total"..recoupType.."RecoupRecovery"]
+			if output["Total"..recoupType.."Recoup"] > 0 then
+				totalRecoup = totalRecoup + output["Total"..recoupType.."Recoup"]
 			end
-			output["Total"..recoupType.."PseudoRecoup"] = ((not modDB:Flag(nil, "UnaffectedBy"..recoupType.."Regen")) and output["Total"..recoupType.."PseudoRecoup"] or 0)
-			output[recoupType.."RecoupRecoveryMax"] = output["Total"..recoupType.."RecoupRecovery"] / recoupTime + output["Total"..recoupType.."PseudoRecoup"] / PseudoRecoupDuration + (extraPseudoRecoup[recoupType] and (extraPseudoRecoup[recoupType][1] / extraPseudoRecoup[recoupType][2]) or 0)
-			output[recoupType.."RecoupRecoveryAvg"] = output["Total"..recoupType.."RecoupRecovery"] / (output["EHPSurvivalTime"] + recoupTime) + output["Total"..recoupType.."PseudoRecoup"] / (output["EHPSurvivalTime"] + PseudoRecoupDuration) + (extraPseudoRecoup[recoupType] and (extraPseudoRecoup[recoupType][1] / (output["EHPSurvivalTime"] + extraPseudoRecoup[recoupType][2])) or 0)
+
+			output[recoupType.."RecoupRecoveryMax"] = totalRecoup / effectiveRecoupTime
+			output[recoupType.."RecoupRecoveryAvg"] = totalRecoup / recoupAvgTime
+
 			if breakdown then
 				local multipleTypes = 0
+
+				-- standard recoup types
 				breakdown[recoupType.."RecoupRecoveryMax"] = { }
 				if (output[recoupType.."Recoup"] or 0) > 0 then
 					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("%d ^8(total damage taken during ehp calcs)", totalDamage))
@@ -3452,41 +3446,42 @@ function calcs.buildDefenceEstimations(env, actor)
 					if multipleTypes > 0 then
 						t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format(""))
 					end
-					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("%s%d ^8(total elemental damage taken during ehp calcs)", multipleTypes > 0 and "+" or "", totalDamage))
+					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("%s%d ^8(total elemental damage taken during ehp calcs)", multipleTypes > 0 and "+" or "", totalElementalDamage))
 					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("* %.2f ^8(percent of damage recouped)", output["Elemental"..recoupType.."Recoup"] / 100))
 					multipleTypes = multipleTypes + 1
 				end
+
 				for _, damageType in ipairs(dmgTypeList) do
 					if (output[damageType..recoupType.."Recoup"] or 0) > 0 and output[damageType.."RecoupableDamageTaken"] > 0 then
 						if multipleTypes > 0 then
 							t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format(""))
 						end
-						t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("%s%d ^8(total %s damage taken during ehp calcs)", multipleTypes > 0 and "+" or "", totalDamage, damageType))
+						t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("%s%d ^8(total %s damage taken during ehp calcs)", multipleTypes > 0 and "+" or "", output[damageType.."RecoupableDamageTaken"], damageType))
 						t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("* %.2f ^8(percent of damage recouped)", output[damageType..recoupType.."Recoup"] / 100))
 						multipleTypes = multipleTypes + 1
 					end
 				end
-				t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("= %d ^8(total damage recoup amount)", output["Total"..recoupType.."RecoupRecovery"]))
+
+				if output["Total"..recoupType.."Recoup"] > 0 then
+					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format(""))
+					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("+ %.2f ^8(total Physical damage mitigated)", totalPhysicalDamageMitigated))
+					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("* %.2f ^8(percent Physical mitigated as %s)", output["PhysicalDamageMitigated"..recoupType.."Recoup"] / 100, recoupType))
+					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("+ %.2f ^8(total damage mitigated recoup amount)", output["Total"..recoupType.."Recoup"]))
+				end
+				t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format(""))
+				t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("= %d ^8(total damage recoup amount)", totalRecoup))
+
 				breakdown[recoupType.."RecoupRecoveryAvg"] = copyTable(breakdown[recoupType.."RecoupRecoveryMax"])
-				t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("/ %.2f ^8(over %d seconds)", recoupTime, recoupTime))
-				if output["Total"..recoupType.."PseudoRecoup"] > 0 then
-					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("+ %.2f ^8(total damage mitigated pseudo recoup amount)", output["Total"..recoupType.."PseudoRecoup"]))
-					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("/ %.2f ^8(over %d seconds)", PseudoRecoupDuration, PseudoRecoupDuration))
-				end
-				if extraPseudoRecoup[recoupType] then
-					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("+ %.2f ^8(total damage mitigated pseudo recoup amount)", extraPseudoRecoup[recoupType][1]))
-					t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("/ %.2f ^8(over %d seconds)", extraPseudoRecoup[recoupType][2], extraPseudoRecoup[recoupType][2]))
-				end
+
+				t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("/ %.2f ^8(over %.2f seconds)", effectiveRecoupTime, effectiveRecoupTime))
 				t_insert(breakdown[recoupType.."RecoupRecoveryMax"], s_format("= %.2f per second ^8", output[recoupType.."RecoupRecoveryMax"]))
-				t_insert(breakdown[recoupType.."RecoupRecoveryAvg"], s_format("/ %.2f ^8(total time of the recoup (survival time + %d seconds))", (output["EHPSurvivalTime"] + recoupTime), recoupTime))
-				if output["Total"..recoupType.."PseudoRecoup"] > 0 then
-					t_insert(breakdown[recoupType.."RecoupRecoveryAvg"], s_format("+ %.2f ^8(total damage mitigated pseudo recoup amount)", output["Total"..recoupType.."PseudoRecoup"]))
-					t_insert(breakdown[recoupType.."RecoupRecoveryAvg"], s_format("/ %.2f ^8(total time of the recoup (survival time + %d seconds)", (output["EHPSurvivalTime"] + PseudoRecoupDuration), PseudoRecoupDuration))
-				end
-				if extraPseudoRecoup[recoupType] then
-					t_insert(breakdown[recoupType.."RecoupRecoveryAvg"], s_format("+ %.2f ^8(total damage mitigated pseudo recoup amount)", extraPseudoRecoup[recoupType][1]))
-					t_insert(breakdown[recoupType.."RecoupRecoveryAvg"], s_format("/ %.2f ^8(total time of the recoup (survival time + %d seconds)", (output["EHPSurvivalTime"] + extraPseudoRecoup[recoupType][2]), extraPseudoRecoup[recoupType][2]))
-				end
+
+				t_insert(breakdown[recoupType.."RecoupRecoveryAvg"], s_format(
+					"/ %.2f ^8(total time of the recoup (%.2f sec survival time + %.2f sec recoup))",
+					recoupAvgTime,
+					output["EHPSurvivalTime"],
+					effectiveRecoupTime
+				))
 				t_insert(breakdown[recoupType.."RecoupRecoveryAvg"], s_format("= %.2f per second ^8", output[recoupType.."RecoupRecoveryAvg"]))
 			end
 		end
