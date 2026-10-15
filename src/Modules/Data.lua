@@ -317,8 +317,8 @@ data.misc = { -- magic numbers
 	-- Archon Buffs: base duration and the recovery period after losing one (seconds)
 	ArchonBuffBaseDuration = 10,
 	ArchonBuffBaseRecoveryPeriod = 20,
-	-- Assumed rate of Command Skill uses for regaining Archon of Undeath, unless configured
-	ArchonCommandUsesPerSecond = 0.5,
+	-- Assumed rate of Command Skill uses for Archon of Undeath uptime and Puppet Master stacks, unless configured
+	CommandSkillUsesPerSecond = 0.5,
 	-- Puppet Master: base maximum stacks and per-stack duration (seconds)
 	PuppetMasterBaseMaxStacks = 5,
 	PuppetMasterBaseDuration = 8,

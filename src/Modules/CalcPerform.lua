@@ -1265,13 +1265,39 @@ function calcs.perform(env, skipEHP)
 	end
 
 	-- Puppet Master: stacking buff from Command Skills, each stack grants the lines below
+	local commandRate = modDB:Override(nil, "CommandSkillUsesPerSecond") or data.misc.CommandSkillUsesPerSecond
+	local puppetMasterBreakdown
 	if modDB:Flag(nil, "Condition:HavePuppetMaster") then
 		local maxStacks = data.misc.PuppetMasterBaseMaxStacks + modDB:Sum("BASE", nil, "PuppetMasterStacksMax")
-		local stacks = m_max(m_min(modDB:Override(nil, "PuppetMasterStacks") or maxStacks, maxStacks), 0)
 		local effect = 1 + modDB:Sum("INC", nil, "PuppetMasterEffect") / 100
-		output.PuppetMasterStacks = stacks
 		output.PuppetMasterStacksMax = maxStacks
 		output.PuppetMasterDuration = data.misc.PuppetMasterBaseDuration * (1 + modDB:Sum("INC", nil, "PuppetMasterDuration") / 100)
+		local stacks = modDB:Override(nil, "PuppetMasterStacks")
+		if stacks then
+			stacks = m_max(m_min(stacks, maxStacks), 0)
+		else
+			-- Each stack lasts independently, so the stacks held are those gained during the last duration, capped at maximum:
+			-- E[min(N, max)] with N ~ Poisson(stacks gained per second x duration); Surpassing Chance counts as stacks per use
+			local chance = m_max(modDB:Sum("BASE", nil, "PuppetMasterChance"), 0) / 100
+			local gained = chance * commandRate * output.PuppetMasterDuration
+			local probability, cumulative = math.exp(-gained), 0
+			stacks = 0
+			for count = 0, maxStacks - 1 do
+				cumulative = cumulative + probability
+				stacks = stacks + m_max(1 - cumulative, 0)
+				probability = probability * gained / (count + 1)
+			end
+			if env.buildBreakdown then
+				puppetMasterBreakdown = {
+					s_format("%.2f ^8(Command Skill uses per second)", commandRate),
+					s_format("x %.2f ^8(stacks gained per Command Skill use)", chance),
+					s_format("x %.2fs ^8(stack duration)", output.PuppetMasterDuration),
+					s_format("= %.2f ^8(stacks gained per duration)", gained),
+					s_format("%.2f ^8(average stacks, capped at %d maximum)", stacks, maxStacks),
+				}
+			end
+		end
+		output.PuppetMasterStacks = stacks
 		modDB:NewMod("Multiplier:PuppetMasterStack", "BASE", stacks, "Puppet Master")
 		if stacks > 0 then
 			addScaledBuffLines(modDB, data.puppetMasterStackStats, stacks * effect, "Puppet Master")
@@ -1288,15 +1314,16 @@ function calcs.perform(env, skipEHP)
 	if archonOfUndeath then
 		-- Averaged over a cycle of: buff active, recovery period, then waiting for a gain chance to succeed
 		local commandChance = m_min(modDB:Sum("BASE", nil, "ArchonOfUndeathChance"), 100) / 100
-		local commandRate = modDB:Override(nil, "ArchonCommandUsesPerSecond") or data.misc.ArchonCommandUsesPerSecond
 		local offeringChance = m_min(modDB:Sum("BASE", nil, "ArchonOfUndeathChanceOnOffering"), 100) / 100
 		local offeringRate = modDB:Override(nil, "ArchonOfferingsPerSecond") or 0
 		local gainRate = commandChance * commandRate + offeringChance * offeringRate
 		local uptimeOverride = modDB:Override(nil, "ArchonBuffUptime")
+		if gainRate > 0 then
+			output.ArchonGainTime = 1 / gainRate
+		end
 		if uptimeOverride then
 			output.ArchonUptime = uptimeOverride
 		elseif gainRate > 0 then
-			output.ArchonGainTime = 1 / gainRate
 			output.ArchonUptime = output.ArchonBuffDuration / (output.ArchonBuffDuration + output.ArchonRecoveryPeriod + output.ArchonGainTime) * 100
 		else
 			output.ArchonUptime = 0
@@ -1557,6 +1584,7 @@ function calcs.perform(env, skipEHP)
 		breakdown = LoadModule(calcs.breakdownModule)(modDB, output, env.player)
 		env.player.breakdown = breakdown
 		breakdown.ArchonUptime = archonUptimeBreakdown
+		breakdown.PuppetMasterStacks = puppetMasterBreakdown
 		if env.minion then
 			env.minion.breakdown = LoadModule(calcs.breakdownModule)(env.minion.modDB, env.minion.output, env.minion)
 		end

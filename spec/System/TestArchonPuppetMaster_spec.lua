@@ -140,9 +140,15 @@ describe("Archon of Undeath and Puppet Master", function()
 			-- "While affected by an Archon Buff" modifiers need 100% uptime
 			assert.is_falsy(env.player.modDB:Flag(nil, "ShockImmune"))
 
-			build.configTab.input.archonCommandUsesPerSecond = 2
+			build.configTab.input.commandSkillUsesPerSecond = 2
 			output = rebuild()
 			assert.are.near(14 / (14 + 16 + 10 / 3) * 100, output.ArchonUptime, 0.001)
+
+			-- The time to regain it is still reported when the uptime is overridden
+			build.configTab.input.overrideArchonUptime = 100
+			output = rebuild()
+			assert.are.equals(100, output.ArchonUptime)
+			assert.are.near(10 / 3, output.ArchonGainTime, 0.001)
 		end)
 
 		it("includes Offerings when you can gain it on creating an Offering", function()
@@ -182,16 +188,41 @@ describe("Archon of Undeath and Puppet Master", function()
 			assert.is_true(build.configTab.varControls.usePuppetMaster.shown() and true or false)
 		end)
 
-		it("defaults to maximum stacks and scales per stack and by effect", function()
+		-- E[min(N, cap)] for N ~ Poisson(mean)
+		local function cappedPoissonMean(mean, cap)
+			local total, probability, cumulative = 0, math.exp(-mean), 0
+			for count = 0, cap - 1 do
+				cumulative = cumulative + probability
+				total = total + (1 - cumulative)
+				probability = probability * mean / (count + 1)
+			end
+			return total
+		end
+
+		it("calculates average stacks from Command Skill uses", function()
 			local output, env = setMods(sourceMods)
 			assert.is_nil(output.PuppetMasterStacks)
 			assert.are.equals(0, minionModifierSum(env, "Damage", "INC", "Puppet Master"))
 
 			build.configTab.input.usePuppetMaster = true
-			output, env = rebuild()
+			output = rebuild()
 			assert.are.equals(7, output.PuppetMasterStacksMax)
-			assert.are.equals(7, output.PuppetMasterStacks)
 			assert.are.near(8, output.PuppetMasterDuration, 0.001)
+			-- 15% Surpassing Chance x 0.5 Command Skill uses per second x 8 seconds
+			assert.are.near(cappedPoissonMean(0.6, 7), output.PuppetMasterStacks, 0.0001)
+
+			build.configTab.input.commandSkillUsesPerSecond = 5
+			output = rebuild()
+			assert.are.near(cappedPoissonMean(6, 7), output.PuppetMasterStacks, 0.0001)
+			assert.is_true(output.PuppetMasterStacks > 5 and output.PuppetMasterStacks < 7)
+		end)
+
+		it("scales per stack and by effect", function()
+			setMods(sourceMods)
+			build.configTab.input.usePuppetMaster = true
+			build.configTab.input.overridePuppetMasterStacks = 7
+			local output, env = rebuild()
+			assert.are.equals(7, output.PuppetMasterStacks)
 			-- 10% per stack with Command Skills, 7 stacks, 20% increased effect
 			assert.are.equals(84, minionModifierSum(env, "Damage", "INC", "Puppet Master"))
 		end)
