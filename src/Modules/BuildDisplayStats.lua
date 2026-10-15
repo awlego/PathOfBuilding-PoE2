@@ -66,7 +66,7 @@ local displayStats = {
 	{ stat = "PreEffectiveCritChance", label = "Crit Chance", fmt = ".2f%%", flag = "hit", breakdown = "PreEffectiveCritChance" },
 	{ stat = "CritChance", label = "Effective Crit Chance", fmt = ".2f%%", flag = "hit", condFunc = function(v, o) return v ~= o.PreEffectiveCritChance end, breakdown = "CritChance" },
 	{ stat = "CritBifurcates", label = "Crit Bifurcate Chance", fmt = ".2f%%", flag = "hit", condFunc = function(v,o) return (o.CritForks or 0) > 0 end },
-	{ stat = "CritMultiplier", label = "Crit Multiplier", fmt = "d%%", pc = true, condFunc = function(v, o) return (o.CritChance or 0) > 0 end, breakdown = "CritMultiplier" },
+	{ stat = "CritMultiplier", label = "Crit Multiplier", fmt = ".0f%%", pc = true, condFunc = function(v, o) return (o.CritChance or 0) > 0 end, breakdown = "CritMultiplier" },
 	{ stat = "HitChance", label = "Hit Chance", fmt = ".0f%%", flag = "attack", breakdown = "HitChance" },
 	{ stat = "HitChance", label = "Hit Chance", fmt = ".0f%%", condFunc = function(v,o) return o.enemyHasSpellBlock end },
 	{ stat = "AccuracyHitChanceUncapped", label = "Uncap. Hit Chance", fmt = ".0f%%", flag = "attack", condFunc = function(v,o) if o.AccuracyHitChanceUncapped then return o.AccuracyHitChanceUncapped > 100 end end },
