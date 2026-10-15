@@ -714,6 +714,8 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 	local alloc1Red = colorCodes.NEGATIVE
 	local alloc2Green = colorCodes.POSITIVE
 	local white = "^xFFFFFF"
+	local compareAddTeal = "^x00F2FF"
+	local compareRemovePink = "^xFF00D9"
 	local function renderConnector(connector)
 		local node1, node2 = spec.nodes[connector.nodeId1], spec.nodes[connector.nodeId2]
 		connector.colour = white
@@ -725,12 +727,14 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 				baseState = getState(cNode1,cNode2)
 			end
 		end
+		-- Compare added nodes pathing color (teal, distinct from weapon set 2 green)
 		if baseState == "Active" and state ~= "Active" then
 			state = "Active"
-			connector.colour = brightGreen
+			connector.colour = compareAddTeal
 		end
+		-- Compare removed nodes pathing color (pink, distinct from weapon set 1 red)
 		if baseState ~= "Active" and state == "Active" then
-			connector.colour = brightRed
+			connector.colour = compareRemovePink
 		end
 		if baseState == "Intermediate" and spec.allocMode > 0 and not connector.ascendancyName then
 			if spec.allocMode == 1 then
@@ -1105,12 +1109,12 @@ function PassiveTreeViewClass:Draw(build, viewPort, inputEvents)
 				self:DrawAsset(base, scrX, scrY, scale)
 			else
 
-				if not self.showHeatMap and not launch.devModeAlt and not node.alloc then
+				if not self.showHeatMap and not launch.devModeAlt and not node.alloc and not (compareNode and compareNode.alloc) then
 					SetDrawColor(halfGray)
 				end
 
 				self:DrawAsset(base, scrX, scrY, scale)
-				if not self.showHeatMap and not launch.devModeAlt and not node.alloc then
+				if not self.showHeatMap and not launch.devModeAlt and not node.alloc and not (compareNode and compareNode.alloc) then
 					SetDrawColor(1, 1, 1, 1);
 				end
 			end
