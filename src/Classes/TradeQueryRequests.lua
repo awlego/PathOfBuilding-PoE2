@@ -481,7 +481,10 @@ function TradeQueryRequestsClass:SearchWithURL(url, callback)
 	if #paths == 3 then
 		realm = paths[1]
 	end
-	league = paths[#paths-1]
+	-- URL path segments are already escaped; buildUrl encodes the league again
+	league = paths[#paths-1]:gsub("%%(%x%x)", function(hex)
+		return string.char(tonumber(hex, 16))
+	end)
 	queryId = paths[#paths]
 	local json = tradeHelpers.B64GzipDecode(queryId)
 	if not json then

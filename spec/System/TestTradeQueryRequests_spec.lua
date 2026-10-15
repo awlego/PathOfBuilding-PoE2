@@ -232,6 +232,18 @@ Strict-Transport-Security: max-age=63115200; includeSubDomains; preload]]
 			assert.are.equal(0, #urlRequests.requestQueue.search)
 		end)
 
+		it("encodes an already-escaped league name only once", function()
+			decodedQuery = [[{"stats":[{"type":"and","filters":[]}]}]]
+			urlRequests:SearchWithURL("https://www.pathofexile.com/trade2/search/poe2/Forbidden%20Rites/encoded", function() end)
+			assert.are.equal("https://www.pathofexile.com/api/trade2/search/poe2/Forbidden%20Rites", urlRequests.requestQueue.search[1].url)
+		end)
+
+		it("preserves escaped percent signs and slashes in league names", function()
+			decodedQuery = [[{"stats":[{"type":"and","filters":[]}]}]]
+			urlRequests:SearchWithURL("https://www.pathofexile.com/trade2/search/poe2/Test%2520%2FLeague/encoded", function() end)
+			assert.are.equal("https://www.pathofexile.com/api/trade2/search/poe2/Test%2520%2FLeague", urlRequests.requestQueue.search[1].url)
+		end)
+
 		it("relays ordinary search errors to the caller", function()
 			decodedQuery = [[{"stats":[{"type":"and","filters":[]}]}]]
 			local calls = 0
