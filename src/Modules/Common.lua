@@ -510,15 +510,17 @@ do
 		if not noRecurse then
 			subTableMap[tbl] = out
 		end
-		if preserveMeta then
-			setmetatable(out, getmetatable(tbl))
-		end
+		-- rawset, and the metatable is set last, so a preserved __newindex (e.g. a class parent proxy,
+		-- whose __newindex is the original object) can't redirect the copy's fields onto the source
 		for k, v in pairs(tbl) do
 			if not noRecurse and type(v) == "table" then
-				out[k] = subTableMap[v] or copyTableSafe(v, false, preserveMeta, true)
+				rawset(out, k, subTableMap[v] or copyTableSafe(v, false, preserveMeta, true))
 			else
-				out[k] = v
+				rawset(out, k, v)
 			end
+		end
+		if preserveMeta then
+			setmetatable(out, getmetatable(tbl))
 		end
 		if not noRecurse and not isSubTable then
 			wipeTable(subTableMap)
