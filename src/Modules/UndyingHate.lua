@@ -5,10 +5,12 @@
 --
 -- The game seeds the pick with the jewel's hidden per-socket value (item stat
 -- local_unique_jewel_break_timeless_jewel_calculators), not with the souls number on the item, so it has to
--- be typed into the item as a "Hidden Seed: <value>" line. The RNG is GGG's TinyMT32 variant feeding MSVC's
+-- come from the item's "Hidden Seed: <value>" lines (character import writes them) or from the known values
+-- at the end of this file. The RNG is GGG's TinyMT32 variant feeding MSVC's
 -- uniform_int_distribution, as in TimelessEmulator / Vilsol's timeless-jewels (GPL-3.0); constants and pool
 -- order were re-verified against the PoE2 0.5 client and in-game recordings.
 --
+local dkjson = require "dkjson"
 local bxor = bit.bxor
 local band = bit.band
 local lshift = bit.lshift
@@ -160,6 +162,87 @@ end
 -- LegionPassives id ("abyss_notable_N") of the notable that replaces tree notable `graphId` for RNG seed `seed`
 function M.notableId(graphId, seed)
 	return M.notablePool[M.notableIndex(graphId, seed)].id
+end
+
+-- Hidden values known from outside the item, for jewels that don't carry one for their socket. They come from
+-- UndyingHateKnown.json in the user folder (written by an external dataset's exporter; PoB doesn't ship one)
+-- and from the Undying Hate Survey's log. LoadModule runs this file afresh for each caller, so the store hangs
+-- off main and is read once.
+M.knownFile = "UndyingHateKnown.json"
+M.surveyFile = "UndyingHateSurvey.csv"
+M.knownFormat = "undying-hate-known/1"
+
+---Reads an Undying Hate Survey log: { { time, character, souls, conqueror, socket, clock, hidden }, ... }
+function M.readSurveyLog(path)
+	local rows = { }
+	local file = path and io.open(path, "r")
+	if not file then
+		return rows
+	end
+	for line in file:lines() do
+		local time, character, souls, conqueror, socket, clock, hidden = line:match("^([^,]*),([^,]*),(%d+),([^,]*),(%d+),(%d+),(%-?%d+)")
+		if time then
+			table.insert(rows, { time = time, character = character, souls = tonumber(souls), conqueror = conqueror,
+				socket = tonumber(socket), clock = tonumber(clock), hidden = tonumber(hidden) })
+		end
+	end
+	file:close()
+	return rows
+end
+
+---Rereads the known hidden values from the user folder
+function M.reloadKnown()
+	local known = { bySouls = { }, placements = 0, souls = 0 }
+	main.undyingHateKnown = known
+	local userPath = main.userPath or ""
+	local file = io.open(userPath..M.knownFile, "r")
+	if file then
+		local doc = dkjson.decode(file:read("*a"))
+		file:close()
+		if type(doc) == "table" and doc.format == M.knownFormat and type(doc.placements) == "table" then
+			for _, placement in ipairs(doc.placements) do
+				local souls, socket, hidden = tonumber(placement.souls), tonumber(placement.socket), tonumber(placement.hidden)
+				if souls and socket and hidden then
+					M.addKnown(souls, socket, hidden, placement.source or M.knownFile)
+				end
+			end
+		else
+			known.error = M.knownFile.." isn't an "..M.knownFormat.." file"
+		end
+	end
+	-- The survey's own reads of the game come last, so they win over any other source
+	for _, row in ipairs(M.readSurveyLog(userPath..M.surveyFile)) do
+		M.addKnown(row.souls, row.socket, row.hidden, "survey")
+	end
+	return known
+end
+
+---The known hidden values: { bySouls = { [souls] = { [socket id] = { hidden, source } } }, placements, souls, error }
+function M.known()
+	return main.undyingHateKnown or M.reloadKnown()
+end
+
+function M.addKnown(souls, socket, hidden, source)
+	local known = M.known()
+	local bySocket = known.bySouls[souls]
+	if not bySocket then
+		bySocket = { }
+		known.bySouls[souls] = bySocket
+		known.souls = known.souls + 1
+	end
+	if not bySocket[socket] then
+		known.placements = known.placements + 1
+	end
+	bySocket[socket] = { hidden = hidden, source = source }
+end
+
+---Known hidden value and its source for a jewel with this many souls in this socket, or nil
+function M.knownHidden(souls, socket)
+	local bySocket = souls and M.known().bySouls[souls]
+	local entry = bySocket and bySocket[socket]
+	if entry then
+		return entry.hidden, entry.source
+	end
 end
 
 return M

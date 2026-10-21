@@ -12,6 +12,7 @@ local m_max = math.max
 local dkjson = require "dkjson"
 
 local tradeHelpers = LoadModule("Classes/TradeHelpers")
+local UndyingHate = LoadModule("Modules/UndyingHate")
 
 local realmList = {
 	{ label = "PoE2", id = "PoE2", realmCode = "poe2", hostName = "https://www.pathofexile.com/", profileURL = "account/view-profile/" },
@@ -132,7 +133,7 @@ function ImportTabClass:ImportTab(build)
 	-- Undying Hate survey: fetch the character, log the jewel's hidden value for its socket, say where to move it next
 	self.survey = new("UndyingHateSurvey"):UndyingHateSurvey(build.latestTree, (main.userPath or "").."UndyingHateSurvey.csv")
 	self.surveyStatus = "^7Pick your character on the left, socket the jewel at 12 o'clock, log out, Fetch."
-	self.controls.sectionSurvey = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "TOPRIGHT" }, { 10, 0, 600, 246 }, "Undying Hate Survey")
+	self.controls.sectionSurvey = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "TOPRIGHT" }, { 10, 0, 600, 272 }, "Undying Hate Survey")
 	self.controls.surveyIntro = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.sectionSurvey, "TOPLEFT" }, { 6, 14, 0, 14 }, "^7Logs the hidden value the game rolls for your Undying Hate in each socket.")
 	self.controls.surveyIntro2 = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyIntro, "BOTTOMLEFT" }, { 0, 2, 0, 14 }, "^7Socket it, log the character out, Fetch; then the next socket. After a round, Divine it.")
 	self.controls.surveyFetch = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.controls.surveyIntro2, "BOTTOMLEFT" }, { 0, 10, 100, 20 }, function()
@@ -213,6 +214,20 @@ function ImportTabClass:ImportTab(build)
 	end
 	self.controls.surveyCopy.tooltipText = "^7Copies the log as JSON (souls, conqueror, socket, hidden value; no character names)."
 	self.controls.surveyPath = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyLog, "BOTTOMLEFT" }, { 0, 6, 0, 14 }, "^8"..self.survey.logPath)
+	-- Hidden values from outside the item (an exported dataset and the survey log), used by jewels that don't carry one for their socket
+	self.controls.surveyKnown = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyPath, "BOTTOMLEFT" }, { 0, 10, 0, 16 }, function()
+		local known = UndyingHate.known()
+		if known.error then
+			return colorCodes.NEGATIVE..known.error
+		end
+		return s_format("^7Known values: %d placements of %d souls numbers", known.placements, known.souls)
+	end)
+	self.controls.surveyReload = new("ButtonControl"):ButtonControl({ "LEFT", self.controls.surveyKnown, "RIGHT" }, { 10, 0, 80, 20 }, "Reload", function()
+		UndyingHate.reloadKnown()
+		self.build.spec:BuildAllDependsAndPaths()
+		self.build.buildFlag = true
+	end)
+	self.controls.surveyReload.tooltipText = "^7Rereads "..UndyingHate.knownFile.." and the survey log from the user folder.\nAn Undying Hate without a Hidden Seed for its socket uses these."
 
 	-- Build import/export
 	self.controls.sectionBuild = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "BOTTOMLEFT", true }, { 0, 18, 650, 182 }, "Build Sharing")

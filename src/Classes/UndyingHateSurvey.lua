@@ -55,18 +55,9 @@ function UndyingHateSurveyClass:UndyingHateSurvey(tree, logPath)
 end
 
 function UndyingHateSurveyClass:Load()
-	local file = self.logPath and io.open(self.logPath, "r")
-	if not file then
-		return
+	for _, row in ipairs(UndyingHate.readSurveyLog(self.logPath)) do
+		self:Remember(row)
 	end
-	for line in file:lines() do
-		local time, character, souls, conqueror, socket, clock, hidden = line:match("^([^,]*),([^,]*),(%d+),([^,]*),(%d+),(%d+),(%-?%d+)")
-		if time then
-			self:Remember({ time = time, character = character, souls = tonumber(souls), conqueror = conqueror,
-				socket = tonumber(socket), clock = tonumber(clock), hidden = tonumber(hidden) })
-		end
-	end
-	file:close()
 end
 
 function UndyingHateSurveyClass:Remember(row)
@@ -86,6 +77,8 @@ function UndyingHateSurveyClass:Append(row)
 	file:write(s_format("%s,%s,%d,%s,%d,%d,%d\n", row.time, row.character, row.souls, row.conqueror, row.socket, row.clock, row.hidden))
 	file:close()
 	self:Remember(row)
+	-- So any jewel with these souls picks it up in this socket without a restart
+	UndyingHate.addKnown(row.souls, row.socket, row.hidden, "survey")
 end
 
 ---The socketed Undying Hate in a character fetched from the API, or nil and the reason

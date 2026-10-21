@@ -1687,7 +1687,7 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 
 			if node.type == "Notable" then
 				if conqueredBy.conqueror.type == "abyss" then
-					self:ConquerAbyssNotable(node, conqueredBy.hiddenSeeds, node.conqueredBySocket)
+					self:ConquerAbyssNotable(node, conqueredBy, node.conqueredBySocket)
 				end
 				-- todo: update once we get seed data for the other timeless jewels
 				--local jewelDataTbl = { }
@@ -2143,13 +2143,31 @@ function PassiveSpecClass:ReplaceNode(old, newNode)
 	old.attributeIndex = newNode.attributeIndex
 end
 
+local knownSourceNames = {
+	["poe.ninja"] = "poe.ninja characters",
+	["survey"] = "your Undying Hate Survey log",
+	["solver"] = "the Undying Hate Solver",
+}
+
 ---Replaces a notable conquered by Undying Hate with the Abyss notable picked by the jewel's hidden seed
 ---@param node table @ The conquered notable
----@param hiddenSeeds table|nil @ RNG seeds from the jewel's "Hidden Seed" lines, keyed by socket node id or "any"
+---@param conqueredBy table @ The jewel's conquest: id (its souls number) and hiddenSeeds, the RNG seeds from its "Hidden Seed" lines keyed by socket node id or "any"
 ---@param socketId number @ The socket the jewel is in
-function PassiveSpecClass:ConquerAbyssNotable(node, hiddenSeeds, socketId)
-	-- The game rolls the seed per placement, so a seed pinned to this socket beats a general one
-	local seed = hiddenSeeds and (hiddenSeeds[socketId] or hiddenSeeds.any)
+function PassiveSpecClass:ConquerAbyssNotable(node, conqueredBy, socketId)
+	-- The game rolls the seed per placement: a seed pinned to this socket on the item comes first,
+	-- then one known for this souls number and socket, then a general one on the item
+	local hiddenSeeds = conqueredBy.hiddenSeeds
+	local seed = hiddenSeeds and hiddenSeeds[socketId]
+	if not seed then
+		local hidden, source = UndyingHate.knownHidden(conqueredBy.id, socketId)
+		if hidden then
+			seed = UndyingHate.seedFromHidden(hidden)
+			node.conquestNote = {
+				"^7Undying Hate's hidden value here is "..hidden.." for "..conqueredBy.id.." souls, from "..(knownSourceNames[source] or source)..".",
+			}
+		end
+	end
+	seed = seed or (hiddenSeeds and hiddenSeeds.any)
 	if seed then
 		self:ReplaceNode(node, self.tree.legion.nodeById[UndyingHate.notableId(node.id, seed)])
 	elseif hiddenSeeds then
