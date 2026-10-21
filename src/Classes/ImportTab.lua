@@ -1554,6 +1554,18 @@ function ImportTabClass:ImportItem(itemData, slotName)
 			end
 		end
 	end
+	-- Undying Hate's conquered notables follow a hidden stat the game rolls per socket; only the raw mod stats carry it
+	if itemData.mods and itemData.mods.explicit then
+		for _, itemMod in ipairs(itemData.mods.explicit) do
+			local hiddenSeed = itemMod.stats and itemMod.stats.local_unique_jewel_break_timeless_jewel_calculators
+			if hiddenSeed then
+				local socketId = slotName:match("^Jewel (%d+)$")
+				local line = "Hidden Seed: "..hiddenSeed..(socketId and " @"..socketId or "")
+				local modList, extra = modLib.parseMod(line)
+				t_insert(item.explicitModLines, { line = line, extra = extra, mods = modList or { } })
+			end
+		end
+	end
 
 	if itemData.grantedSkills then
 		for _, grantedSkillInfo in ipairs(itemData.grantedSkills) do

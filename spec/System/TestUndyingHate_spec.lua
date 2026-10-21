@@ -185,6 +185,55 @@ describe("UndyingHate", function()
 		assert.is_nil(build.spec.nodes[8957].conqueredBy)
 	end)
 
+	it("reads the hidden seed from the character import", function()
+		build.spec:BuildAllDependsAndPaths()
+		build.spec:AllocNode(build.spec.nodes[60735])
+		-- trimmed from a real GET /character/poe2/<name> response: the raw mod stats carry the hidden value
+		build.importTab:ImportItem({
+			id = "407a009ba0f303d6b31f4f53aafc6aedf35f5fa5172ba8330f06f21743bc735a",
+			name = "Undying Hate",
+			typeLine = "Timeless Jewel",
+			baseType = "Timeless Jewel",
+			frameType = 3,
+			ilvl = 83,
+			properties = {
+				{ name = "Limited to", values = { { "1 Historic", 0 } } },
+				{ name = "Radius", values = { { "Very Large", 0 } } },
+			},
+			explicitMods = {
+				{ description = "Glorifying the defilement of 15473 souls in tribute to Kurgal\nPassives in radius are Conquered by the Abyssals\n[UnstableDesecration|Desecration makes this item unstable]" },
+				{ description = "[Historic]" },
+			},
+			mods = {
+				explicit = {
+					{
+						id = "UniqueJewelAlternateTreeInRadiusAbyssal",
+						stats = {
+							local_unique_jewel_alternate_tree_version = 7,
+							local_unique_jewel_alternate_tree_seed = 15473,
+							local_unique_jewel_alternate_tree_keystone = 3,
+							local_jewel_effect_base_radius = 1500,
+							local_is_alternate_tree_jewel = 1,
+							local_unique_jewel_alternate_tree_internal_revision = 1,
+							local_unique_jewel_break_timeless_jewel_calculators = -20616,
+						},
+					},
+				},
+			},
+			inventoryId = "PassiveJewels",
+			x = 4,
+			y = 0,
+		})
+		build.spec:BuildAllDependsAndPaths()
+
+		local item = build.itemsTab.items[build.itemsTab.sockets[60735].selItemId]
+		assert.are.equals("Hidden Seed: -20616 @60735", item.explicitModLines[#item.explicitModLines].line)
+		assert.are.same({ [60735] = 44920 }, item.jewelData.conqueredBy.hiddenSeeds)
+		for nodeId, name in pairs(recordings[2].notables) do
+			assert.are.equals(name, build.spec.nodes[nodeId].dn)
+		end
+	end)
+
 	it("keeps notables without a seed and still converts the rest", function()
 		local treeName = build.spec.tree.nodes[35809].dn
 		socketJewel(26725, undyingHate(15473, "Kurgal"))
