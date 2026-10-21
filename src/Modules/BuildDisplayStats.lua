@@ -104,6 +104,7 @@ local displayStats = {
 	{ stat = "ExplodeChance", label = "Total Explode Chance", fmt = ".0f%%" },
 	{ stat = "CombinedAvgToMonsterLife", label = "Enemy Life Equivalent", fmt = ".1f%%" },
 	{ stat = "Cooldown", label = "Skill Cooldown", fmt = ".3fs", lowerIsBetter = true },
+	{ stat = "MirrorInterval", label = "Mirror Interval", fmt = ".3fs", lowerIsBetter = true, suffix = function(v) return string.format("%.2f per second", 1 / v) end },
 	{ stat = "SealCooldown", label = "Seal Gain Frequency", fmt = ".2fs", lowerIsBetter = true },
 	{ stat = "SealMax", label = "Max Number of Seals", fmt = "d" },
 	{ stat = "TimeMaxSeals", label = "Time to Gain Max Seals", fmt = ".2fs", lowerIsBetter = true },

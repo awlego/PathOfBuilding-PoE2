@@ -58,6 +58,44 @@ describe("Repeat interval skills", function()
 		assert.are.near(roundUpToServerTick(2 / (1.5 * 1.2)), output.RepeatInterval, 0.0001)
 	end)
 
+	it("shows the Mirror of Refraction interval whichever skill is the main skill", function()
+		equipMirrorOfRefraction()
+		build.skillsTab:PasteSocketGroup("Spark 20/0  1")
+		build.mainSocketGroup = #build.skillsTab.socketGroupList
+		build.configTab.input.customMods = "50% increased Cooldown Recovery Rate"
+		local output, env = rebuild()
+		assert.are.equals("Spark", env.player.mainSkill.activeEffect.grantedEffect.name)
+		assert.is_nil(output.RepeatInterval)
+		-- 2s / 1.5 = 40.4 server ticks, rounded up to 41; 40 ticks needs 2s / 40 ticks = 51.5% increased cooldown recovery
+		assert.are.near(roundUpToServerTick(2 / 1.5), output.MirrorInterval, 0.0001)
+		local lines = env.player.breakdown.MirrorInterval
+		assert.is_truthy(lines[#lines - 2]:find("rounded up to 41 server ticks", 1, true))
+		assert.is_truthy(lines[#lines]:find("40 server ticks", 1, true))
+		assert.is_truthy(lines[#lines]:find("52%", 1, true))
+
+		local sidebarRow
+		for _, row in ipairs(build.controls.statBox.list) do
+			if row[1] and row[1]:find("Mirror Interval", 1, true) then
+				sidebarRow = row
+			end
+		end
+		assert.is_not_nil(sidebarRow)
+		assert.are.equals("MirrorInterval", sidebarRow.breakdown)
+	end)
+
+	it("keeps per-stat cooldown recovery for a Mirror of Refraction on the other weapon set", function()
+		equipMirrorOfRefraction()
+		build.skillsTab:PasteSocketGroup("Spark 20/0  1")
+		local sparkGroup = build.skillsTab.socketGroupList[#build.skillsTab.socketGroupList]
+		sparkGroup.set1, sparkGroup.set2 = false, true
+		build.mainSocketGroup = #build.skillsTab.socketGroupList
+		build.configTab.input.customMods = "+100 to Tribute\n1% increased Cooldown Recovery Rate per 10 Tribute"
+		local output, env = rebuild()
+		assert.are.equals(2, env.weaponSet)
+		assert.is_not_nil(env.weaponSetEnvs[1])
+		assert.are.near(roundUpToServerTick(2 / 1.1), output.MirrorInterval, 0.0001)
+	end)
+
 	it("ignores cooldown recovery for repeat intervals without the cooldown recovery line", function()
 		-- No current skill has a non-zero repeat interval without the line, so drop it from Mirror of Refraction temporarily
 		local stats = data.skills["MirrorOfRefractionPlayer"].statSets[1].stats

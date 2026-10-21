@@ -258,6 +258,15 @@ local function calculateAttributes(modDB, output, breakdown, condList)
 		condList["DexSingleHighestAttribute"] = output.Dex > output.Str and output.Dex > output.Int
 	end
 end
+local function calculateTributeAndAttributes(modDB, output, breakdown, condList)
+	-- Special case for Devotion / Tribute; before attributes, which can scale with Tribute ("+2 to Intelligence per 25 Tribute")
+	output.Devotion = modDB:Sum("BASE", nil, "Devotion")
+	output.Tribute = m_floor(calcLib.val(modDB, "Tribute"))
+
+	-- Calculate total attributes
+	calculateAttributes(modDB, output, breakdown, condList)
+	output.TotalAttr = output.Str + output.Dex + output.Int
+end
 -- Calculate attributes, and set conditions
 ---@param env Env
 ---@param actor Actor
@@ -484,13 +493,7 @@ local function doActorAttribsConditions(env, actor)
 		end
 	end
 
-	-- Special case for Devotion / Tribute; before attributes, which can scale with Tribute ("+2 to Intelligence per 25 Tribute")
-	output.Devotion = modDB:Sum("BASE", nil, "Devotion")
-	output.Tribute = m_floor(calcLib.val(modDB, "Tribute"))
-
-	-- Calculate total attributes
-	calculateAttributes(modDB, output, breakdown, condList)
-	output.TotalAttr = output.Str + output.Dex + output.Int
+	calculateTributeAndAttributes(modDB, output, breakdown, condList)
 
 	-- Add attribute bonuses
 	if not modDB:Flag(nil, "NoAttributeBonuses") then
@@ -1987,6 +1990,13 @@ function calcs.perform(env, skipEHP)
 
 	-- Calculate attributes
 	doActorAttribsConditions(env, env.player)
+	-- Skills of groups bound to the other weapon set keep that set's actor (see CalcSetup), which is never performed here,
+	-- so give it the stats that per-stat modifiers on those skills read (e.g. "increased Cooldown Recovery Rate per 10 Tribute")
+	for _, weaponSetEnv in pairs(env.weaponSetEnvs or { }) do
+		local actor = weaponSetEnv.player
+		actor.output = actor.output or { }
+		calculateTributeAndAttributes(actor.modDB, actor.output, nil, actor.modDB.conditions)
+	end
 	if env.minion then
 		if env.minion.hostile then
 			for _, value in ipairs(env.modDB:Tabulate(nil, nil, "EnemyModifier")) do
@@ -3656,6 +3666,20 @@ function calcs.perform(env, skipEHP)
 					activeSkill.skillModList:NewMod("QuantityMultiplier", "BASE", totalImages, "Hollow Form Power Charges")
 				end
 			end
+		end
+	end
+
+	-- Mirror of Refraction's mirrors keep appearing whichever skill is the main skill
+	for _, activeSkill in ipairs(env.player.activeSkillList) do
+		local statSet = env.mode == "CALCS" and activeSkill.activeEffect.statSetCalcs or activeSkill.activeEffect.statSet
+		if activeSkill.activeEffect.grantedEffect.id == "MirrorOfRefractionPlayer" and (activeSkill.skillData.repeatInterval or 0) > 0
+			and not (statSet and statSet.skillFlags.disable) then
+			local intervalBreakdown
+			output.MirrorInterval, intervalBreakdown = calcSkillRepeatInterval(activeSkill.skillModList, activeSkill.skillCfg, activeSkill.skillData, breakdown ~= nil)
+			if breakdown then
+				breakdown.MirrorInterval = intervalBreakdown
+			end
+			break
 		end
 	end
 

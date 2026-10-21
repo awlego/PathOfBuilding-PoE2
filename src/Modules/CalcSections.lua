@@ -1594,6 +1594,10 @@ return {
 	{ label = "Archon Recovery", haveOutput = "ArchonBuffDuration", { format = "{1:output:ArchonRecoveryPeriod}s", { modName = { "ArchonRecoveryRate", "ArchonNoRecoveryPeriod" } }, }, },
 	{ label = "Archon Uptime", haveOutput = "ArchonBuffEffect", { format = "{1:output:ArchonUptime}%", { breakdown = "ArchonUptime" }, { modName = { "ArchonOfUndeathChance", "ArchonOfUndeathChanceOnOffering" } }, }, },
 	{ label = "Archon Buff Effect", haveOutput = "ArchonBuffEffect", { format = "x {2:output:ArchonBuffEffect}", { modName = "ArchonBuffEffect", modType = "INC" }, { label = "Archon Buffs also grant", modName = "ArchonBuffGrant", modType = "LIST" }, }, },
+	{ label = "Mirror Interval", haveOutput = "MirrorInterval", { format = "{3:output:MirrorInterval}s",
+		{ breakdown = "MirrorInterval" },
+		{ modName = "CooldownRecovery" },
+	}, },
 } }
 } },
 -- attributes/resists

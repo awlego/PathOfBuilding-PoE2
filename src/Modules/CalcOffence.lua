@@ -432,6 +432,42 @@ function calcSkillCooldown(skillModList, skillCfg, skillData)
 	end
 end
 
+-- Interval of a skill's periodic effect (e.g. Mirror of Refraction's mirrors), which is not a cooldown on using the skill
+-- Cooldown recovery only applies with "Modifiers to Cooldown Recovery Rate also apply to ..."
+function calcSkillRepeatInterval(skillModList, skillCfg, skillData, buildBreakdown)
+	local usesCooldownRecovery = skillData.repeatIntervalUsesCooldownRecovery
+	local incCooldownRecovery = usesCooldownRecovery and skillModList:Sum("INC", skillCfg, "CooldownRecovery") or 0
+	local moreCooldownRecovery = usesCooldownRecovery and skillModList:More(skillCfg, "CooldownRecovery") or 1
+	local function unrounded(inc)
+		return skillData.repeatInterval / m_max(0, (1 + inc / 100) * moreCooldownRecovery)
+	end
+	local ticks = m_ceil(unrounded(incCooldownRecovery) * data.misc.ServerTickRate)
+	local interval = ticks / data.misc.ServerTickRate
+	if not buildBreakdown then
+		return interval
+	end
+	local breakdown = { s_format("%.2fs ^8(base)", skillData.repeatInterval) }
+	if usesCooldownRecovery then
+		t_insert(breakdown, s_format("/ %.2f ^8(increased/reduced cooldown recovery)", 1 + incCooldownRecovery / 100))
+		if moreCooldownRecovery ~= 1 then
+			t_insert(breakdown, s_format("/ %.2f ^8(more/less cooldown recovery)", moreCooldownRecovery))
+		end
+		t_insert(breakdown, s_format("= %.3fs", unrounded(incCooldownRecovery)))
+	end
+	t_insert(breakdown, s_format("rounded up to %d server ticks of %.3fs", ticks, data.misc.ServerTickTime))
+	t_insert(breakdown, s_format("= %.3fs ^8(%.2f per second)", interval, 1 / interval))
+	if usesCooldownRecovery and ticks > 1 and ticks < m_huge and moreCooldownRecovery > 0 then
+		-- Smallest total increased cooldown recovery that saves a server tick, using the same rounding as above
+		local exact = (skillData.repeatInterval * data.misc.ServerTickRate / ((ticks - 1) * moreCooldownRecovery) - 1) * 100
+		local needed = m_max(m_floor(exact) - 1, m_floor(incCooldownRecovery))
+		while m_ceil(unrounded(needed) * data.misc.ServerTickRate) >= ticks do
+			needed = needed + 1
+		end
+		t_insert(breakdown, s_format("%d server ticks ^8(%.3fs)^7 at %d%% increased cooldown recovery ^8(%+g%%)", ticks - 1, (ticks - 1) / data.misc.ServerTickRate, needed, needed - incCooldownRecovery))
+	end
+	return interval, breakdown
+end
+
 local function calcWarcryCastTime(skillModList, skillCfg, skillData, actor)
 	local baseSpeed = 1 / skillModList:Sum("BASE", skillCfg, "WarcryCastTime")
 	local warcryCastTime = baseSpeed * calcLib.mod(skillModList, skillCfg, "WarcrySpeed") * calcs.actionSpeedMod(actor)
@@ -1836,23 +1872,10 @@ function calcs.offence(env, actor, activeSkill)
 		end
 	end
 	if (skillData.repeatInterval or 0) > 0 then
-		-- Periodic effect of the skill (e.g. Mirror of Refraction's mirrors), which is not a cooldown on using the skill
-		-- Cooldown recovery only applies with "Modifiers to Cooldown Recovery Rate also apply to ..."
-		local usesCooldownRecovery = skillData.repeatIntervalUsesCooldownRecovery
-		local incCooldownRecovery = usesCooldownRecovery and skillModList:Sum("INC", skillCfg, "CooldownRecovery") or 0
-		local moreCooldownRecovery = usesCooldownRecovery and skillModList:More(skillCfg, "CooldownRecovery") or 1
-		local interval = skillData.repeatInterval / m_max(0, (1 + incCooldownRecovery / 100) * moreCooldownRecovery)
-		output.RepeatInterval = m_ceil(interval * data.misc.ServerTickRate) / data.misc.ServerTickRate
+		local intervalBreakdown
+		output.RepeatInterval, intervalBreakdown = calcSkillRepeatInterval(skillModList, skillCfg, skillData, breakdown ~= nil)
 		if breakdown then
-			breakdown.RepeatInterval = { s_format("%.2fs ^8(base)", skillData.repeatInterval) }
-			if usesCooldownRecovery then
-				t_insert(breakdown.RepeatInterval, s_format("/ %.2f ^8(increased/reduced cooldown recovery)", 1 + incCooldownRecovery / 100))
-				if moreCooldownRecovery ~= 1 then
-					t_insert(breakdown.RepeatInterval, s_format("/ %.2f ^8(more/less cooldown recovery)", moreCooldownRecovery))
-				end
-			end
-			t_insert(breakdown.RepeatInterval, "rounded up to nearest server tick")
-			t_insert(breakdown.RepeatInterval, s_format("= %.3fs", output.RepeatInterval))
+			breakdown.RepeatInterval = intervalBreakdown
 		end
 	end
 	if skillData.storedUses then
