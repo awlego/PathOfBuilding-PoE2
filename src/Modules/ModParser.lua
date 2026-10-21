@@ -6339,6 +6339,17 @@ local specialModList = {
 	["glorifying the defilement of (%d+) souls in tribute to (.+)"] = function(num, _, name) return {
 		mod("JewelData", "LIST", { key = "conqueredBy", value = { id = num, conqueror = conquerorList[name:lower()] } })
 	} end,
+	-- User-typed: Undying Hate's hidden per-socket seed (as poe.ninja shows it), optionally pinned to a socket with "@<node id>"
+	["hidden seed: (%-?%d+)"] = function(num)
+		if num >= -32768 and num <= 65535 then
+			return { mod("JewelData", "LIST", { key = "hiddenSeed", value = { seed = num % 65536 } }) }
+		end
+	end,
+	["hidden seed: (%-?%d+) @(%d+)"] = function(num, _, socket)
+		if num >= -32768 and num <= 65535 then
+			return { mod("JewelData", "LIST", { key = "hiddenSeed", value = { seed = num % 65536, socket = tonumber(socket) } }) }
+		end
+	end,
 	["passives in radius are conquered by the (%D+)"] = { },
 	["historic"] = { },
 	-- Display-only modifiers

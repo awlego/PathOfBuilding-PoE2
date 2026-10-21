@@ -16,6 +16,8 @@ local b_rshift = bit.rshift
 local band = AND64 -- bit.band
 local bor = OR64 -- bit.bor
 
+local UndyingHate = LoadModule("Modules/UndyingHate")
+
 local legacyClassIdMap = {
 	["0_1"] = { [0] = 2, [1] = 6, [2] = 9, [3] = 1, [4] = 7, [5] = 10 },
 	["0_2"] = { [0] = 2, [1] = 8, [2] = 6, [3] = 9, [4] = 1, [5] = 7, [6] = 10 },
@@ -1549,6 +1551,8 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 		node.depends = wipeTable(node.depends)
 		node.intuitiveLeapLikesAffecting = wipeTable(node.intuitiveLeapLikesAffecting)
 		node.conqueredBy = nil
+		node.conqueredBySocket = nil
+		node.conquestNote = nil
 
 		-- ignore cluster jewel nodes that don't have an id in the tree
 		if self.tree.nodes[id] then
@@ -1580,6 +1584,7 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 							end
 							if item.jewelData.conqueredBy then
 								node.conqueredBy = item.jewelData.conqueredBy
+								node.conqueredBySocket = nodeId
 							end
 						end
 					end
@@ -1681,7 +1686,10 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 			end
 
 			if node.type == "Notable" then
-				-- todo: update once we get seed data
+				if conqueredBy.conqueror.type == "abyss" then
+					self:ConquerAbyssNotable(node, conqueredBy.hiddenSeeds, node.conqueredBySocket)
+				end
+				-- todo: update once we get seed data for the other timeless jewels
 				--local jewelDataTbl = { }
 				--if seed ~= m_max(m_min(seed, data.timelessJewelSeedMax[jewelType]), data.timelessJewelSeedMin[jewelType]) then
 				--	ConPrintf("ERROR: Seed " .. seed .. " is outside of valid range [" .. data.timelessJewelSeedMin[jewelType] .. " - " .. data.timelessJewelSeedMax[jewelType] .. "] for jewel type: " .. data.timelessJewelTypes[jewelType])
@@ -1815,7 +1823,8 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 			--		self:ReplaceNode(node, legionNode)
 			--	end
 				if conqueredBy.conqueror.type == "abyss" then
-					if isValueInArray(attributes, node.dn) then
+					-- The game goes by the IsAttribute flag: "+8 to Strength" smalls named "Strength" become Tribute like any other small
+					if node.isAttribute then
 						self:NodeAdditionOrReplacementFromString(node, " \n+3 to Tribute")
 					else
 						local legionNode = legionNodes[201] -- abyss_small_tribute
@@ -2132,6 +2141,33 @@ function PassiveSpecClass:ReplaceNode(old, newNode)
 	old.activeEffectImage = newNode.activeEffectImage
 	old.reminderText = newNode.reminderText or { }
 	old.attributeIndex = newNode.attributeIndex
+end
+
+---Replaces a notable conquered by Undying Hate with the Abyss notable picked by the jewel's hidden seed
+---@param node table @ The conquered notable
+---@param hiddenSeeds table|nil @ RNG seeds from the jewel's "Hidden Seed" lines, keyed by socket node id or "any"
+---@param socketId number @ The socket the jewel is in
+function PassiveSpecClass:ConquerAbyssNotable(node, hiddenSeeds, socketId)
+	-- The game rolls the seed per placement, so a seed pinned to this socket beats a general one
+	local seed = hiddenSeeds and (hiddenSeeds[socketId] or hiddenSeeds.any)
+	if seed then
+		self:ReplaceNode(node, self.tree.legion.nodeById[UndyingHate.notableId(node.id, seed)])
+	elseif hiddenSeeds then
+		local sockets = { }
+		for id in pairs(hiddenSeeds) do
+			t_insert(sockets, id)
+		end
+		table.sort(sockets)
+		node.conquestNote = {
+			"Undying Hate's Hidden Seed is set for socket "..table.concat(sockets, ", ")..", but the game rolls it per socket.",
+			"Add \"Hidden Seed: <value> @"..socketId.."\" to the jewel to see which Abyss notable replaces this one.",
+		}
+	else
+		node.conquestNote = {
+			"Undying Hate replaces this notable with an Abyss notable picked by the jewel's hidden seed.",
+			"Add \"Hidden Seed: <value>\" to the jewel to see which one.",
+		}
+	end
 end
 
 ---Reconnects altered timeless jewel to class start, for Pure Talent

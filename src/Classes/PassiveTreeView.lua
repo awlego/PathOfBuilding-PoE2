@@ -2040,6 +2040,12 @@ function PassiveTreeViewClass:AddNodeTooltip(tooltip, node, build, incSmallPassi
 			tooltip:AddLine(14, "^xA0A080"..line)
 		end
 	end
+	if node.conquestNote then
+		tooltip:AddSeparator(14)
+		for _, line in ipairs(node.conquestNote) do
+			tooltip:AddLine(14, colorCodes.WARNING..line)
+		end
+	end
 
 	-- Flavour text
 	if node.flavourText and main.showFlavourText then

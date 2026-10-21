@@ -484,13 +484,13 @@ local function doActorAttribsConditions(env, actor)
 		end
 	end
 
+	-- Special case for Devotion / Tribute; before attributes, which can scale with Tribute ("+2 to Intelligence per 25 Tribute")
+	output.Devotion = modDB:Sum("BASE", nil, "Devotion")
+	output.Tribute = m_floor(calcLib.val(modDB, "Tribute"))
+
 	-- Calculate total attributes
 	calculateAttributes(modDB, output, breakdown, condList)
 	output.TotalAttr = output.Str + output.Dex + output.Int
-
-	-- Special case for Devotion / Tribute
-	output.Devotion = modDB:Sum("BASE", nil, "Devotion")
-	output.Tribute = modDB:Sum("BASE", nil, "Tribute")
 
 	-- Add attribute bonuses
 	if not modDB:Flag(nil, "NoAttributeBonuses") then

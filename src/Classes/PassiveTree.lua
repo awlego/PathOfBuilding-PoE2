@@ -436,7 +436,9 @@ function PassiveTreeClass:PassiveTree(treeVersion)
 	end
 	
 	-- Build ModList for legion jewels
+	self.legion.nodeById = { }
 	for _, node in pairs(self.legion.nodes) do
+		self.legion.nodeById[node.id] = node
 		-- Determine node type
 		if node.m then
 			node.type = "Mastery"

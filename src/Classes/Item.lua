@@ -2680,8 +2680,19 @@ function ItemClass:BuildModListForSlotNum(baseList, slotNum)
 			t_insert(funcList, func)
 		end
 		jewelData.funcList = funcList
+		local hiddenSeeds = nil
 		for _, value in ipairs(modList:List(nil, "JewelData")) do
-			jewelData[value.key] = value.value
+			if value.key == "hiddenSeed" then
+				-- Timeless jewel seeds are rolled per placement, so the item can carry one per socket (or one for any socket)
+				hiddenSeeds = hiddenSeeds or { }
+				hiddenSeeds[value.value.socket or "any"] = value.value.seed
+			else
+				jewelData[value.key] = value.value
+			end
+		end
+		if jewelData.conqueredBy then
+			jewelData.conqueredBy = copyTable(jewelData.conqueredBy, true)
+			jewelData.conqueredBy.hiddenSeeds = hiddenSeeds
 		end
 		for _, className in ipairs(modList:List(nil, "AlternateClassStart")) do
 			jewelData.alternateClassStart = className
