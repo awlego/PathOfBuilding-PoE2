@@ -46,6 +46,7 @@ runtime/imgui.ini
 runtime/SimpleGraphic/SimpleGraphic.log
 
 src/poe_api_response.json
+src/UndyingHateSurvey.csv
 runtime/SimpleGraphic/Screenshots
 
 .emmyrc.json

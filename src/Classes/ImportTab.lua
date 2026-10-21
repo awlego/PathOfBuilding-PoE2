@@ -129,6 +129,91 @@ function ImportTabClass:ImportTab(build)
 	self.controls.charImportItemsClearItems = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.charImportItems, "RIGHT" }, { 220, 0, 18 }, "Delete equipment:", nil, "Delete all equipped items when importing.", true)
 	self.controls.charImportItemsIgnoreWeaponSwap = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.charImportItems, "RIGHT" }, { 380, 0, 18 }, "Ignore weapon swap:", nil, "Ignore items and skills in weapon swap.", false)
 
+	-- Undying Hate survey: fetch the character, log the jewel's hidden value for its socket, say where to move it next
+	self.survey = new("UndyingHateSurvey"):UndyingHateSurvey(build.latestTree, (main.userPath or "").."UndyingHateSurvey.csv")
+	self.surveyStatus = "^7Pick your character on the left, socket the jewel at 12 o'clock, log out, Fetch."
+	self.controls.sectionSurvey = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "TOPRIGHT" }, { 10, 0, 600, 246 }, "Undying Hate Survey")
+	self.controls.surveyIntro = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.sectionSurvey, "TOPLEFT" }, { 6, 14, 0, 14 }, "^7Logs the hidden value the game rolls for your Undying Hate in each socket.")
+	self.controls.surveyIntro2 = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyIntro, "BOTTOMLEFT" }, { 0, 2, 0, 14 }, "^7Socket it, log the character out, Fetch; then the next socket. After a round, Divine it.")
+	self.controls.surveyFetch = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.controls.surveyIntro2, "BOTTOMLEFT" }, { 0, 10, 100, 20 }, function()
+		return self.surveyFetching and "Fetching..." or "Fetch"
+	end, function()
+		if self.controls.surveyUpdateBuild.state and not self.surveyBuildConfirmed and self.build.spec:CountAllocNodes() > 0 then
+			main:OpenConfirmPopup("Undying Hate Survey", "Each Fetch will import the character's passive tree and jewels,\noverwriting this build's tree.", "Fetch", function()
+				self.surveyBuildConfirmed = true
+				self:SurveyFetch()
+			end)
+		else
+			self:SurveyFetch()
+		end
+	end)
+	self.controls.surveyFetch.enabled = function()
+		return self.charImportMode == "SELECTCHAR" and not self.surveyFetching
+	end
+	self.controls.surveyUpdateBuild = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.surveyFetch, "LEFT" }, { 560, 0, 18 }, "Update the build:", nil,
+		"Also import the fetched passive tree and jewels into this build, as Passive Tree and Jewels does.\nThe jewel gets every hidden value logged for its souls number, so you can move it around in the tree.", true)
+	self.controls.surveyChar = new("LabelControl"):LabelControl({ "LEFT", self.controls.surveyFetch, "RIGHT" }, { 8, 0, 0, 16 }, function()
+		local charSelect = self.controls.charSelect
+		local entry = self.charImportMode == "SELECTCHAR" and charSelect.list[charSelect.selIndex]
+		return entry and "^7"..entry.char.name or "^8No character selected"
+	end)
+	self.controls.surveyStatus = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyFetch, "BOTTOMLEFT" }, { 0, 8, 0, 16 }, function()
+		return type(self.surveyStatus) == "function" and self.surveyStatus() or self.surveyStatus
+	end)
+	self.controls.surveyRound = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyStatus, "BOTTOMLEFT" }, { 0, 10, 0, 16 }, function()
+		local current = self.survey.current
+		if not current then
+			return "^7Sockets (clock):"
+		end
+		local logged, total = self.survey:RoundProgress()
+		return s_format("^7This round: %d souls (%s), %d of %d sockets logged", current.souls, current.conqueror, logged, total)
+	end)
+	self.controls.surveyClock = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyRound, "BOTTOMLEFT" }, { 0, 4, 0, 16 }, function()
+		return self.survey:RoundLine()
+	end)
+	self.controls.surveyClockKey = new("LabelControl"):LabelControl({ "LEFT", self.controls.surveyClock, "RIGHT" }, { 16, 0, 0, 14 },
+		colorCodes.POSITIVE.."logged  "..colorCodes.WARNING.."next  ^x606060not allocated")
+	self.controls.surveyNext = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyClock, "BOTTOMLEFT" }, { 0, 6, 0, 16 }, function()
+		local current = self.survey.current
+		if not current then
+			return ""
+		end
+		local nextSocket = self.survey:NextSocket()
+		if nextSocket then
+			return s_format("^7Next: move it to %d o'clock, log the character out and Fetch.", nextSocket.clock)
+		end
+		local first = self.survey:FirstSocket()
+		return s_format("^7Round done: take it out, Divine it, socket it at %d o'clock, log out, Fetch.", first and first.clock or 12)
+	end)
+	self.controls.surveyNotables = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyNext, "BOTTOMLEFT" }, { 0, 6, 0, 14 }, function()
+		local current = self.survey.current
+		if not current then
+			return ""
+		end
+		-- As many of the most-copied notables as fit the section
+		local label = s_format("^7At %d o'clock:", current.clock)
+		for i, notable in ipairs(self.survey:Notables(current.socket, current.hidden)) do
+			local longer = label..(i > 1 and ", " or " ")..notable.name.." x"..notable.count
+			if i > 4 or DrawStringWidth(14, "VAR", longer) > 580 then
+				break
+			end
+			label = longer
+		end
+		return label
+	end)
+	self.controls.surveyLog = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyNotables, "BOTTOMLEFT" }, { 0, 12, 0, 16 }, function()
+		return s_format("^7Log: %d placements of %d souls numbers", #self.survey.rows, self.survey:SoulsCount())
+	end)
+	self.controls.surveyCopy = new("ButtonControl"):ButtonControl({ "LEFT", self.controls.surveyLog, "RIGHT" }, { 10, 0, 80, 20 }, "Copy log", function()
+		Copy(self.survey:ExportJson())
+		self.surveyStatus = colorCodes.POSITIVE.."Copied "..#self.survey.rows.." placements. Paste them into the Undying Hate Solver's Known tab."
+	end)
+	self.controls.surveyCopy.enabled = function()
+		return #self.survey.rows > 0
+	end
+	self.controls.surveyCopy.tooltipText = "^7Copies the log as JSON (souls, conqueror, socket, hidden value; no character names)."
+	self.controls.surveyPath = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyLog, "BOTTOMLEFT" }, { 0, 6, 0, 14 }, "^8"..self.survey.logPath)
+
 	-- Build import/export
 	self.controls.sectionBuild = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "BOTTOMLEFT", true }, { 0, 18, 650, 182 }, "Build Sharing")
 	self.controls.generateCodeLabel = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.sectionBuild, "TOPLEFT" }, { 6, 14, 0, 16 }, "^7Generate a code to share this build with other Path of Building users:")
@@ -823,6 +908,56 @@ end
 function ImportTabClass:DownloadItems()
 	self:DownloadCharacter(function(charData)
 		self:ImportItemsAndSkills(charData)
+	end)
+end
+
+-- Fetches the selected character for the Undying Hate survey, and imports its tree and jewels if Update the build is ticked
+function ImportTabClass:SurveyFetch()
+	local realm = realmList[self.controls.accountRealm.selIndex]
+	local charSelect = self.controls.charSelect
+	local charName = charSelect.list[charSelect.selIndex].char.name
+	self.surveyFetching = true
+	self.surveyStatus = "^7Fetching "..charName.."..."
+	main.api:DownloadCharacter(realm.realmCode, charName, function(body, errMsg, updateSettings)
+		self.surveyFetching = false
+		if updateSettings then
+			self:SaveApiSettings()
+		end
+		if errMsg == main.api.ERROR_NO_AUTH then
+			self.charImportMode = "AUTHENTICATION"
+			self.charImportStatus = colorCodes.WARNING.."Not authenticated"
+			self.surveyStatus = colorCodes.WARNING.."Not authenticated: authorize on the left, then Fetch again."
+			return
+		elseif errMsg == "Response code: 429" then
+			local retryAt = tonumber(body) or os.time()
+			self.surveyStatus = function() return colorCodes.NEGATIVE.."Too many requests: Fetch again in "..m_max(0, retryAt - os.time()).." seconds." end
+			return
+		elseif errMsg or body == "false" then
+			self.surveyStatus = colorCodes.NEGATIVE.."Fetch failed, try again ("..tostring(errMsg or "no data"):gsub("\n", " ")..")"
+			return
+		end
+		local fullCharData = dkjson.decode(body)
+		if not (fullCharData and fullCharData.character) then
+			self.surveyStatus = colorCodes.NEGATIVE.."Couldn't read the character data, try again."
+			return
+		end
+		local charData = fullCharData.character
+		self.surveyStatus = self.survey:Record(charData, charName)
+		if self.controls.surveyUpdateBuild.state then
+			-- Unequip the fetched jewels first, so one that moved doesn't stay in its old socket when Delete jewels is off
+			local fetched = { }
+			for _, itemData in ipairs(charData.jewels or { }) do
+				fetched[itemData.id] = true
+			end
+			for _, slot in pairs(self.build.itemsTab.slots) do
+				local item = slot.nodeId and self.build.itemsTab.items[slot.selItemId]
+				if item and item.uniqueID and fetched[item.uniqueID] then
+					slot:SetSelItemId(0)
+				end
+			end
+			self.lastCharacterHash = common.sha1(charName)
+			self:ImportPassiveTreeAndJewels(charData)
+		end
 	end)
 end
 
@@ -1560,9 +1695,17 @@ function ImportTabClass:ImportItem(itemData, slotName)
 			local hiddenSeed = itemMod.stats and itemMod.stats.local_unique_jewel_break_timeless_jewel_calculators
 			if hiddenSeed then
 				local socketId = slotName:match("^Jewel (%d+)$")
-				local line = "Hidden Seed: "..hiddenSeed..(socketId and " @"..socketId or "")
-				local modList, extra = modLib.parseMod(line)
-				t_insert(item.explicitModLines, { line = line, extra = extra, mods = modList or { } })
+				local lines = { "Hidden Seed: "..hiddenSeed..(socketId and " @"..socketId or "") }
+				-- What the Undying Hate Survey logged for this souls number in other sockets, so the jewel can be moved around the tree
+				for _, logged in ipairs(self.survey:LoggedSockets(itemMod.stats.local_unique_jewel_alternate_tree_seed)) do
+					if tostring(logged.socket) ~= socketId then
+						t_insert(lines, "Hidden Seed: "..logged.hidden.." @"..logged.socket)
+					end
+				end
+				for _, line in ipairs(lines) do
+					local modList, extra = modLib.parseMod(line)
+					t_insert(item.explicitModLines, { line = line, extra = extra, mods = modList or { } })
+				end
 			end
 		end
 	end
