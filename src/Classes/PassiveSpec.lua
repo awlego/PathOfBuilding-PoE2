@@ -1686,8 +1686,9 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 			end
 
 			if node.type == "Notable" then
-				if conqueredBy.conqueror.type == "abyss" then
-					self:ConquerAbyssNotable(node, conqueredBy, node.conqueredBySocket)
+				local timelessJewel = UndyingHate.jewelByType[conqueredBy.conqueror.type]
+				if timelessJewel then
+					self:ConquerTimelessNotable(node, conqueredBy, node.conqueredBySocket, timelessJewel)
 				end
 				-- todo: update once we get seed data for the other timeless jewels
 				--local jewelDataTbl = { }
@@ -2145,31 +2146,32 @@ end
 
 local knownSourceNames = {
 	["poe.ninja"] = "poe.ninja characters",
-	["survey"] = "your Undying Hate Survey log",
+	["survey"] = "your survey log",
 	["solver"] = "the Undying Hate Solver",
 }
 
----Replaces a notable conquered by Undying Hate with the Abyss notable picked by the jewel's hidden seed
+---Replaces a notable conquered by Undying Hate or Heroic Tragedy with the notable picked by the jewel's hidden seed
 ---@param node table @ The conquered notable
----@param conqueredBy table @ The jewel's conquest: id (its souls number) and hiddenSeeds, the RNG seeds from its "Hidden Seed" lines keyed by socket node id or "any"
+---@param conqueredBy table @ The jewel's conquest: id (its souls or deeds number) and hiddenSeeds, the RNG seeds from its "Hidden Seed" lines keyed by socket node id or "any"
 ---@param socketId number @ The socket the jewel is in
-function PassiveSpecClass:ConquerAbyssNotable(node, conqueredBy, socketId)
+---@param jewel table @ The jewel's entry in UndyingHate.jewels
+function PassiveSpecClass:ConquerTimelessNotable(node, conqueredBy, socketId, jewel)
 	-- The game rolls the seed per placement: a seed pinned to this socket on the item comes first,
-	-- then one known for this souls number and socket, then a general one on the item
+	-- then one known for this jewel, number and socket, then a general one on the item
 	local hiddenSeeds = conqueredBy.hiddenSeeds
 	local seed = hiddenSeeds and hiddenSeeds[socketId]
 	if not seed then
-		local hidden, source = UndyingHate.knownHidden(conqueredBy.id, socketId)
+		local hidden, source = UndyingHate.knownHidden(jewel.name, conqueredBy.id, socketId)
 		if hidden then
 			seed = UndyingHate.seedFromHidden(hidden)
 			node.conquestNote = {
-				"^7Undying Hate's hidden value here is "..hidden.." for "..conqueredBy.id.." souls, from "..(knownSourceNames[source] or source)..".",
+				"^7"..jewel.name.."'s hidden value here is "..hidden.." for "..conqueredBy.id.." "..jewel.number..", from "..(knownSourceNames[source] or source)..".",
 			}
 		end
 	end
 	seed = seed or (hiddenSeeds and hiddenSeeds.any)
 	if seed then
-		self:ReplaceNode(node, self.tree.legion.nodeById[UndyingHate.notableId(node.id, seed)])
+		self:ReplaceNode(node, self.tree.legion.nodeById[UndyingHate.notableId(node.id, seed, jewel.conquerorType)])
 	elseif hiddenSeeds then
 		local sockets = { }
 		for id in pairs(hiddenSeeds) do
@@ -2177,12 +2179,12 @@ function PassiveSpecClass:ConquerAbyssNotable(node, conqueredBy, socketId)
 		end
 		table.sort(sockets)
 		node.conquestNote = {
-			"Undying Hate's Hidden Seed is set for socket "..table.concat(sockets, ", ")..", but the game rolls it per socket.",
-			"Add \"Hidden Seed: <value> @"..socketId.."\" to the jewel to see which Abyss notable replaces this one.",
+			jewel.name.."'s Hidden Seed is set for socket "..table.concat(sockets, ", ")..", but the game rolls it per socket.",
+			"Add \"Hidden Seed: <value> @"..socketId.."\" to the jewel to see which "..jewel.notableKind.." notable replaces this one.",
 		}
 	else
 		node.conquestNote = {
-			"Undying Hate replaces this notable with an Abyss notable picked by the jewel's hidden seed.",
+			jewel.name.." replaces this notable with a "..jewel.notableKind.." notable picked by the jewel's hidden seed.",
 			"Add \"Hidden Seed: <value>\" to the jewel to see which one.",
 		}
 	end

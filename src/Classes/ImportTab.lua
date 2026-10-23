@@ -130,17 +130,17 @@ function ImportTabClass:ImportTab(build)
 	self.controls.charImportItemsClearItems = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.charImportItems, "RIGHT" }, { 220, 0, 18 }, "Delete equipment:", nil, "Delete all equipped items when importing.", true)
 	self.controls.charImportItemsIgnoreWeaponSwap = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.charImportItems, "RIGHT" }, { 380, 0, 18 }, "Ignore weapon swap:", nil, "Ignore items and skills in weapon swap.", false)
 
-	-- Undying Hate survey: fetch the character, log the jewel's hidden value for its socket, say where to move it next
+	-- Undying Hate / Heroic Tragedy survey: fetch the character, log the jewel's hidden value for its socket, say where to move it next
 	self.survey = new("UndyingHateSurvey"):UndyingHateSurvey(build.latestTree, (main.userPath or "").."UndyingHateSurvey.csv")
 	self.surveyStatus = "^7Pick your character on the left, socket the jewel at 12 o'clock, log out, Fetch."
-	self.controls.sectionSurvey = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "TOPRIGHT" }, { 10, 0, 600, 272 }, "Undying Hate Survey")
-	self.controls.surveyIntro = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.sectionSurvey, "TOPLEFT" }, { 6, 14, 0, 14 }, "^7Logs the hidden value the game rolls for your Undying Hate in each socket.")
+	self.controls.sectionSurvey = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "TOPRIGHT" }, { 10, 0, 600, 272 }, "Undying Hate / Heroic Tragedy Survey")
+	self.controls.surveyIntro = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.sectionSurvey, "TOPLEFT" }, { 6, 14, 0, 14 }, "^7Logs the hidden value the game rolls for an Undying Hate or Heroic Tragedy per socket.")
 	self.controls.surveyIntro2 = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyIntro, "BOTTOMLEFT" }, { 0, 2, 0, 14 }, "^7Socket it, log the character out, Fetch; then the next socket. After a round, Divine it.")
 	self.controls.surveyFetch = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.controls.surveyIntro2, "BOTTOMLEFT" }, { 0, 10, 100, 20 }, function()
 		return self.surveyFetching and "Fetching..." or "Fetch"
 	end, function()
 		if self.controls.surveyUpdateBuild.state and not self.surveyBuildConfirmed and self.build.spec:CountAllocNodes() > 0 then
-			main:OpenConfirmPopup("Undying Hate Survey", "Each Fetch will import the character's passive tree and jewels,\noverwriting this build's tree.", "Fetch", function()
+			main:OpenConfirmPopup("Undying Hate / Heroic Tragedy Survey", "Each Fetch will import the character's passive tree and jewels,\noverwriting this build's tree.", "Fetch", function()
 				self.surveyBuildConfirmed = true
 				self:SurveyFetch()
 			end)
@@ -152,7 +152,7 @@ function ImportTabClass:ImportTab(build)
 		return self.charImportMode == "SELECTCHAR" and not self.surveyFetching
 	end
 	self.controls.surveyUpdateBuild = new("CheckBoxControl"):CheckBoxControl({ "LEFT", self.controls.surveyFetch, "LEFT" }, { 560, 0, 18 }, "Update the build:", nil,
-		"Also import the fetched passive tree and jewels into this build, as Passive Tree and Jewels does.\nThe jewel gets every hidden value logged for its souls number, so you can move it around in the tree.", true)
+		"Also import the fetched passive tree and jewels into this build, as Passive Tree and Jewels does.\nThe jewel gets every hidden value logged for its number, so you can move it around in the tree.", true)
 	self.controls.surveyChar = new("LabelControl"):LabelControl({ "LEFT", self.controls.surveyFetch, "RIGHT" }, { 8, 0, 0, 16 }, function()
 		local charSelect = self.controls.charSelect
 		local entry = self.charImportMode == "SELECTCHAR" and charSelect.list[charSelect.selIndex]
@@ -167,7 +167,8 @@ function ImportTabClass:ImportTab(build)
 			return "^7Sockets (clock):"
 		end
 		local logged, total = self.survey:RoundProgress()
-		return s_format("^7This round: %d souls (%s), %d of %d sockets logged", current.souls, current.conqueror, logged, total)
+		return s_format("^7This round: %s, %d %s (%s), %d of %d logged", current.jewel, current.souls,
+			UndyingHate.jewels[current.jewel].number, current.conqueror, logged, total)
 	end)
 	self.controls.surveyClock = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyRound, "BOTTOMLEFT" }, { 0, 4, 0, 16 }, function()
 		return self.survey:RoundLine()
@@ -193,7 +194,7 @@ function ImportTabClass:ImportTab(build)
 		end
 		-- As many of the most-copied notables as fit the section
 		local label = s_format("^7At %d o'clock:", current.clock)
-		for i, notable in ipairs(self.survey:Notables(current.socket, current.hidden)) do
+		for i, notable in ipairs(self.survey:Notables(current.socket, current.hidden, current.jewel)) do
 			local longer = label..(i > 1 and ", " or " ")..notable.name.." x"..notable.count
 			if i > 4 or DrawStringWidth(14, "VAR", longer) > 580 then
 				break
@@ -203,7 +204,7 @@ function ImportTabClass:ImportTab(build)
 		return label
 	end)
 	self.controls.surveyLog = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyNotables, "BOTTOMLEFT" }, { 0, 12, 0, 16 }, function()
-		return s_format("^7Log: %d placements of %d souls numbers", #self.survey.rows, self.survey:SoulsCount())
+		return s_format("^7Log: %d placements of %d souls or deeds numbers", #self.survey.rows, self.survey:SoulsCount())
 	end)
 	self.controls.surveyCopy = new("ButtonControl"):ButtonControl({ "LEFT", self.controls.surveyLog, "RIGHT" }, { 10, 0, 80, 20 }, "Copy log", function()
 		Copy(self.survey:ExportJson())
@@ -212,7 +213,7 @@ function ImportTabClass:ImportTab(build)
 	self.controls.surveyCopy.enabled = function()
 		return #self.survey.rows > 0
 	end
-	self.controls.surveyCopy.tooltipText = "^7Copies the log as JSON (souls, conqueror, socket, hidden value; no character names)."
+	self.controls.surveyCopy.tooltipText = "^7Copies the log as JSON (jewel, souls or deeds, conqueror, socket, hidden value; no character names)."
 	self.controls.surveyPath = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyLog, "BOTTOMLEFT" }, { 0, 6, 0, 14 }, "^8"..self.survey.logPath)
 	-- Hidden values from outside the item (an exported dataset and the survey log), used by jewels that don't carry one for their socket
 	self.controls.surveyKnown = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.surveyPath, "BOTTOMLEFT" }, { 0, 10, 0, 16 }, function()
@@ -220,14 +221,14 @@ function ImportTabClass:ImportTab(build)
 		if known.error then
 			return colorCodes.NEGATIVE..known.error
 		end
-		return s_format("^7Known values: %d placements of %d souls numbers", known.placements, known.souls)
+		return s_format("^7Known values: %d placements of %d souls or deeds numbers", known.placements, known.numbers)
 	end)
 	self.controls.surveyReload = new("ButtonControl"):ButtonControl({ "LEFT", self.controls.surveyKnown, "RIGHT" }, { 10, 0, 80, 20 }, "Reload", function()
 		UndyingHate.reloadKnown()
 		self.build.spec:BuildAllDependsAndPaths()
 		self.build.buildFlag = true
 	end)
-	self.controls.surveyReload.tooltipText = "^7Rereads "..UndyingHate.knownFile.." and the survey log from the user folder.\nAn Undying Hate without a Hidden Seed for its socket uses these."
+	self.controls.surveyReload.tooltipText = "^7Rereads "..UndyingHate.knownFile.." and the survey log from the user folder.\nAn Undying Hate or Heroic Tragedy without a Hidden Seed for its socket uses these."
 
 	-- Build import/export
 	self.controls.sectionBuild = new("SectionControl"):SectionControl({ "TOPLEFT", self.controls.sectionCharImport, "BOTTOMLEFT", true }, { 0, 18, 650, 182 }, "Build Sharing")
@@ -926,7 +927,7 @@ function ImportTabClass:DownloadItems()
 	end)
 end
 
--- Fetches the selected character for the Undying Hate survey, and imports its tree and jewels if Update the build is ticked
+-- Fetches the selected character for the Undying Hate / Heroic Tragedy survey, and imports its tree and jewels if Update the build is ticked
 function ImportTabClass:SurveyFetch()
 	local realm = realmList[self.controls.accountRealm.selIndex]
 	local charSelect = self.controls.charSelect
@@ -1704,15 +1705,16 @@ function ImportTabClass:ImportItem(itemData, slotName)
 			end
 		end
 	end
-	-- Undying Hate's conquered notables follow a hidden stat the game rolls per socket; only the raw mod stats carry it
+	-- Undying Hate's and Heroic Tragedy's conquered notables follow a hidden stat the game rolls per socket; only the raw mod stats carry it
 	if itemData.mods and itemData.mods.explicit then
 		for _, itemMod in ipairs(itemData.mods.explicit) do
 			local hiddenSeed = itemMod.stats and itemMod.stats.local_unique_jewel_break_timeless_jewel_calculators
 			if hiddenSeed then
 				local socketId = slotName:match("^Jewel (%d+)$")
 				local lines = { "Hidden Seed: "..hiddenSeed..(socketId and " @"..socketId or "") }
-				-- What the Undying Hate Survey logged for this souls number in other sockets, so the jewel can be moved around the tree
-				for _, logged in ipairs(self.survey:LoggedSockets(itemMod.stats.local_unique_jewel_alternate_tree_seed)) do
+				-- What the survey logged for this jewel and number in other sockets, so the jewel can be moved around the tree
+				local jewel = UndyingHate.jewelByVersion[itemMod.stats.local_unique_jewel_alternate_tree_version] or UndyingHate.jewels[itemData.name]
+				for _, logged in ipairs(jewel and self.survey:LoggedSockets(jewel.name, itemMod.stats.local_unique_jewel_alternate_tree_seed) or { }) do
 					if tostring(logged.socket) ~= socketId then
 						t_insert(lines, "Hidden Seed: "..logged.hidden.." @"..logged.socket)
 					end

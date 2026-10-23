@@ -6339,7 +6339,7 @@ local specialModList = {
 	["glorifying the defilement of (%d+) souls in tribute to (.+)"] = function(num, _, name) return {
 		mod("JewelData", "LIST", { key = "conqueredBy", value = { id = num, conqueror = conquerorList[name:lower()] } })
 	} end,
-	-- User-typed: Undying Hate's hidden per-socket seed (as poe.ninja shows it), optionally pinned to a socket with "@<node id>"
+	-- User-typed: a timeless jewel's hidden per-socket seed (Undying Hate, Heroic Tragedy; as poe.ninja shows it), optionally pinned to a socket with "@<node id>"
 	["hidden seed: (%-?%d+)"] = function(num)
 		if num >= -32768 and num <= 65535 then
 			return { mod("JewelData", "LIST", { key = "hiddenSeed", value = { seed = num % 65536 } }) }

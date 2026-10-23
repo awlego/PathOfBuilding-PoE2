@@ -131,8 +131,8 @@ describe("UndyingHate", function()
 		for _, v in ipairs(vectors) do
 			assert.are.equals(v[3] + 1, UndyingHate.notableIndex(v[1], v[2]))
 		end
-		assert.are.equals(29, #UndyingHate.notablePool)
-		for _, entry in ipairs(UndyingHate.notablePool) do
+		assert.are.equals(29, #UndyingHate.abyssPool)
+		for _, entry in ipairs(UndyingHate.abyssPool) do
 			assert.is_not_nil(build.spec.tree.legion.nodeById[entry.id])
 		end
 		assert.are.equals(44920, UndyingHate.seedFromHidden(-20616))
@@ -248,6 +248,33 @@ describe("UndyingHate", function()
 		socketJewel(60735, undyingHate(15473, "Kurgal"))
 		assert.are.equals(treeName, build.spec.nodes[35809].dn)
 		assert.is_not_nil(build.spec.nodes[35809].conquestNote)
+	end)
+
+	it("picks Kalguuran notables for Heroic Tragedy", function()
+		assert.are.equals(37, #UndyingHate.kalguurPool)
+		for _, entry in ipairs(UndyingHate.kalguurPool) do
+			assert.is_not_nil(build.spec.tree.legion.nodeById[entry.id])
+		end
+
+		local item = new("Item"):Item(table.concat({ "Rarity: UNIQUE", "Heroic Tragedy", "Timeless Jewel", "Radius: Very Large",
+			"Limited to: 1 Historic", "Remembrancing 5000 songworthy deeds by the line of Medved",
+			"Passives in radius are Conquered by the Kalguur", "Historic", "Hidden Seed: -20616" }, "\n"))
+		item:BuildAndParseRaw()
+		socketJewel(60735, item)
+		for nodeId in pairs(recordings[2].notables) do
+			local id = UndyingHate.notableId(nodeId, 44920, "kalguur")
+			assert.is_truthy(id:match("^kalguur_notable%d+$"))
+			assert.are.equals(build.spec.tree.legion.nodeById[id].dn, build.spec.nodes[nodeId].dn)
+		end
+
+		-- the survey tells the jewels apart by tree version
+		local found = build.importTab.survey:FindJewels({ jewels = { { name = "Heroic Tragedy", x = 4, mods = { explicit = { { stats = {
+			local_unique_jewel_alternate_tree_version = 6,
+			local_unique_jewel_alternate_tree_seed = 5000,
+			local_unique_jewel_alternate_tree_keystone = 2,
+			local_unique_jewel_break_timeless_jewel_calculators = -20616,
+		} } } } } } })
+		assert.are.same({ jewel = "Heroic Tragedy", souls = 5000, conqueror = "Medved", hidden = -20616, socket = 60735 }, found[1])
 	end)
 
 	it("applies Tribute before attributes and counts increased Tribute", function()
