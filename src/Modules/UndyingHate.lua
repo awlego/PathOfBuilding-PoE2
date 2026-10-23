@@ -130,6 +130,12 @@ function M.seedFromHidden(hidden)
 	return hidden % 65536
 end
 
+-- Clock position (1-12) of a jewel socket, from its place on the tree: 12 o'clock is straight up
+function M.socketClock(node)
+	local clock = m_floor((math.deg(math.atan2(node.x, -node.y)) % 360) / 30 + 0.5) % 12
+	return clock == 0 and 12 or clock
+end
+
 -- 1-based index into `pool` of the notable that replaces tree notable `graphId` for RNG seed `seed`
 local function pickNotable(graphId, seed, pool)
 	-- Seeding: state words 1..4, seed words { graph id, seed, 12345 }, 7 "alpha" and 4 "bravo" mixing rounds.

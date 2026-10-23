@@ -6339,15 +6339,24 @@ local specialModList = {
 	["glorifying the defilement of (%d+) souls in tribute to (.+)"] = function(num, _, name) return {
 		mod("JewelData", "LIST", { key = "conqueredBy", value = { id = num, conqueror = conquerorList[name:lower()] } })
 	} end,
-	-- User-typed: a timeless jewel's hidden per-socket seed (Undying Hate, Heroic Tragedy; as poe.ninja shows it), optionally pinned to a socket with "@<node id>"
+	-- User-typed: a timeless jewel's hidden per-socket seed (Undying Hate, Heroic Tragedy; as poe.ninja shows it), optionally
+	-- pinned to a socket with "@<node id>" or "@<clock position>" ("@3" or "@3 o'clock"). Jewel socket ids are all far above 12.
 	["hidden seed: (%-?%d+)"] = function(num)
 		if num >= -32768 and num <= 65535 then
 			return { mod("JewelData", "LIST", { key = "hiddenSeed", value = { seed = num % 65536 } }) }
 		end
 	end,
-	["hidden seed: (%-?%d+) @(%d+)"] = function(num, _, socket)
+	["hidden seed: (%-?%d+) @(%d+)"] = function(num, _, place)
+		place = tonumber(place)
 		if num >= -32768 and num <= 65535 then
-			return { mod("JewelData", "LIST", { key = "hiddenSeed", value = { seed = num % 65536, socket = tonumber(socket) } }) }
+			local value = place >= 1 and place <= 12 and { seed = num % 65536, clock = place } or { seed = num % 65536, socket = place }
+			return { mod("JewelData", "LIST", { key = "hiddenSeed", value = value }) }
+		end
+	end,
+	["hidden seed: (%-?%d+) @(%d+) o'clock"] = function(num, _, clock)
+		clock = tonumber(clock)
+		if num >= -32768 and num <= 65535 and clock >= 1 and clock <= 12 then
+			return { mod("JewelData", "LIST", { key = "hiddenSeed", value = { seed = num % 65536, clock = clock } }) }
 		end
 	end,
 	["passives in radius are conquered by the (%D+)"] = { },

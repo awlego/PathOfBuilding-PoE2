@@ -2683,9 +2683,11 @@ function ItemClass:BuildModListForSlotNum(baseList, slotNum)
 		local hiddenSeeds = nil
 		for _, value in ipairs(modList:List(nil, "JewelData")) do
 			if value.key == "hiddenSeed" then
-				-- Timeless jewel seeds are rolled per placement, so the item can carry one per socket (or one for any socket)
+				-- Timeless jewel seeds are rolled per placement, so the item can carry one per socket (by node id or
+				-- clock position, which PassiveSpec resolves against the tree) or one for any socket
+				local place = value.value.socket or value.value.clock and value.value.clock.." o'clock" or "any"
 				hiddenSeeds = hiddenSeeds or { }
-				hiddenSeeds[value.value.socket or "any"] = value.value.seed
+				hiddenSeeds[place] = value.value.seed
 			else
 				jewelData[value.key] = value.value
 			end

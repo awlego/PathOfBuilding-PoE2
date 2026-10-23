@@ -147,12 +147,37 @@ describe("UndyingHate", function()
 		assert.is_nil(modLib.parseMod("Hidden Seed: 65536"))
 		assert.is_nil(modLib.parseMod("Hidden Seed: -32769"))
 
+		-- 1-12 is a clock position (jewel socket ids are all far higher), with or without "o'clock"
+		mods = modLib.parseMod("Hidden Seed: -20616 @4")
+		assert.are.same({ key = "hiddenSeed", value = { seed = 44920, clock = 4 } }, mods[1].value)
+		mods = modLib.parseMod("Hidden Seed: 2818 @12")
+		assert.are.same({ key = "hiddenSeed", value = { seed = 2818, clock = 12 } }, mods[1].value)
+		mods = modLib.parseMod("Hidden Seed: 2818 @1 o'clock")
+		assert.are.same({ key = "hiddenSeed", value = { seed = 2818, clock = 1 } }, mods[1].value)
+		assert.is_nil(modLib.parseMod("Hidden Seed: 2818 @13 o'clock"))
+		assert.is_nil(modLib.parseMod("Hidden Seed: 2818 @7960 o'clock"))
+		assert.is_nil(modLib.parseMod("Hidden Seed: 65536 @3"))
+
 		local item = undyingHate(15473, "Kurgal", { "Hidden Seed: 21603 @46882", "Hidden Seed: -20616 @60735", "Hidden Seed: 7" })
 		assert.are.same({ [46882] = 21603, [60735] = 44920, any = 7 }, item.jewelData.conqueredBy.hiddenSeeds)
 		assert.are.equals(3, item.jewelData.conqueredBy.conqueror.id)
 		local reparsed = new("Item"):Item(item:BuildRaw())
 		reparsed:BuildAndParseRaw()
 		assert.are.same(item.jewelData.conqueredBy.hiddenSeeds, reparsed.jewelData.conqueredBy.hiddenSeeds)
+
+		item = undyingHate(15473, "Kurgal", { "Hidden Seed: 21603 @5", "Hidden Seed: -20616 @4 o'clock", "Hidden Seed: 2818 @7960" })
+		assert.are.same({ ["5 o'clock"] = 21603, ["4 o'clock"] = 44920, [7960] = 2818 }, item.jewelData.conqueredBy.hiddenSeeds)
+		reparsed = new("Item"):Item(item:BuildRaw())
+		reparsed:BuildAndParseRaw()
+		assert.are.same(item.jewelData.conqueredBy.hiddenSeeds, reparsed.jewelData.conqueredBy.hiddenSeeds)
+	end)
+
+	it("knows each jewel socket's clock position", function()
+		local clocks = { [61419] = 12, [21984] = 1, [61834] = 2, [32763] = 3, [60735] = 4, [46882] = 5,
+			[54127] = 6, [2491] = 7, [26725] = 8, [55190] = 9, [26196] = 10, [7960] = 11 }
+		for socketId, clock in pairs(clocks) do
+			assert.are.equals(clock, UndyingHate.socketClock(build.spec.tree.nodes[socketId]))
+		end
 	end)
 
 	for _, rec in ipairs(recordings) do
@@ -183,6 +208,41 @@ describe("UndyingHate", function()
 		build.spec:BuildAllDependsAndPaths()
 		assert.is_nil(build.spec.nodes[8957].conquestNote)
 		assert.is_nil(build.spec.nodes[8957].conqueredBy)
+	end)
+
+	it("uses the seed given for the jewel's clock position", function()
+		-- 46882 is 5 o'clock, 60735 is 4 o'clock
+		socketJewel(46882, undyingHate(15473, "Kurgal", { "Hidden Seed: 21603 @5", "Hidden Seed: -20616 @4 o'clock" }))
+		for nodeId, name in pairs(recordings[1].notables) do
+			assert.are.equals(name, build.spec.nodes[nodeId].dn)
+		end
+		newBuild()
+		socketJewel(60735, undyingHate(15473, "Kurgal", { "Hidden Seed: 21603 @5", "Hidden Seed: -20616 @4 o'clock" }))
+		for nodeId, name in pairs(recordings[2].notables) do
+			assert.are.equals(name, build.spec.nodes[nodeId].dn)
+		end
+
+		-- a seed for the socket's node id comes before one for its clock position, which comes before a general one
+		newBuild()
+		socketJewel(46882, undyingHate(15473, "Kurgal", { "Hidden Seed: 7", "Hidden Seed: 2818 @5", "Hidden Seed: 21603 @46882" }))
+		for nodeId, name in pairs(recordings[1].notables) do
+			assert.are.equals(name, build.spec.nodes[nodeId].dn)
+		end
+		newBuild()
+		socketJewel(60735, undyingHate(15473, "Kurgal", { "Hidden Seed: 7", "Hidden Seed: -20616 @4" }))
+		for nodeId, name in pairs(recordings[2].notables) do
+			assert.are.equals(name, build.spec.nodes[nodeId].dn)
+		end
+
+		-- no seed for this socket (11 o'clock): the note lists where there are seeds and asks for one here by clock position
+		newBuild()
+		local treeName = build.spec.tree.nodes[8957].dn
+		socketJewel(7960, undyingHate(15473, "Kurgal", { "Hidden Seed: 21603 @5", "Hidden Seed: -20616 @60735", "Hidden Seed: 1 @12" }))
+		assert.are.equals(treeName, build.spec.nodes[8957].dn)
+		local note = build.spec.nodes[8957].conquestNote
+		assert.is_truthy(note[1]:find("set for socket 60735 and 5, 12 o'clock,", 1, true))
+		assert.is_truthy(note[2]:find("\"Hidden Seed: <value> @11\"", 1, true))
+		assert.is_truthy(note[2]:find("11 o'clock, node 7960", 1, true))
 	end)
 
 	it("reads the hidden seed from the character import", function()
@@ -258,9 +318,9 @@ describe("UndyingHate", function()
 
 		local item = new("Item"):Item(table.concat({ "Rarity: UNIQUE", "Heroic Tragedy", "Timeless Jewel", "Radius: Very Large",
 			"Limited to: 1 Historic", "Remembrancing 5000 songworthy deeds by the line of Medved",
-			"Passives in radius are Conquered by the Kalguur", "Historic", "Hidden Seed: -20616" }, "\n"))
+			"Passives in radius are Conquered by the Kalguur", "Historic", "Hidden Seed: 7", "Hidden Seed: -20616 @4" }, "\n"))
 		item:BuildAndParseRaw()
-		socketJewel(60735, item)
+		socketJewel(60735, item) -- 4 o'clock
 		for nodeId in pairs(recordings[2].notables) do
 			local id = UndyingHate.notableId(nodeId, 44920, "kalguur")
 			assert.is_truthy(id:match("^kalguur_notable%d+$"))

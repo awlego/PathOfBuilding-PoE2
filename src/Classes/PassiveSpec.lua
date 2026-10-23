@@ -2152,14 +2152,15 @@ local knownSourceNames = {
 
 ---Replaces a notable conquered by Undying Hate or Heroic Tragedy with the notable picked by the jewel's hidden seed
 ---@param node table @ The conquered notable
----@param conqueredBy table @ The jewel's conquest: id (its souls or deeds number) and hiddenSeeds, the RNG seeds from its "Hidden Seed" lines keyed by socket node id or "any"
+---@param conqueredBy table @ The jewel's conquest: id (its souls or deeds number) and hiddenSeeds, the RNG seeds from its "Hidden Seed" lines keyed by socket node id, clock position ("3 o'clock") or "any"
 ---@param socketId number @ The socket the jewel is in
 ---@param jewel table @ The jewel's entry in UndyingHate.jewels
 function PassiveSpecClass:ConquerTimelessNotable(node, conqueredBy, socketId, jewel)
-	-- The game rolls the seed per placement: a seed pinned to this socket on the item comes first,
-	-- then one known for this jewel, number and socket, then a general one on the item
+	-- The game rolls the seed per placement: a seed pinned to this socket on the item comes first (by node id,
+	-- then by clock position), then one known for this jewel, number and socket, then a general one on the item
 	local hiddenSeeds = conqueredBy.hiddenSeeds
-	local seed = hiddenSeeds and hiddenSeeds[socketId]
+	local clock = UndyingHate.socketClock(self.tree.nodes[socketId])
+	local seed = hiddenSeeds and (hiddenSeeds[socketId] or hiddenSeeds[clock.." o'clock"])
 	if not seed then
 		local hidden, source = UndyingHate.knownHidden(jewel.name, conqueredBy.id, socketId)
 		if hidden then
@@ -2173,14 +2174,26 @@ function PassiveSpecClass:ConquerTimelessNotable(node, conqueredBy, socketId, je
 	if seed then
 		self:ReplaceNode(node, self.tree.legion.nodeById[UndyingHate.notableId(node.id, seed, jewel.conquerorType)])
 	elseif hiddenSeeds then
-		local sockets = { }
-		for id in pairs(hiddenSeeds) do
-			t_insert(sockets, id)
+		local sockets, clocks = { }, { }
+		for place in pairs(hiddenSeeds) do
+			if type(place) == "number" then
+				t_insert(sockets, place)
+			else
+				t_insert(clocks, tonumber(place:match("^(%d+) o'clock$")))
+			end
 		end
 		table.sort(sockets)
+		table.sort(clocks)
+		local placed = { }
+		if sockets[1] then
+			t_insert(placed, "socket "..table.concat(sockets, ", "))
+		end
+		if clocks[1] then
+			t_insert(placed, table.concat(clocks, ", ").." o'clock")
+		end
 		node.conquestNote = {
-			jewel.name.."'s Hidden Seed is set for socket "..table.concat(sockets, ", ")..", but the game rolls it per socket.",
-			"Add \"Hidden Seed: <value> @"..socketId.."\" to the jewel to see which "..jewel.notableKind.." notable replaces this one.",
+			jewel.name.."'s Hidden Seed is set for "..table.concat(placed, " and ")..", but the game rolls it per socket.",
+			"Add \"Hidden Seed: <value> @"..clock.."\" to the jewel (this socket is "..clock.." o'clock, node "..socketId..") to see which "..jewel.notableKind.." notable replaces this one.",
 		}
 	else
 		node.conquestNote = {

@@ -10,7 +10,6 @@ local pairs = pairs
 local t_insert = table.insert
 local t_concat = table.concat
 local s_format = string.format
-local m_floor = math.floor
 local dkjson = require "dkjson"
 
 local UndyingHate = LoadModule("Modules/UndyingHate")
@@ -37,8 +36,7 @@ function UndyingHateSurveyClass:UndyingHateSurvey(tree, logPath)
 	for _, id in ipairs(tree.jewelSlots) do
 		local node = tree.nodes[id]
 		if node and node.name == "Jewel Socket" and node.nodesInRadius then
-			local clock = m_floor((math.deg(math.atan2(node.x, -node.y)) % 360) / 30 + 0.5) % 12
-			local socket = { id = id, clock = clock == 0 and 12 or clock }
+			local socket = { id = id, clock = UndyingHate.socketClock(node) }
 			t_insert(self.sockets, socket)
 			self.socketById[id] = socket
 		end
