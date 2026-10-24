@@ -9052,11 +9052,11 @@ c["Recoup 5% of damage taken by your Totems as Life Each Totem applies 2% increa
 c["Recover 0.75% of maximum Life per Poison affecting Enemies you Kill"]={nil,"Recover 0.75% of maximum Life per Poison affecting Enemies you Kill "}
 c["Recover 1% of maximum Energy Shield on Kill"]={nil,"Recover 1% of maximum Energy Shield on Kill "}
 c["Recover 1% of maximum Life on Kill"]={{[1]={[1]={percent=1,stat="Life",type="PercentStat"},flags=0,keywordFlags=0,name="LifeOnKill",type="BASE",value=1}},nil}
-c["Recover 1% of maximum Life on Kill per 50 Tribute"]={nil,"Recover 1% of maximum Life on Kill per 50 Tribute "}
+c["Recover 1% of maximum Life on Kill per 50 Tribute"]={{[1]={[1]={actor="parent",div=50,stat="Tribute",type="PerStat"},[2]={percent=1,stat="Life",type="PercentStat"},flags=0,keywordFlags=0,name="LifeOnKill",type="BASE",value=1}},nil}
 c["Recover 1% of maximum Life per Glory consumed"]={nil,"Recover 1% of maximum Life per Glory consumed "}
 c["Recover 1% of maximum Life when you Ignite an Enemy"]={nil,"Recover 1% of maximum Life when you Ignite an Enemy "}
 c["Recover 1% of maximum Mana on Kill"]={{[1]={[1]={percent=1,stat="Mana",type="PercentStat"},flags=0,keywordFlags=0,name="ManaOnKill",type="BASE",value=1}},nil}
-c["Recover 1% of maximum Mana on Kill per 50 Tribute"]={nil,"Recover 1% of maximum Mana on Kill per 50 Tribute "}
+c["Recover 1% of maximum Mana on Kill per 50 Tribute"]={{[1]={[1]={actor="parent",div=50,stat="Tribute",type="PerStat"},[2]={percent=1,stat="Mana",type="PercentStat"},flags=0,keywordFlags=0,name="ManaOnKill",type="BASE",value=1}},nil}
 c["Recover 1% of maximum Runic Ward on Kill"]={nil,"Recover 1% of maximum Runic Ward on Kill "}
 c["Recover 10 Life when Used"]={nil,"Recover 10 Life when Used "}
 c["Recover 10 Life when you Block"]={{[1]={flags=0,keywordFlags=0,name="LifeOnBlock",type="BASE",value=10}},nil}

@@ -338,6 +338,23 @@ describe("UndyingHate", function()
 		assert.are.equals(5 * smalls + 3 * attributes, build.calcsTab.mainOutput.Tribute)
 	end)
 
+	it("recovers Life and Mana on kill per Tribute", function()
+		for _, resource in ipairs({ "Life", "Mana" }) do
+			local mods = modLib.parseMod("Recover 1% of maximum "..resource.." on Kill per 50 Tribute")
+			assert.are.equals(1, #mods)
+			assert.are.equals(resource.."OnKill", mods[1].name)
+		end
+		build.configTab.input.customMods = "+150 to Tribute\n+1000 to maximum Life\n+1000 to maximum Mana\n"
+			.."Recover 1% of maximum Life on Kill per 50 Tribute\nRecover 1% of maximum Mana on Kill per 50 Tribute"
+		build.configTab:BuildModList()
+		runCallback("OnFrame")
+		local modDB = build.calcsTab.mainEnv.player.modDB
+		local output = build.calcsTab.mainOutput
+		-- 3% of the pool, rounded up once (not 1% rounded up, then tripled)
+		assert.are.equals(math.ceil(output.Life * 0.03), modDB:Sum("BASE", nil, "LifeOnKill"))
+		assert.are.equals(math.ceil(output.Mana * 0.03), modDB:Sum("BASE", nil, "ManaOnKill"))
+	end)
+
 	it("keeps notables without a seed and still converts the rest", function()
 		local treeName = build.spec.tree.nodes[35809].dn
 		socketJewel(26725, undyingHate(15473, "Kurgal"))
