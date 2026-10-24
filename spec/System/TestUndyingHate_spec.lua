@@ -245,11 +245,9 @@ describe("UndyingHate", function()
 		assert.is_truthy(note[2]:find("11 o'clock, node 7960", 1, true))
 	end)
 
-	it("reads the hidden seed from the character import", function()
-		build.spec:BuildAllDependsAndPaths()
-		build.spec:AllocNode(build.spec.nodes[60735])
-		-- trimmed from a real GET /character/poe2/<name> response: the raw mod stats carry the hidden value
-		build.importTab:ImportItem({
+	-- trimmed from a real GET /character/poe2/<name> response: the raw mod stats carry the hidden value
+	local function importedUndyingHate()
+		return {
 			id = "407a009ba0f303d6b31f4f53aafc6aedf35f5fa5172ba8330f06f21743bc735a",
 			name = "Undying Hate",
 			typeLine = "Timeless Jewel",
@@ -283,7 +281,13 @@ describe("UndyingHate", function()
 			inventoryId = "PassiveJewels",
 			x = 4,
 			y = 0,
-		})
+		}
+	end
+
+	it("reads the hidden seed from the character import", function()
+		build.spec:BuildAllDependsAndPaths()
+		build.spec:AllocNode(build.spec.nodes[60735])
+		build.importTab:ImportItem(importedUndyingHate())
 		build.spec:BuildAllDependsAndPaths()
 
 		local item = build.itemsTab.items[build.itemsTab.sockets[60735].selItemId]
@@ -292,6 +296,46 @@ describe("UndyingHate", function()
 		for nodeId, name in pairs(recordings[2].notables) do
 			assert.are.equals(name, build.spec.nodes[nodeId].dn)
 		end
+	end)
+
+	it("keeps the Tribute on conquered attribute passives through character import", function()
+		-- a tree reaching socket 60735 and a conquered attribute passive, as the character API lists it
+		socketJewel(60735, undyingHate(15473, "Kurgal", { "Hidden Seed: -20616 @60735" }))
+		local attrId
+		for id, node in pairs(build.spec.nodes) do
+			if node.conqueredBy and node.isAttribute and node.path and (not attrId or id < attrId) then
+				attrId = id
+			end
+		end
+		build.spec:AllocNode(build.spec.nodes[attrId])
+		build.spec:BuildAllDependsAndPaths()
+		local hashes = { }
+		for id, node in pairs(build.spec.allocNodes) do
+			if node.type ~= "ClassStart" and node.type ~= "AscendClassStart" then
+				table.insert(hashes, id)
+			end
+		end
+		local className = build.spec.curClassName
+
+		newBuild()
+		build.importTab:ImportPassiveTreeAndJewels({
+			name = "Test", class = className, league = "Standard", level = 90,
+			passives = { hashes = hashes, specialisations = { }, skill_overrides = { [tostring(attrId)] = { name = "Intelligence" } },
+				mastery_effects = { }, jewel_data = { }, quest_stats = { } },
+			jewels = { importedUndyingHate() },
+		})
+		local node = build.spec.nodes[attrId]
+		assert.are.equals("Intelligence", node.dn)
+		assert.are.equals("+3 to Tribute", node.sd[#node.sd])
+		runCallback("OnFrame")
+		local smalls, attributes = 0, 0
+		for _, allocated in pairs(build.spec.allocNodes) do
+			if allocated.conqueredBy and allocated.type == "Normal" then
+				if allocated.isAttribute then attributes = attributes + 1 else smalls = smalls + 1 end
+			end
+		end
+		assert.is_true(attributes > 0)
+		assert.are.equals(5 * smalls + 3 * attributes, build.calcsTab.mainOutput.Tribute)
 	end)
 
 	it("keeps notables without a seed and still converts the rest", function()

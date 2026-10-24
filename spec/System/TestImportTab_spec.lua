@@ -46,6 +46,9 @@ describe("ImportTab", function()
 
 	it("imports Split Personality alternate class start from character JSON", function()
 		local spec = build.spec
+		-- path to the socket from the Witch start the character is imported with, so the tree stays connected
+		spec:SelectClass(spec.tree.classNameMap.Witch)
+		spec:BuildAllDependsAndPaths()
 		local socketNode = spec.nodes[60735]
 		local templarStartPassive = spec.nodes[13855]
 		assert.is_not_nil(socketNode)

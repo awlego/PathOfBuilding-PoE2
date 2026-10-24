@@ -1122,19 +1122,14 @@ function ImportTabClass:ImportPassiveTreeAndJewels(charData)
 
 		if changeAttributeId > 0 then
 			self.build.spec:SwitchAttributeNode(id, changeAttributeId)
-			local node = self.build.spec.nodes[id]
-			if node then
-				self.build.spec:ReplaceNode(node, self.build.spec.hashOverrides[id])
-			end
 		elseif nodeInfo.stats and nodeInfo.stats[1] then
 			local stat = escapeGGGString(nodeInfo.stats[1]):lower()
 			self.build.spec:SwitchAttributeNode(id, stat)
-			local node = self.build.spec.nodes[id]
-			if node then
-				self.build.spec:ReplaceNode(node, self.build.spec.hashOverrides[id])
-			end
 		end
 	end
+	-- Rebuild rather than replacing the nodes directly, so the choices go through the same path as a loaded build
+	-- and timeless jewels conquer the switched nodes again (Undying Hate's "+3 to Tribute" on attribute passives)
+	self.build.spec:BuildAllDependsAndPaths()
 
 	self.build.spec:AddUndoState()
 	self:ImportQuestRewardConfig(charPassiveData.quest_stats)
