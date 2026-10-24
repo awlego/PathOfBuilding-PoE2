@@ -338,6 +338,32 @@ describe("UndyingHate", function()
 		assert.are.equals(5 * smalls + 3 * attributes, build.calcsTab.mainOutput.Tribute)
 	end)
 
+	it("credits conquered passives' modifiers to their own node", function()
+		socketJewel(60735, undyingHate(15473, "Kurgal", { "Hidden Seed: -20616 @60735" }))
+		local small
+		for id, node in pairs(build.spec.nodes) do
+			if node.conqueredBy and node.type == "Normal" and not node.isAttribute and (not small or id < small) then
+				small = id
+			end
+		end
+		-- 34908 becomes Creature of Death, the small passive "+5 to Tribute"
+		for _, id in ipairs({ 34908, small }) do
+			assert.is_true(#build.spec.nodes[id].modList > 0)
+			for _, mod in ipairs(build.spec.nodes[id].modList) do
+				assert.are.equals("Tree:"..id, mod.source)
+			end
+		end
+		-- the shared legion nodes keep their own source
+		assert.are.equals("Tree:abyss_notable_2", build.spec.tree.legion.nodeById["abyss_notable_2"].modList[1].source)
+
+		newBuild()
+		socketJewel(26725, undyingHate(15473, "Kurgal"))
+		assert.are.equals("Sacrifice of Mind", build.spec.nodes[44017].dn)
+		for _, mod in ipairs(build.spec.nodes[44017].modList) do
+			assert.are.equals("Tree:44017", mod.source)
+		end
+	end)
+
 	it("recovers Life and Mana on kill per Tribute", function()
 		for _, resource in ipairs({ "Life", "Mana" }) do
 			local mods = modLib.parseMod("Recover 1% of maximum "..resource.." on Kill per 50 Tribute")

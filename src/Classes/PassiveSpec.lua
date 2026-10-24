@@ -1833,6 +1833,7 @@ function PassiveSpecClass:BuildAllDependsAndPaths()
 					end
 				end
 			end
+			self:CreditConqueredMods(node)
 			self:ReconnectNodeToClassStart(node)
 		end
 	end
@@ -2201,6 +2202,18 @@ function PassiveSpecClass:ConquerTimelessNotable(node, conqueredBy, socketId, je
 			"Add \"Hidden Seed: <value>\" to the jewel to see which one.",
 		}
 	end
+end
+
+---Credits a conquered node's modifiers to the node itself. The ones copied from a legion node carry the legion node's
+---id ("Tree:abyss_notable_2"), which breakdowns can't look up, and one legion node replaces many tree nodes.
+---@param node table @ The conquered node
+function PassiveSpecClass:CreditConqueredMods(node)
+	local source = "Tree:"..node.id
+	local modList = new("ModList"):ModList()
+	for _, mod in ipairs(node.modList) do
+		modList:AddMod(mod.source == source and mod or modLib.setSource(copyTable(mod), source))
+	end
+	node.modList = modList
 end
 
 ---Reconnects altered timeless jewel to class start, for Pure Talent
