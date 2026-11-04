@@ -120,8 +120,6 @@ function TradeQueryGeneratorClass:TradeQueryGenerator(queryTab)
 	self.queryTab = queryTab
 	self.itemsTab = queryTab.itemsTab
 	self.calcContext = { }
-	self.lastMaxPrice = nil
-	self.lastMaxPriceTypeIndex = nil
 	self.lastMaxLevel = nil
 	return self
 end
@@ -1061,13 +1059,24 @@ local currencyTable = {
 	{ name = "Orb of Alchemy", id = "alch" },
 	{ name = "Mirror of Kalandra", id = "mirror" }
 }
+TradeQueryGeneratorClass.currencyTable = currencyTable
+
+-- Trade-site price filter for the budget set in the Trader window (or the Find best popup).
+function TradeQueryGeneratorClass:GetBudgetPriceFilter()
+	local maxBudget = self.queryTab.maxBudget
+	if not maxBudget or maxBudget <= 0 then
+		return nil
+	end
+	local currency = currencyTable[self.queryTab.maxBudgetTypeIndex or 1] or currencyTable[1]
+	return { option = currency.id, max = maxBudget }
+end
 
 function TradeQueryGeneratorClass:StartQuery(slot, options)
-	if self.lastMaxPrice then
-		options.maxPrice = self.lastMaxPrice
+	if self.queryTab.maxBudget then
+		options.maxPrice = self.queryTab.maxBudget
 	end
-	if self.lastMaxPriceTypeIndex then
-		options.maxPriceType = currencyTable[self.lastMaxPriceTypeIndex].id
+	if self.queryTab.maxBudgetTypeIndex then
+		options.maxPriceType = currencyTable[self.queryTab.maxBudgetTypeIndex].id
 	end
 	if self.lastMaxLevel then
 		options.maxLevel = self.lastMaxLevel
@@ -1397,6 +1406,10 @@ function TradeQueryGeneratorClass:BuildTradeQueryFromTimeLostRow(row)
 			{ type = "and", filters = statFilters }
 		}
 	}
+	local priceFilter = self:GetBudgetPriceFilter()
+	if priceFilter then
+		queryTable.filters.trade_filters = { filters = { price = priceFilter } }
+	end
 	-- There is no weight group to sort by, so ask for the cheapest listings instead
 	self.requesterCallback(self.requesterContext, queryTable, nil, { price = "asc" })
 end
@@ -1775,9 +1788,9 @@ Remove: anoints are completely ignored, and removed from items.]]
 		t_insert(currencyDropdownNames, currency.name)
 	end
 	controls.maxPrice = new("EditControl"):EditControl({ "TOPLEFT", lastItemAnchor, "BOTTOMLEFT" }, { 0, 5, 70, 18 }, nil, nil, "%D")
-	controls.maxPrice.buf = self.lastMaxPrice and tostring(self.lastMaxPrice) or ""
+	controls.maxPrice.buf = self.queryTab.maxBudget and tostring(self.queryTab.maxBudget) or ""
 	controls.maxPriceType = new("DropDownControl"):DropDownControl({ "LEFT", controls.maxPrice, "RIGHT" }, { 5, 0, 150, 18 }, currencyDropdownNames, nil, "The trade site will filter out listings with other currencies,\nif anything other than \"Exalted Orb Equivalent\" is chosen and a maximum is specified.")
-	controls.maxPriceType.selIndex = self.lastMaxPriceTypeIndex or 1
+	controls.maxPriceType.selIndex = self.queryTab.maxBudgetTypeIndex or 1
 	controls.maxPriceLabel = new("LabelControl"):LabelControl({ "RIGHT", controls.maxPrice, "LEFT" }, { -5, 0, 0, 16 }, "^7Max Price:")
 	updateLastAnchor(controls.maxPrice)
 
@@ -1858,9 +1871,10 @@ Remove: anoints are completely ignored, and removed from items.]]
 		end
 		if controls.maxPrice.buf then
 			options.maxPrice = tonumber(controls.maxPrice.buf)
-			self.lastMaxPrice = options.maxPrice
+			self.queryTab.maxBudget = options.maxPrice
 			options.maxPriceType = currencyTable[controls.maxPriceType.selIndex].id
-			self.lastMaxPriceTypeIndex = controls.maxPriceType.selIndex
+			self.queryTab.maxBudgetTypeIndex = controls.maxPriceType.selIndex
+			self.queryTab:SyncBudgetControls()
 		end
 		if controls.maxLevel.buf then
 			options.maxLevel = tonumber(controls.maxLevel.buf)

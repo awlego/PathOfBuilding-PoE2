@@ -273,6 +273,16 @@ local function isSameAsDefaultList(list)
 		and list[2].stat == "TotalEHP" and list[2].weightMult == 0.5
 end
 
+-- Reflect the shared budget (also editable from the Find best popup) in the Trader window controls
+function TradeQueryClass:SyncBudgetControls()
+	if self.controls.maxBudgetEdit then
+		self.controls.maxBudgetEdit:SetText(self.maxBudget and tostring(self.maxBudget) or "")
+	end
+	if self.controls.maxBudgetType then
+		self.controls.maxBudgetType:SetSel(self.maxBudgetTypeIndex or 1, true)
+	end
+end
+
 -- Opens the item pricing popup
 function TradeQueryClass:PriceItem()
 	self.tradeQueryGenerator = new("TradeQueryGenerator"):TradeQueryGenerator(self)
@@ -506,6 +516,22 @@ Highest Weight - Displays the order retrieved from trade]]
 	self.controls.league.enabled = function()
 		return #self.controls.league.list > 1
 	end
+
+	-- Max budget: applied as a price filter to every search started from this window
+	local currencyNames = { }
+	for _, currency in ipairs(self.tradeQueryGenerator.currencyTable) do
+		t_insert(currencyNames, currency.name)
+	end
+	self.controls.maxBudgetLabel = new("LabelControl"):LabelControl({ "TOPRIGHT", self.controls.leagueLabel, "TOPRIGHT" }, { 0, row_height + row_vertical_padding, 20, row_height - 4 }, "^7Budget:")
+	self.controls.maxBudgetEdit = new("EditControl"):EditControl({ "LEFT", self.controls.maxBudgetLabel, "RIGHT" }, { 6, 0, 100, row_height }, "", nil, "%D", 7, function(buf)
+		local value = tonumber(buf)
+		self.maxBudget = value and value > 0 and value or nil
+	end)
+	self.controls.maxBudgetEdit.tooltipText = "Maximum price for items found by \"Find best\" and Time-Lost solver searches.\nLeave empty for no limit."
+	self.controls.maxBudgetType = new("DropDownControl"):DropDownControl({ "LEFT", self.controls.maxBudgetEdit, "RIGHT" }, { 4, 0, 150, row_height }, currencyNames, function(index, value)
+		self.maxBudgetTypeIndex = index
+	end, "The trade site will filter out listings with other currencies,\nif anything other than \"Exalted Orb Equivalent\" is chosen and a budget is specified.")
+	self:SyncBudgetControls()
 
 	if self.pbRealm == "" then
 		self:UpdateRealms()
