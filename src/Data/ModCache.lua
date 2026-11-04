@@ -9813,7 +9813,7 @@ c["With at least 40 Intelligence in Radius, Summon Skeletons can Summon up to 15
 c["With at least 40 Strength in Radius, Combust is Disabled"]={nil,"With at least 40 Strength in Radius, Combust is Disabled "}
 c["With at least 40 Strength in Radius, Ground Slam has a 35% chance to grant an Endurance Charge when you Stun an Enemy"]={nil,"With at least 40 Strength in Radius, Ground Slam has a 35% chance to grant an Endurance Charge when you Stun an Enemy "}
 c["With at least 40 Strength in Radius, Ground Slam has a 50% increased angle"]={nil,"With at least 40 Strength in Radius, Ground Slam has a 50% increased angle "}
-c["Withered also causes enemies to deal 1% reduced Damage"]={nil,"Withered also causes enemies to deal 1% reduced Damage "}
+c["Withered also causes enemies to deal 1% reduced Damage"]={{[1]={flags=0,keywordFlags=0,name="WitherEnemyDamageReduction",type="BASE",value=1}},nil}
 c["Withered does not expire on Enemies Ignited by you"]={nil,"Withered does not expire on Enemies Ignited by you "}
 c["Withered does not expire on Enemies Ignited by you 25% chance to Intimidate Enemies for 4 seconds on Hit"]={nil,"Withered does not expire on Enemies Ignited by you 25% chance to Intimidate Enemies for 4 seconds on Hit "}
 c["Withered you inflict also increases Fire Damage taken"]={nil,"Withered you inflict also increases Fire Damage taken "}

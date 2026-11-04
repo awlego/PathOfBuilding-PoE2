@@ -718,6 +718,11 @@ local function doActorMisc(env, actor)
 			modDB:NewMod("Condition:CanWither", "FLAG", true, "Config")
 			local effect = modDB:Max(nil, "WitherEffectStack")
 			enemyDB:NewMod("ChaosDamageTaken", "INC", effect, "Withered", { type = "Multiplier", var = "WitheredStack", limit = 10 } )
+			local reduction = modDB:Max(nil, "WitherEnemyDamageReductionStack")
+			if reduction then
+				enemyDB:NewMod("Damage", "INC", -reduction, "Withered", { type = "Multiplier", var = "WitheredStack", limit = 10 } )
+				output.WitherEnemyDamageReduction = reduction * m_min(enemyDB:GetMultiplier("WitheredStack") or 0, 10)
+			end
 		end
 		if modDB:Flag(nil, "Condition:CanInflictIncision") then
 			local effect = 10 * (1 + modDB:Sum("INC", nil, "IncisionEffect") / 100)
@@ -2716,8 +2721,14 @@ function calcs.perform(env, skipEHP)
 			end
 		end
 		if activeSkill.skillModList:Flag(nil, "Condition:CanWither") or (activeSkill.minion and env.minion and env.minion.modDB:Flag(nil, "Condition:CanWither")) then
-			local effect = activeSkill.minion and 5 or m_floor(5 * (1 + modDB:Sum("INC", nil, "WitherEffect") / 100))
+			local magnitude = activeSkill.minion and 1 or (1 + modDB:Sum("INC", nil, "WitherEffect") / 100)
+			local effect = m_floor(5 * magnitude)
 			modDB:NewMod("WitherEffectStack", "MAX", effect)
+			-- Dark Entropy adds a "damage +%" stat to each Withered debuff; it scales with Withered Magnitude like the base stat
+			local reduction = modDB:Sum("BASE", nil, "WitherEnemyDamageReduction")
+			if reduction > 0 then
+				modDB:NewMod("WitherEnemyDamageReductionStack", "MAX", reduction * magnitude)
+			end
 		end
 		if activeSkill.skillModList:Flag(nil, "ApplyCriticalWeakness") then
 			modDB:NewMod("ApplyCriticalWeakness", "FLAG", true)

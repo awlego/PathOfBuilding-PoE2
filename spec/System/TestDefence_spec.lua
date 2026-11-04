@@ -912,4 +912,22 @@ describe("TestDefence", function()
 			assert.are.equals(baseMaxHit, build.calcsTab.calcsOutput.PhysicalMaximumHitTaken)
 		end)
 	end)
+
+	it("Dark Entropy makes Withered enemies deal reduced damage scaled by Withered Magnitude", function()
+		build.configTab.input.customMods = "100% chance to inflict Withered for 2 seconds on Hit\n\z
+		Withered also causes enemies to deal 1% reduced Damage\n\z
+		100% increased Withered Magnitude"
+		build.configTab.input.multiplierWitheredStackCount = 10
+		build.configTab:BuildModList()
+		runCallback("OnFrame")
+		-- 1% per stack * (1 + 100% magnitude) * 10 stacks
+		assert.are.near(20, build.calcsTab.mainOutput.WitherEnemyDamageReduction, 0.001)
+		assert.are.near(0.8, build.calcsTab.mainOutput.PhysicalEnemyDamageMult, 0.001)
+
+		build.configTab.input.multiplierWitheredStackCount = 15
+		build.configTab:BuildModList()
+		runCallback("OnFrame")
+		-- Withered caps at 10 stacks
+		assert.are.near(0.8, build.calcsTab.mainOutput.PhysicalEnemyDamageMult, 0.001)
+	end)
 end)
