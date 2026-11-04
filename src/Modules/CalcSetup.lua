@@ -1635,12 +1635,8 @@ function calcs.initEnv(build, mode, override, specEnv)
 					for _, mod in ipairs(srcList) do
 						combinedList:MergeMod(mod)
 					end
-					local scaledList = new("ModList"):ModList()
-					scaledList:ScaleAddList(combinedList, scale)
-					for _, mod in ipairs(scaledList) do
-						combinedList:MergeMod(mod, true)
-					end
-					env.itemModDB:AddList(combinedList)
+					-- Scale every mod once (incl. LIST mods such as +gem levels, which MergeMod can't add onto)
+					env.itemModDB:ScaleAddList(combinedList, scale + 1)
 				elseif item.name:match("Kalandra's Touch") then
 					-- Reset mult counters since they don't work for kalandra
 					if item["corrupted"] then

@@ -112,6 +112,31 @@ Dueling Wand]])
 			local output = calcFunc({ repSlotName = "Weapon 1", repItem = staff })
 			assert.True(output.EnergyShield > 0)
 		end)
+		it("halves the focus' +levels to spell skills with Instruments of Power", function()
+			build.characterLevel = 90
+			build.characterLevelAutoMode = false
+			local spec = build.spec
+			spec:SelectClass(spec.tree.classNameMap["Sorceress"])
+			for id, asc in pairs(spec.tree.classes[spec.curClassId].classes) do
+				if asc.name == "Disciple of Varashta" then spec:SelectAscendClass(id) end
+			end
+			for _, name in ipairs({ "Cast Speed", "Instruments of Power" }) do
+				for _, node in pairs(spec.nodes) do
+					if node.ascendancyName == "Disciple of Varashta" and node.dn == name then spec:AllocNode(node) end
+				end
+			end
+			build.skillsTab:PasteSocketGroup("Spark 20/0  1")
+			equipInSlot(staff, "Weapon 1")
+			pasteAndEquipItem(focus)
+			build.buildFlag = true
+			runCallback("OnFrame")
+			local level
+			for _, skill in ipairs(build.calcsTab.mainEnv.player.activeSkillList) do
+				if skill.activeEffect.grantedEffect.name == "Spark" then level = skill.activeEffect.level end
+			end
+			-- the focus' "+2 to Level of all Spell Skills" is reduced by 50%
+			assert.are.equals(21, level)
+		end)
 		it("keeps rare off-hand sceptre when using a talisman with Lord of the Wilds", function()
 			equipInSlot(sceptre, "Weapon 2")
 			allocateKeystone("You can equip a non-Unique Sceptre while wielding a Talisman")
