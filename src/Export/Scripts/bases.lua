@@ -422,13 +422,7 @@ directiveTable.baseGroup = function(state, args, out)
 	baseMods[baseGroup] = values
 end
 
-directiveTable.setBestBase = function(state, args, out)
-	local baseClass, baseSubType, itemNameOverride, values = args:match("^([^,]+), ([^,]+), ([^,]+), %[([^%]]+)%]")
-	if not baseClass then
-		baseClass, baseSubType, values = args:match("^([^%)]+), ([^%)]+), %[ ([^%)]+)%]")
-	end
-	local itemName = itemNameOverride and itemNameOverride or (baseSubType..' '..baseClass)
-	local base = bases[baseClass][baseSubType][1]
+local function writeBestBase(out, itemName, base, values)
 	out:write('[[\n')
 	out:write(itemName,'\n')
 	out:write(base,'\n')
@@ -445,6 +439,21 @@ directiveTable.setBestBase = function(state, args, out)
 		end
 	end
 	out:write(']],')
+end
+
+directiveTable.setBestBase = function(state, args, out)
+	local baseClass, baseSubType, itemNameOverride, values = args:match("^([^,]+), ([^,]+), ([^,]+), %[([^%]]+)%]")
+	if not baseClass then
+		baseClass, baseSubType, values = args:match("^([^%)]+), ([^%)]+), %[ ([^%)]+)%]")
+	end
+	local itemName = itemNameOverride and itemNameOverride or (baseSubType..' '..baseClass)
+	local base = bases[baseClass][baseSubType][1]
+	-- Runeforged bases win on raw defences because of their Ward, so also offer the base they were forged from
+	local originalBase = base:match("^Runeforged (.+)")
+	if originalBase and bases["All"][originalBase] then
+		writeBestBase(out, itemName, originalBase, values)
+	end
+	writeBestBase(out, itemName, base, values)
 end
 
 directiveTable.setBase = function(state, args, out)
