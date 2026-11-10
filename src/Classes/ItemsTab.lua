@@ -422,7 +422,11 @@ function ItemsTabClass:ItemsTab(build)
 	self.controls.newDisplayItem = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.controls.craftDisplayItem, "TOPRIGHT" }, { 8, 0, 120, 20 }, "Create custom...", function()
 		self:EditDisplayItemText()
 	end)
-	self.controls.displayItemTip = new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.craftDisplayItem, "BOTTOMLEFT" }, { 0, 8, 100, 16 },
+	self.controls.basicArmourSet = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.controls.newDisplayItem, "TOPRIGHT" }, { 8, 0, 100, 20 }, "Armour set...", function()
+		self:OpenBasicArmourSetPopup()
+	end)
+	self.controls.basicArmourSet.tooltipText = "Add and equip a basic set of rare armour for a chosen defence type."
+	self.controls.displayItemTip =new("LabelControl"):LabelControl({ "TOPLEFT", self.controls.craftDisplayItem, "BOTTOMLEFT" }, { 0, 8, 100, 16 },
 [[^7Double-click an item from one of the lists,
 or copy and paste an item from in game
 (hover over the item and Ctrl+C) to view or edit
@@ -2759,6 +2763,162 @@ function ItemsTabClass:OpenItemSetManagePopup()
 end
 
 -- Opens the item crafting popup
+-- Basic armour sets: one rare per armour slot on the best base of a defence type, with every affix at the same tier
+local basicArmourSetTiers = { 1, 2, 3 }
+local basicArmourSetDefaultTier = 3
+local basicArmourSetDefences = {
+	{ subType = "Armour", flat = "LocalIncreasedPhysicalDamageReductionRating", percent = "LocalIncreasedPhysicalDamageReductionRatingPercent" },
+	{ subType = "Evasion", flat = "LocalIncreasedEvasionRating", percent = "LocalIncreasedEvasionRatingPercent" },
+	{ subType = "Energy Shield", flat = "LocalIncreasedEnergyShield", percent = "LocalIncreasedEnergyShieldPercent" },
+	{ subType = "Armour/Evasion", flat = "LocalBaseArmourAndEvasionRating", percent = "LocalIncreasedArmourAndEvasion" },
+	{ subType = "Armour/Energy Shield", flat = "LocalBaseArmourAndEnergyShield", percent = "LocalIncreasedArmourAndEnergyShield" },
+	{ subType = "Evasion/Energy Shield", flat = "LocalBaseEvasionRatingAndEnergyShield", percent = "LocalIncreasedEvasionAndEnergyShield" },
+}
+-- Boots trade the flat defence prefix for movement speed
+local basicArmourSetSlots = {
+	{ type = "Helmet", label = "Helmet" },
+	{ type = "Body Armour", label = "Chest" },
+	{ type = "Gloves", label = "Gloves" },
+	{ type = "Boots", label = "Boots", prefix = "MovementVelocity" },
+}
+-- Each piece skips one of these in turn, so the set ends up with three of each resistance
+local basicArmourSetResists = { "FireResist", "ColdResist", "LightningResist", "ChaosResist" }
+
+-- Returns the name of the non-hidden base of the given type with the highest total defences
+-- Ties go to the higher level base, which is the one the best Runeforged base is forged from
+local function getBestArmourBase(itemBases, baseType, subType, runeforged)
+	local bestName, bestValue, bestLevel
+	for name, base in pairs(itemBases) do
+		if base.type == baseType and base.subType == subType and base.armour and not base.hidden and (base.tags.runeforged or false) == runeforged then
+			local value = (base.armour.Armour or 0) + (base.armour.Evasion or 0) + (base.armour.EnergyShield or 0) + (base.armour.Ward or 0)
+			local level = base.req.level or 0
+			if not bestValue or value > bestValue or (value == bestValue and (level > bestLevel or (level == bestLevel and name < bestName))) then
+				bestName, bestValue, bestLevel = name, value, level
+			end
+		end
+	end
+	return bestName
+end
+
+-- Returns the mod of the given tier (1 = best) from the series of affixes "<stem><number>" that can roll on the item,
+-- or its lowest tier if the series is shorter than that
+local function getTieredAffix(item, stem, tier)
+	local series = { }
+	for modId, mod in pairs(item.affixes) do
+		if modId:match("^" .. stem .. "%d+_*$") and item:GetModSpawnWeight(mod) > 0 then
+			t_insert(series, modId)
+		end
+	end
+	table.sort(series, function(a, b)
+		return item.affixes[a].level > item.affixes[b].level
+	end)
+	return series[m_min(tier, #series)]
+end
+
+-- Creates the rares of a basic armour set for one of the defence types in GetBasicArmourSetTypes()
+-- Tier 1 is the best tier that can roll on each base
+function ItemsTabClass:CreateBasicArmourSet(subType, runeforged, tier)
+	tier = tier or basicArmourSetDefaultTier
+	local defence
+	for _, entry in ipairs(basicArmourSetDefences) do
+		if entry.subType == subType then
+			defence = entry
+		end
+	end
+	local items = { }
+	for slotIndex, slot in ipairs(basicArmourSetSlots) do
+		local baseName = defence and getBestArmourBase(self.build.data.itemBases, slot.type, subType, runeforged and true or false)
+		if baseName then
+			local item = new("Item"):Item("Rarity: RARE\nT" .. tier .. " " .. subType .. " " .. slot.label .. "\n" .. baseName .. "\nCrafted: true")
+			if item.base.implicit and #item.implicitModLines == 0 then
+				local implicitIndex = 1
+				for line in item.base.implicit:gmatch("[^\n]+") do
+					t_insert(item.implicitModLines, { line = line, modTags = item.base.implicitModTypes and item.base.implicitModTypes[implicitIndex] or { } })
+					implicitIndex = implicitIndex + 1
+				end
+			end
+			local range = main.defaultItemAffixQuality or 0.5
+			local suffixStems = { }
+			for resistIndex, stem in ipairs(basicArmourSetResists) do
+				if resistIndex ~= slotIndex then
+					t_insert(suffixStems, stem)
+				end
+			end
+			for affixList, stems in pairs({ [item.prefixes] = { slot.prefix or defence.flat, defence.percent, "IncreasedLife" }, [item.suffixes] = suffixStems }) do
+				local affixIndex = 1
+				for _, stem in ipairs(stems) do
+					local modId = getTieredAffix(item, stem, tier)
+					if modId and affixIndex <= item.affixLimit / 2 then
+						affixList[affixIndex] = { modId = modId, range = range }
+						affixIndex = affixIndex + 1
+					end
+				end
+			end
+			item:Craft()
+			item:NormaliseQuality()
+			item:BuildAndParseRaw()
+			t_insert(items, item)
+		end
+	end
+	return items
+end
+
+function ItemsTabClass:GetBasicArmourSetTypes()
+	local types = { }
+	for _, defence in ipairs(basicArmourSetDefences) do
+		t_insert(types, defence.subType)
+	end
+	return types
+end
+
+-- Adds a basic armour set to the build and equips it in the active item set
+function ItemsTabClass:AddBasicArmourSet(subType, runeforged, tier)
+	local items = self:CreateBasicArmourSet(subType, runeforged, tier)
+	for _, item in ipairs(items) do
+		self:AddItem(item, true)
+		local slot = self.slots[item:GetPrimarySlot()]
+		if slot then
+			slot:SetSelItemId(item.id)
+		end
+	end
+	if items[1] then
+		self:PopulateSlots()
+		self:AddUndoState()
+		self.build.buildFlag = true
+	end
+	return items
+end
+
+function ItemsTabClass:OpenBasicArmourSetPopup()
+	local controls = { }
+	controls.info = new("LabelControl"):LabelControl({ "TOP", nil, "TOP" }, { 0, 20, 0, 16 }, "^7Adds and equips a rare helmet, body armour, gloves and boots\nwith defence, life and resistance modifiers of the chosen tier.")
+	local tierList = { }
+	for index, tier in ipairs(basicArmourSetTiers) do
+		tierList[index] = { label = "Tier " .. tier, tier = tier }
+	end
+	controls.tierLabel = new("LabelControl"):LabelControl({ "TOPRIGHT", nil, "TOP" }, { -100, 63, 0, 16 }, "^7Modifiers:")
+	controls.tier = new("DropDownControl"):DropDownControl({ "TOPLEFT", nil, "TOP" }, { -96, 62, 80, 18 }, tierList, function(index, value)
+		self.basicArmourSetTier = value.tier
+	end)
+	controls.tier:SelByValue(self.basicArmourSetTier or basicArmourSetDefaultTier, "tier")
+	controls.runeforged = new("CheckBoxControl"):CheckBoxControl({ "TOPLEFT", nil, "TOP" }, { 150, 62, 18 }, "Runeforged bases:", function(state)
+		self.basicArmourSetRuneforged = state
+	end)
+	controls.runeforged.state = self.basicArmourSetRuneforged or false
+	for index, subType in ipairs(self:GetBasicArmourSetTypes()) do
+		local column = (index - 1) % 3
+		local row = m_floor((index - 1) / 3)
+		controls["set" .. index] = new("ButtonControl"):ButtonControl({ "TOP", nil, "TOP" }, { (column - 1) * 158, 90 + row * 26, 150, 20 }, subType, function()
+			main:ClosePopup()
+			self:AddBasicArmourSet(subType, controls.runeforged.state, controls.tier:GetSelValue().tier)
+		end)
+	end
+	controls.cancel = new("ButtonControl"):ButtonControl({ "TOP", nil, "TOP" }, { 0, 150, 80, 20 }, "Cancel", function()
+		main:ClosePopup()
+	end)
+	main:OpenPopup(500, 180, "Add Basic Armour Set", controls, nil, nil, "cancel")
+end
+
 function ItemsTabClass:CraftItem()
 	local controls = { }
 	local function makeItem(base)
