@@ -217,6 +217,7 @@ local modNameList = {
 	["mana cost efficiency"] = "ManaCostEfficiency",
 	["mana cost efficiency of skills"] = "ManaCostEfficiency",
 	["mana cost efficiency of attacks"] = { "ManaCostEfficiency", tag = { type = "SkillType", skillType = SkillType.Attack } },
+	["mana cost efficiency of spells"] = { "ManaCostEfficiency", tag = { type = "SkillType", skillType = SkillType.Spell } },
 	["life cost efficiency"] = "LifeCostEfficiency",
 	["life cost efficiency of skills"] = "LifeCostEfficiency",
 	["spirit cost efficiency"] = "SpiritCostEfficiency",

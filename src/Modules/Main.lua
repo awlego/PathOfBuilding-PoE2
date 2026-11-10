@@ -179,6 +179,13 @@ function main:Init()
 							t_insert(newItem.implicitModLines, { line = line, modTags = newItem.base.implicitModTypes and newItem.base.implicitModTypes[implicitIndex] or { } })
 							implicitIndex = implicitIndex + 1
 						end
+					elseif newItem.base.implicit and newItem.base.implicitModTypes and #newItem.implicitModLines == #newItem.base.implicitModTypes then
+						-- The template spells out the base's implicit (to set its roll), so restore the tags that catalysts scale by
+						for implicitIndex, modLine in ipairs(newItem.implicitModLines) do
+							if not modLine.modTags or #modLine.modTags == 0 then
+								modLine.modTags = newItem.base.implicitModTypes[implicitIndex]
+							end
+						end
 					end
 					newItem:Craft()
 				end

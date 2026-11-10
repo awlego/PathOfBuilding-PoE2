@@ -477,6 +477,29 @@ Prefix: IncreasedMana7
 Suffix: Intelligence5
 Suffix: ManaRegeneration4
 ]],[[
+Mana Stacker Ring
+Mnemonic Ring
+Crafted: true
+Prefix: {range:1}IncreasedMana12
+Prefix: {range:1}EssenceIncreasedManaPercent1
+Prefix: SpellCostEfficiency6
+Suffix: ManaRegeneration6
+Catalyst: Neural
+CatalystQuality: 40
+Implicits: 1
+{range:1}(4-6)% increased maximum Mana
+]],[[
+Life Stacker Ring
+Vitalic Ring
+Crafted: true
+Prefix: {range:1}IncreasedLife8
+Suffix: Strength8
+Suffix: LifeRegeneration7
+Catalyst: Flesh
+CatalystQuality: 40
+Implicits: 1
+{range:1}(4-6)% increased maximum Life
+]],[[
 Resistance Ring
 Ruby Ring
 Crafted: true
