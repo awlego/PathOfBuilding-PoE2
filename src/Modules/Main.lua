@@ -147,6 +147,20 @@ function main:Init()
 		self:ChangeUserPath(self.userPath, ignoreBuild)
 	end
 
+	-- Claude harness: restore state saved by a panel-initiated reload
+	if self.userPath then
+		local claudeOk, claudeErr = pcall(function() claudeHarness = LoadModule("Claude/Harness") end)
+		if not claudeOk then
+			ConPrintf("Claude harness failed to load: %s", claudeErr)
+			claudeHarness = nil
+		else
+			claudeErr = PCall(claudeHarness.OnMainInit, claudeHarness)
+			if claudeErr then
+				ConPrintf("Claude harness init failed: %s", claudeErr)
+			end
+		end
+	end
+
 	---@type ItemDBData
 	self.uniqueDB = { list = {}, loading = true }
 	---@type ItemDBData

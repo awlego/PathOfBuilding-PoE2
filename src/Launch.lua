@@ -205,6 +205,9 @@ function launch:OnSubCall(func, ...)
 end
 
 function launch:OnSubError(id, errMsg)
+	if not self.subScripts[id] then
+		return
+	end
 	if self.subScripts[id].type == "UPDATE" then
 		self:ShowErrMsg("In update thread: %s", errMsg)
 		self.updateCheckRunning = false
@@ -213,11 +216,19 @@ function launch:OnSubError(id, errMsg)
 		if errMsg then
 			self:ShowErrMsg("In download callback: %s", errMsg)
 		end
+	elseif self.subScripts[id].type == "CUSTOM" and self.subScripts[id].errorCallback then
+		local cbErrMsg = PCall(self.subScripts[id].errorCallback, errMsg)
+		if cbErrMsg then
+			self:ShowErrMsg("In subscript error callback: %s", cbErrMsg)
+		end
 	end
 	self.subScripts[id] = nil
 end
 
 function launch:OnSubFinished(id, ...)
+	if not self.subScripts[id] then
+		return
+	end
 	if self.subScripts[id].type == "UPDATE" then
 		self.updateAvailable, self.updateErrMsg = ...
 		self.updateCheckRunning = false

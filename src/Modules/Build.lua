@@ -606,6 +606,20 @@ function buildMode:Init(dbFileName, buildName, buildXML, convertBuild, importLin
 
 	self.spec:SetWindowTitleWithBuildClass()
 
+	-- Claude chat panel (right side); see Classes/ClaudePanel.lua and Claude/Harness.lua
+	local claudeOk, claudeErr = pcall(function() self.claudePanel = new("ClaudePanel"):ClaudePanel(self) end)
+	if not claudeOk then
+		ConPrintf("Claude panel failed to load: %s", claudeErr)
+		if claudeHarness and claudeHarness.dataDir then
+			local f = io.open(claudeHarness.dataDir .. "panel_error.txt", "w")
+			if f then
+				f:write(tostring(claudeErr))
+				f:close()
+			end
+		end
+		self.claudePanel = nil
+	end
+
 	--[[
 	local testTooltip = new("Tooltip"):Tooltip()
 	for _, item in pairs(main.uniqueDB.list) do
@@ -1328,6 +1342,9 @@ function buildMode:OnFrame(inputEvents)
 					self.viewMode = "NOTES"
 				elseif event.key == "7" then
 					self.viewMode = "PARTY"
+				elseif event.key == "k" and self.claudePanel then
+					self.claudePanel:Toggle()
+					inputEvents[id] = nil
 				end
 			end
 		elseif event.type == "KeyUp" and event.key == "LEFTBUTTON" and self.controls.pointDisplay:IsMouseInBounds() then
@@ -1407,6 +1424,9 @@ function buildMode:OnFrame(inputEvents)
 		self:RefreshStatList()
 		self.configTab.calcFunc, self.configTab.calcBase = self.calcsTab:GetMiscCalculator()
 	end
+	if self.claudePanel then
+		self.claudePanel:OnFrame()
+	end
 	if main.showThousandsSeparators ~= self.lastShowThousandsSeparators then
 		self:RefreshStatList()
 	end
@@ -1428,7 +1448,7 @@ function buildMode:OnFrame(inputEvents)
 	local tabViewPort = {
 		x = sideBarWidth,
 		y = 32,
-		width = main.screenW - sideBarWidth,
+		width = main.screenW - sideBarWidth - (self.claudePanel and self.claudePanel:GetReservedWidth() or 0),
 		height = main.screenH - 32
 	}
 	if self.viewMode == "IMPORT" then
@@ -1475,6 +1495,9 @@ function buildMode:OnFrame(inputEvents)
 	SetDrawColor(0.85, 0.85, 0.85)
 	DrawImage(nil, sideBarWidth - 4, 32, 4, main.screenH - 32)
 
+	if self.claudePanel then
+		self.claudePanel:DrawBackground()
+	end
 
 	local hovered = self.controls.statBox and self.controls.statBox.hoveredLine
 	self:SetDisplayStat(hovered, false)
