@@ -30,7 +30,7 @@ harness.permissionModes = {
 	{ label = "Bypass (unsafe)", mode = "bypassPermissions", tooltip = "No permission checks at all. Only use if you understand the risk." },
 }
 harness.models = {
-	{ label = "Default model", model = "" },
+	{ label = "Default", model = "" },
 	{ label = "Opus", model = "opus" },
 	{ label = "Sonnet", model = "sonnet" },
 	{ label = "Haiku", model = "haiku" },
@@ -165,23 +165,26 @@ function harness:Init()
 	MakeDir(self.dataDir)
 	MakeDir(self.liveDir)
 	MakeDir(self.ctxDir)
+	self.chatsDir = self.dataDir .. "chats/"
+	MakeDir(self.chatsDir)
 	local settings = loadLuaTable(self.dataDir .. "settings.lua")
 	if settings then
 		for k, v in pairs(settings) do
 			self.settings[k] = v
 		end
 	end
-	local chat = loadLuaTable(self.dataDir .. "chat.lua")
-	if chat then
-		self.sessionId = chat.sessionId
-		self.messages = chat.messages or { }
-		self.totalCost = chat.totalCost or 0
-		self.lastContextXML = nil
-		self.lastBuildKey = chat.lastBuildKey
-	end
-	-- Interrupted turn (e.g. reload mid-turn): close any streaming message
-	for _, msg in ipairs(self.messages) do
-		msg.streaming = nil
+	self:LoadChatIndex()
+	-- Migrate the single-conversation file used before chat history existed
+	local legacy = loadLuaTable(self.dataDir .. "chat.lua")
+	if legacy then
+		os.remove(self.dataDir .. "chat.lua")
+		if legacy.messages and #legacy.messages > 0 then
+			self:ApplyChat(legacy)
+			self.chatId = nil
+			self:SaveChat()
+		end
+	elseif self.settings.currentChatId then
+		self:OpenChat(self.settings.currentChatId)
 	end
 	self.lastLivePoll = 0
 	-- Live-channel requests left over from a previous run are stale
@@ -192,14 +195,168 @@ function harness:SaveSettings()
 	writeFile(self.dataDir .. "settings.lua", serialize(self.settings))
 end
 
+---------------------------------------------------------------------------------------------------
+-- Chat history: one file per conversation in ClaudeData/chats/<id>.lua, plus chats/index.lua
+-- holding the metadata shown in the History list (so the list never loads every transcript)
+---------------------------------------------------------------------------------------------------
+
+function harness:LoadChatIndex()
+	local index = loadLuaTable(self.chatsDir .. "index.lua")
+	self.chatIndex = index and index.chats or { }
+	self:SortChatIndex()
+end
+
+function harness:SortChatIndex()
+	table.sort(self.chatIndex, function(a, b)
+		if (a.updated or 0) ~= (b.updated or 0) then
+			return (a.updated or 0) > (b.updated or 0)
+		end
+		return tostring(a.id) > tostring(b.id)
+	end)
+end
+
+function harness:SaveChatIndex()
+	writeFile(self.chatsDir .. "index.lua", serialize({ chats = self.chatIndex }))
+end
+
+function harness:FindChatEntry(id)
+	for i, entry in ipairs(self.chatIndex or { }) do
+		if entry.id == id then
+			return entry, i
+		end
+	end
+end
+
+local function chatTitle(messages)
+	for _, m in ipairs(messages) do
+		if m.role == "user" and m.text and m.text:match("%S") then
+			local title = m.text:gsub("%s+", " "):gsub("^ ", "")
+			if #title > 80 then
+				title = title:sub(1, 77) .. "..."
+			end
+			return title
+		end
+	end
+	return "(empty conversation)"
+end
+
+function harness:ApplyChat(chat)
+	self.sessionId = chat.sessionId
+	self.messages = chat.messages or { }
+	self.totalCost = chat.totalCost or 0
+	self.lastBuildKey = chat.lastBuildKey
+	self.lastContextXML = nil
+	self.lastTurnInfo = nil
+	-- Interrupted turn (e.g. reload mid-turn): close any streaming message
+	for _, msg in ipairs(self.messages) do
+		msg.streaming = nil
+	end
+	self:Touch()
+end
+
 function harness:SaveChat()
+	if not self.chatsDir then
+		return
+	end
+	local userCount = 0
+	for _, m in ipairs(self.messages) do
+		if m.role == "user" then
+			userCount = userCount + 1
+		end
+	end
+	if userCount == 0 then
+		-- Nothing worth keeping yet; don't litter the history with empty chats
+		return
+	end
+	if not self.chatId then
+		self.chatId = os.date("%Y%m%d-%H%M%S") .. "-" .. string.format("%04x", math.random(0, 65535))
+		self.chatCreated = os.time()
+	end
 	local keep = { }
 	local first = math.max(1, #self.messages - 300)
 	for i = first, #self.messages do
 		local m = self.messages[i]
 		t_insert(keep, { role = m.role, text = m.text, toolName = m.toolName, toolId = m.toolId, isError = m.isError, result = m.result, sub = m.sub, ts = m.ts, done = m.done })
 	end
-	writeFile(self.dataDir .. "chat.lua", serialize({ sessionId = self.sessionId, messages = keep, totalCost = self.totalCost, lastBuildKey = self.lastBuildKey }))
+	writeFile(self.chatsDir .. self.chatId .. ".lua", serialize({ id = self.chatId, sessionId = self.sessionId, messages = keep, totalCost = self.totalCost, lastBuildKey = self.lastBuildKey }))
+	local entry = self:FindChatEntry(self.chatId)
+	if not entry then
+		entry = { id = self.chatId, created = self.chatCreated or os.time() }
+		t_insert(self.chatIndex, entry)
+	end
+	entry.title = entry.customTitle or chatTitle(self.messages)
+	entry.updated = os.time()
+	entry.messages = userCount
+	entry.build = self.lastBuildName or entry.build
+	entry.cost = self.totalCost
+	entry.sessionId = self.sessionId
+	self:SortChatIndex()
+	self:SaveChatIndex()
+	if self.settings.currentChatId ~= self.chatId then
+		self.settings.currentChatId = self.chatId
+		self:SaveSettings()
+	end
+end
+
+-- Drop a running turn without waiting for it (used when switching conversations)
+function harness:AbandonRun()
+	if not self.running then
+		return
+	end
+	if self.pid then
+		self:KillProcess(self.pid)
+	elseif self.subId then
+		AbortSubScript(self.subId)
+		launch.subScripts[self.subId] = nil
+	end
+	if self.currentAssistant then
+		self.currentAssistant.streaming = nil
+	end
+	self:AddMessage("system", "Stopped (switched conversation).")
+	self:SaveChat()
+	self.runId = self.runId + 1
+	self.running = false
+	self.subId = nil
+	self.pid = nil
+	self.currentAssistant = nil
+	self.pendingReload = nil
+	self.stopRequested = nil
+	self.gotResult = nil
+	self.status = "idle"
+end
+
+function harness:OpenChat(id)
+	local chat = loadLuaTable(self.chatsDir .. id .. ".lua")
+	if not chat then
+		local _, i = self:FindChatEntry(id)
+		if i then
+			table.remove(self.chatIndex, i)
+			self:SaveChatIndex()
+		end
+		return false
+	end
+	self:AbandonRun()
+	self:SaveChat()
+	self:ApplyChat(chat)
+	self.chatId = id
+	local entry = self:FindChatEntry(id)
+	self.chatCreated = entry and entry.created
+	self.settings.currentChatId = id
+	self:SaveSettings()
+	return true
+end
+
+function harness:DeleteChat(id)
+	os.remove(self.chatsDir .. id .. ".lua")
+	local _, i = self:FindChatEntry(id)
+	if i then
+		table.remove(self.chatIndex, i)
+		self:SaveChatIndex()
+	end
+	if id == self.chatId then
+		self.chatId = nil
+		self:NewChat()
+	end
 end
 
 function harness:Touch()
@@ -217,15 +374,19 @@ function harness:AddMessage(role, text, extra)
 end
 
 function harness:NewChat()
-	if self.running then
-		self:Stop()
-	end
+	self:AbandonRun()
+	self:SaveChat()
+	self.chatId = nil
+	self.chatCreated = nil
 	self.messages = { }
 	self.sessionId = nil
+	self.totalCost = 0
 	self.lastContextXML = nil
 	self.lastBuildKey = nil
+	self.lastTurnInfo = nil
+	self.settings.currentChatId = nil
+	self:SaveSettings()
 	self:Touch()
-	self:SaveChat()
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -549,6 +710,23 @@ function harness:HandleSlashCommand(text, build)
 	if cmd == "clear" or cmd == "new" then
 		self:NewChat()
 		return true
+	elseif cmd == "history" then
+		self.showHistory = true
+		self:Touch()
+		return true
+	elseif cmd == "title" then
+		local title = text:match("^/%S+%s+(.-)%s*$")
+		self:SaveChat()
+		local entry = self.chatId and self:FindChatEntry(self.chatId)
+		if entry and title and title ~= "" then
+			entry.customTitle = title
+			entry.title = title
+			self:SaveChatIndex()
+			self:AddMessage("system", "Conversation renamed to: " .. title)
+		else
+			self:AddMessage("system", "Usage: /title <name> (after the conversation has at least one message)")
+		end
+		return true
 	elseif cmd == "reload" then
 		self:RequestReload()
 		return true
@@ -562,7 +740,7 @@ function harness:HandleSlashCommand(text, build)
 		end
 		return true
 	elseif cmd == "help" then
-		self:AddMessage("system", "Local commands: /new (fresh conversation), /reload (restart PoB, keeps chat + build), /context (show the build summary Claude sees), /cmd (show CLI command line). Anything else is sent to Claude.")
+		self:AddMessage("system", "Local commands: /new (fresh conversation), /history (past conversations), /title <name> (rename this conversation), /reload (restart PoB, keeps chat + build), /context (show the build summary Claude sees), /cmd (show CLI command line). Anything else is sent to Claude.")
 		return true
 	end
 end
@@ -689,6 +867,7 @@ function harness:BuildContext(build, force)
 	local switched = buildKey ~= self.lastBuildKey
 	self.lastContextXML = xmlText
 	self.lastBuildKey = buildKey
+	self.lastBuildName = build.buildName
 	local header = { "<pob_context>" }
 	t_insert(header, s_format("Open build: %s (%s / %s, level %s). Active tab: %s. Unsaved changes: %s.",
 		tostring(build.buildName), tostring(build.spec.curClassName), tostring(build.spec.curAscendClassName), tostring(build.characterLevel),

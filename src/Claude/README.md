@@ -7,13 +7,13 @@ A collapsible Claude Code chat panel on the right side of the build screen.
 - **Ctrl+K**, or the orange **CLAUDE** tab on the right edge, opens and closes the panel. Drag the panel's left border to resize it.
 - **Enter** sends, **Shift+Enter** adds a new line, and **Up/Down** recall earlier prompts when the box is empty. **Esc** (or **Stop**) cancels a running turn and kills the CLI process tree.
 - Right-click a message to copy it. Click a tool line to expand its input and result.
-- **New** starts a fresh conversation. **Reload** restarts PoB's Lua so source edits take effect; the chat, the session and the open build are kept.
+- **New** starts a fresh conversation; the previous one is kept. **History** swaps the chat area for a list of past conversations, newest first, each with its date, build, message count and cost. Click a row to reopen it: Claude resumes that same session, so it remembers the earlier context. Click **x** twice to delete one. `/title <name>` renames the current conversation. **Reload** restarts PoB's Lua so source edits take effect; the chat, the session and the open build are kept.
 - The permission dropdown picks what Claude may do:
   - **Read-only**: reads files and queries the live build.
   - **Accept edits**: may also edit files.
   - **Auto**: Claude Code auto mode. This is the default and suits PoB development.
   - **Bypass**: no permission checks.
-- Local commands that never reach Claude: `/new`, `/reload`, `/context` (shows what Claude is told about the build), `/cmd` (shows the CLI command line), `/help`.
+- Local commands that never reach Claude: `/new`, `/history`, `/title <name>`, `/reload`, `/context` (shows what Claude is told about the build), `/cmd` (shows the CLI command line), `/help`.
 
 ## How it works
 
@@ -30,6 +30,6 @@ Before each message, PoB writes `ClaudeData/context/build_summary.md` and `build
 | `Claude/SystemPrompt.md` | appended system prompt; edit it to change how Claude behaves here |
 | `Claude/pob_live.py` | live-channel client used by Claude |
 | `Classes/ClaudePanel.lua` | the UI: chat view with markdown, splitter, collapsed tab, input |
-| `ClaudeData/` (gitignored) | `settings.lua`, `chat.lua`, `context/`, `live/` |
+| `ClaudeData/` (gitignored) | `settings.lua`, `chats/<id>.lua` (one transcript per conversation), `chats/index.lua` (history list metadata), `context/`, `live/` |
 
 The appended system prompt is recorded when a session is created, so edits to `SystemPrompt.md` apply from the next **New** conversation.

@@ -57,7 +57,7 @@ The user wants you to be able to add features, data and items, and to improve th
 - `src/Classes/`: UI and logic classes, one class per file, loaded by `new("ClassName")`.
 - `src/Data/`: game data (bases, uniques, skills, mods, stat descriptions).
 - `spec/`: busted tests.
-- **This harness**: `src/Claude/Harness.lua` (session, CLI, context export, live channel), `src/Claude/ProcessRunner.lua` (background-thread process spawn and stream-json parser), `src/Classes/ClaudePanel.lua` (chat UI), `src/Claude/SystemPrompt.md` (this text), `src/Claude/pob_live.py` (live-channel client). Runtime data goes to `src/ClaudeData/` (gitignored): `chat.lua`, `settings.lua`, `context/`, `live/`.
+- **This harness**: `src/Claude/Harness.lua` (session, CLI, context export, live channel), `src/Claude/ProcessRunner.lua` (background-thread process spawn and stream-json parser), `src/Classes/ClaudePanel.lua` (chat UI), `src/Claude/SystemPrompt.md` (this text), `src/Claude/pob_live.py` (live-channel client). Runtime data goes to `src/ClaudeData/` (gitignored): `settings.lua`, `chats/` (one file per conversation plus `index.lua`), `context/`, `live/`.
 
 PoB's LuaJIT is patched: the source may use `x += 1`, `a ?? b`, `a?.b` and `continue`. Keep that syntax where it already appears, and don't "fix" it. Files use tabs and CRLF line endings.
 

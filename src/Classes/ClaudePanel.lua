@@ -281,6 +281,90 @@ function ChatViewClass:GetLayout(msg, width)
 	return msg._layoutLines, msg._layoutH
 end
 
+local HISTORY_ROW = 42
+
+-- Past conversations list (replaces the chat view while harness.showHistory is set)
+function ChatViewClass:DrawHistory(x, y, width, height)
+	local harness = self.panel.harness
+	local scrollBar = self.panel.scrollBar
+	local contentW = width - 16
+	local list = harness.chatIndex or { }
+	scrollBar:SetContentDimension(30 + #list * HISTORY_ROW + 8, height)
+	SetDrawColor(0.06, 0.06, 0.07)
+	DrawImage(nil, x, y, width, height)
+	SetViewport(x + 6, y, contentW, height)
+	local cursorX, cursorY = GetCursorPos()
+	local mx, my = cursorX - x - 6, cursorY - y
+	local mouseIn = self:IsMouseOver()
+	self.hoverChat = nil
+	self.hoverDelete = nil
+	local top = 4 - scrollBar.offset
+	SetDrawColor(1, 1, 1)
+	DrawString(0, top, "LEFT", 16, "VAR BOLD", COLOR_BRIGHT .. "Past conversations " .. COLOR_DIM .. "(" .. #list .. ")")
+	DrawString(contentW, top + 2, "RIGHT_X", 13, "VAR", COLOR_DIM .. "click to open, x to delete")
+	if #list == 0 then
+		DrawString(0, top + 30, "LEFT", 15, "VAR", COLOR_DIM .. "No saved conversations yet.")
+	end
+	local rowY = top + 26
+	for _, entry in ipairs(list) do
+		if rowY + HISTORY_ROW >= 0 and rowY <= height then
+			local hovered = mouseIn and my >= rowY and my < rowY + HISTORY_ROW - 2 and mx >= 0 and mx < contentW
+			local current = entry.id == harness.chatId
+			if hovered then
+				self.hoverChat = entry
+				SetDrawColor(1, 1, 1, 0.07)
+			else
+				SetDrawColor(1, 1, 1, 0.025)
+			end
+			DrawImage(nil, 0, rowY, contentW, HISTORY_ROW - 2)
+			if current then
+				SetDrawColor(0.85, 0.47, 0.34)
+				DrawImage(nil, 0, rowY, 3, HISTORY_ROW - 2)
+			end
+			local title = sanitize(entry.title or "(untitled)")
+			local maxW = contentW - 34
+			if DrawStringWidth(15, "VAR", title) > maxW then
+				while #title > 4 and DrawStringWidth(15, "VAR", title .. "...") > maxW do
+					title = title:sub(1, -2)
+				end
+				title = title .. "..."
+			end
+			DrawString(8, rowY + 3, "LEFT", 15, "VAR", (current and COLOR_CLAUDE or COLOR_BRIGHT) .. title)
+			local meta = { os.date("%Y-%m-%d %H:%M", entry.updated or entry.created or 0) }
+			if entry.build then
+				t_insert(meta, sanitize(entry.build))
+			end
+			t_insert(meta, (entry.messages or 0) .. " msg" .. ((entry.messages or 0) == 1 and "" or "s"))
+			if entry.cost and entry.cost > 0 then
+				t_insert(meta, s_format("$%.3f", entry.cost))
+			end
+			DrawString(8, rowY + 21, "LEFT", 13, "VAR", COLOR_DIM .. table.concat(meta, "  |  "))
+			if hovered then
+				local delX = contentW - 22
+				local overDel = mx >= delX and my >= rowY + 4 and my < rowY + 24
+				local confirm = self.confirmDelete == entry.id
+				if overDel then
+					self.hoverDelete = entry
+				end
+				SetDrawColor(confirm and 0.8 or (overDel and 0.5 or 0.25), overDel and 0.2 or 0.25, overDel and 0.2 or 0.25)
+				DrawImage(nil, delX, rowY + 4, 20, 20)
+				SetDrawColor(1, 1, 1)
+				DrawString(delX + 10, rowY + 5, "CENTER_X", 15, "VAR", "^7x")
+				if confirm then
+					DrawString(delX - 4, rowY + 6, "RIGHT_X", 13, "VAR", "^xE05050click again to delete")
+				end
+			end
+		end
+		rowY = rowY + HISTORY_ROW
+	end
+	if not self.hoverChat or self.hoverChat.id ~= self.confirmDelete then
+		if not mouseIn then
+			self.confirmDelete = nil
+		end
+	end
+	SetViewport()
+end
+
 function ChatViewClass:Draw(viewPort)
 	local harness = self.panel.harness
 	local x, y = self:GetPos()
@@ -288,6 +372,19 @@ function ChatViewClass:Draw(viewPort)
 	local scrollBar = self.panel.scrollBar
 	local contentW = width - 16
 	local messages = harness.messages
+	if harness.showHistory ~= self.lastShowHistory then
+		self.lastShowHistory = harness.showHistory
+		self.hoverMsg = nil
+		if harness.showHistory then
+			scrollBar.offset = 0
+		else
+			self.forceBottom = true
+		end
+	end
+	if harness.showHistory then
+		self:DrawHistory(x, y, width, height)
+		return
+	end
 
 	-- Merge consecutive assistant blocks visually (one "Claude" label per run of text/tool blocks)
 	local prevRole
@@ -403,6 +500,24 @@ function ChatViewClass:Draw(viewPort)
 end
 
 function ChatViewClass:OnKeyDown(key, doubleClick)
+	local harness = self.panel.harness
+	if harness.showHistory then
+		if key == "LEFTBUTTON" and self.hoverDelete then
+			if self.confirmDelete == self.hoverDelete.id then
+				harness:DeleteChat(self.hoverDelete.id)
+				self.confirmDelete = nil
+			else
+				self.confirmDelete = self.hoverDelete.id
+			end
+		elseif key == "LEFTBUTTON" and self.hoverChat then
+			self.confirmDelete = nil
+			if self.hoverChat.id == harness.chatId or harness:OpenChat(self.hoverChat.id) then
+				harness.showHistory = false
+				self.forceBottom = true
+			end
+		end
+		return nil
+	end
 	if key == "LEFTBUTTON" and self.hoverMsg and self.hoverMsg.role == "tool" then
 		self.expanded[self.hoverMsg] = not self.expanded[self.hoverMsg] or nil
 	elseif key == "RIGHTBUTTON" and self.hoverMsg then
@@ -559,13 +674,26 @@ function PanelClass:ClaudePanel(build)
 	controls.claudeCollapse.tooltipText = "Collapse the Claude panel (Ctrl+K)"
 	controls.claudeCollapse.shown = shown
 
-	controls.claudeNew = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.anchor, "TOPLEFT" }, { 10, 28, 46, 20 }, "New", function()
+	controls.claudeNew = new("ButtonControl"):ButtonControl({ "TOPLEFT", self.anchor, "TOPLEFT" }, { 10, 28, 42, 20 }, "New", function()
 		harness:NewChat()
+		harness.showHistory = false
+		self.build:SelectControl(self.edit)
 	end)
 	controls.claudeNew.tooltipText = "Start a fresh Claude conversation"
 	controls.claudeNew.shown = shown
 
-	controls.claudeReload = new("ButtonControl"):ButtonControl({ "LEFT", controls.claudeNew, "RIGHT" }, { 4, 0, 58, 20 }, "Reload", function()
+	controls.claudeHistory = new("ButtonControl"):ButtonControl({ "LEFT", controls.claudeNew, "RIGHT" }, { 4, 0, 58, 20 }, function()
+		return harness.showHistory and "Chat" or "History"
+	end, function()
+		harness.showHistory = not harness.showHistory
+		if harness.showHistory then
+			harness:SaveChat()
+		end
+	end)
+	controls.claudeHistory.tooltipText = "Browse and reopen past conversations (Claude resumes the same session)"
+	controls.claudeHistory.shown = shown
+
+	controls.claudeReload = new("ButtonControl"):ButtonControl({ "LEFT", controls.claudeHistory, "RIGHT" }, { 4, 0, 54, 20 }, "Reload", function()
 		harness:RequestReload()
 	end)
 	controls.claudeReload.tooltipText = "Restart PoB's Lua to pick up code edits.\nThe chat and the open build are preserved (F5 also works in dev mode)."
@@ -575,7 +703,7 @@ function PanelClass:ClaudePanel(build)
 	for _, m in ipairs(harness.permissionModes) do
 		t_insert(modeList, { label = m.label, mode = m.mode })
 	end
-	controls.claudeMode = new("DropDownControl"):DropDownControl({ "LEFT", controls.claudeReload, "RIGHT" }, { 4, 0, 118, 20 }, modeList, function(index, value)
+	controls.claudeMode = new("DropDownControl"):DropDownControl({ "LEFT", controls.claudeReload, "RIGHT" }, { 4, 0, 104, 20 }, modeList, function(index, value)
 		harness.settings.permissionMode = value.mode
 		harness:SaveSettings()
 	end)
@@ -593,7 +721,7 @@ function PanelClass:ClaudePanel(build)
 	for _, m in ipairs(harness.models) do
 		t_insert(modelList, { label = m.label, model = m.model })
 	end
-	controls.claudeModel = new("DropDownControl"):DropDownControl({ "LEFT", controls.claudeMode, "RIGHT" }, { 4, 0, 112, 20 }, modelList, function(index, value)
+	controls.claudeModel = new("DropDownControl"):DropDownControl({ "LEFT", controls.claudeMode, "RIGHT" }, { 4, 0, 100, 20 }, modelList, function(index, value)
 		harness.settings.model = value.model
 		harness:SaveSettings()
 	end)
@@ -709,6 +837,9 @@ function PanelClass:Submit()
 	end
 	self.edit:SetText("")
 	self.historyIndex = nil
+	if not text:match("^%s*/history") then
+		self.harness.showHistory = false
+	end
 	self.build.controls.claudeChat.forceBottom = true
 	self.harness:Send(text, self.build)
 end
