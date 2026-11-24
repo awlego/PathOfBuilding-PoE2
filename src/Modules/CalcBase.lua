@@ -166,7 +166,10 @@ return calcs
 ---@field totemBuffSkill? boolean
 ---@field debuffSkill? boolean
 ---@field conversionTable? table
+---@field skillConversionTable? table
+---@field globalConversionTable? table
 ---@field gainTable? table
+---@field skillGainTable? table
 ---@field decayCfg? ModCfg
 ---@field dotCfg? ModCfg
 

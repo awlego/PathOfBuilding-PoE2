@@ -138,40 +138,73 @@ local selfHitHandlers = {
 	end,
 }
 
-local function calcConvertedDamage(activeSkill, output, cfg, damageType)
-	local skillModList = activeSkill.skillModList
-	-- Calculate conversions
-	local convertedMin, convertedMax = 0, 0
-	local conversionTable = activeSkill.conversionTable
-	for _, otherType in ipairs(dmgTypeList) do
-		local convMult = conversionTable[otherType][damageType]
-		if convMult > 0 then
-			-- Damage is being converted/gained from the other damage type
-			local min, max = output[otherType.."MinBase"], output[otherType.."MaxBase"]
-			convertedMin = convertedMin + (min or 0) * convMult
-			convertedMax = convertedMax + (max or 0) * convMult
+-- Applies a conversion table to a set of per-type amounts: each type keeps its unconverted share (mult) and receives
+-- the converted shares of every type. Returns the unconverted and converted parts separately.
+local function applyConversion(conversionTable, amounts)
+	local unconverted, converted = { }, { }
+	for _, damageType in ipairs(dmgTypeList) do
+		unconverted[damageType] = amounts[damageType] * conversionTable[damageType].mult
+		local total = 0
+		for _, otherType in ipairs(dmgTypeList) do
+			local convMult = conversionTable[otherType][damageType]
+			if convMult and convMult > 0 then
+				total = total + amounts[otherType] * convMult
+			end
 		end
+		converted[damageType] = total
 	end
-	return convertedMin, convertedMax
+	return unconverted, converted
 end
 
-local function calcGainedDamage(activeSkill, output, cfg, damageType)
-	local gainTable = activeSkill.gainTable
-
-	local gainedMin, gainedMax = 0, 0
-	for _, otherType in ipairs(dmgTypeList) do
-		local baseMin = output[otherType.."MinBase"] * activeSkill.conversionTable[otherType].mult
-		local baseMax = output[otherType.."MaxBase"] * activeSkill.conversionTable[otherType].mult
-		local gainMult = gainTable[otherType][damageType]
-		if gainMult and gainMult > 0 then
-			-- Damage is being converted/gained from the other damage type
-			local convertedMin, convertedMax = calcConvertedDamage(activeSkill, output, cfg, otherType)
-			gainedMin = gainedMin + (baseMin + convertedMin) * gainMult
-			gainedMax = gainedMax + (baseMax + convertedMax) * gainMult
+-- Applies a gain table to a set of per-type amounts. Gains in one step all come from the same source amounts,
+-- so damage gained in a step is never a source for another gain in that same step.
+local function applyGain(gainTable, amounts)
+	local gained = { }
+	for _, damageType in ipairs(dmgTypeList) do
+		local total = 0
+		for _, otherType in ipairs(dmgTypeList) do
+			local gainMult = gainTable[otherType][damageType]
+			if gainMult and gainMult > 0 then
+				total = total + amounts[otherType] * gainMult
+			end
 		end
+		gained[damageType] = total
+	end
+	return gained
+end
+
+-- Damage conversion and gain happen in two steps:
+--   Step 1 (inherent to the skill): skill conversion, then skill gain sourced from the skill-converted damage
+--   Step 2 (everything else): global conversion of all step 1 damage (including damage gained in step 1),
+--     then global gain sourced from the fully converted damage
+-- Base damage goes through the combined conversionTable (both steps, rounded like the game does); damage gained in
+-- step 1 goes through the global step only.
+-- Returns per-type tables of { unconverted, converted, skillGained, gained } amounts for the given "Min"/"Max" key.
+local function calcConvertedAndGainedDamage(activeSkill, output, minOrMax)
+	local base = { }
+	for _, damageType in ipairs(dmgTypeList) do
+		base[damageType] = output[damageType..minOrMax.."Base"] or 0
 	end
 
-	return gainedMin, gainedMax
+	-- Step 1
+	local skillUnconverted, skillConverted = applyConversion(activeSkill.skillConversionTable, base)
+	local afterSkillConversion = { }
+	for _, damageType in ipairs(dmgTypeList) do
+		afterSkillConversion[damageType] = skillUnconverted[damageType] + skillConverted[damageType]
+	end
+	local skillGainedRaw = applyGain(activeSkill.skillGainTable, afterSkillConversion)
+
+	-- Step 2
+	local unconverted, converted = applyConversion(activeSkill.conversionTable, base)
+	local skillGainedUnconverted, skillGainedConverted = applyConversion(activeSkill.globalConversionTable, skillGainedRaw)
+	local skillGained, afterConversion = { }, { }
+	for _, damageType in ipairs(dmgTypeList) do
+		skillGained[damageType] = skillGainedUnconverted[damageType] + skillGainedConverted[damageType]
+		afterConversion[damageType] = unconverted[damageType] + converted[damageType] + skillGained[damageType]
+	end
+	local gained = applyGain(activeSkill.gainTable, afterConversion)
+
+	return unconverted, converted, skillGained, gained
 end
 
 -- Calculate min/max damage for the given damage type
@@ -2502,13 +2535,22 @@ function calcs.offence(env, actor, activeSkill)
 	end
 
 	-- Calculate damage conversion percentages
+	-- conversionTable: combined skill + global conversion (what each base damage type ends up as).
+	-- skillConversionTable: the skill conversion step on its own (step 1).
+	-- globalConversionTable: the global conversion step on its own (step 2), used for damage gained in step 1.
 	activeSkill.conversionTable = wipeTable(activeSkill.conversionTable)
+	activeSkill.skillConversionTable = wipeTable(activeSkill.skillConversionTable)
+	activeSkill.globalConversionTable = wipeTable(activeSkill.globalConversionTable)
 	activeSkill.gainTable = wipeTable(activeSkill.gainTable)
+	activeSkill.skillGainTable = wipeTable(activeSkill.skillGainTable)
 
 	-- Initialize conversion tables
 	for _, type in ipairs(dmgTypeList) do
 		activeSkill.conversionTable[type] = {}
+		activeSkill.skillConversionTable[type] = {}
+		activeSkill.globalConversionTable[type] = {}
 		activeSkill.gainTable[type] = {}
+		activeSkill.skillGainTable[type] = {}
 		for _, otherType in ipairs(dmgTypeList) do
 			activeSkill.conversionTable[type][otherType] = 0
 		end
@@ -2519,8 +2561,16 @@ function calcs.offence(env, actor, activeSkill)
 		local skillConv, skillTotal = processDamageConversion(skillModList, skillCfg, damageType, true)
 		for toType, amount in pairs(skillConv) do
 			activeSkill.conversionTable[damageType][toType] = amount
+			activeSkill.skillConversionTable[damageType][toType] = amount
 		end
 		activeSkill.conversionTable[damageType].mult = 1 - m_min(skillTotal / 100, 1)
+		activeSkill.skillConversionTable[damageType].mult = activeSkill.conversionTable[damageType].mult
+
+		local globalConv, globalTotal = processDamageConversion(skillModList, skillCfg, damageType)
+		for toType, amount in pairs(globalConv) do
+			activeSkill.globalConversionTable[damageType][toType] = amount
+		end
+		activeSkill.globalConversionTable[damageType].mult = 1 - m_min(globalTotal / 100, 1)
 	end
 
 	-- Second step: Process global conversion and gains
@@ -4191,6 +4241,7 @@ function calcs.offence(env, actor, activeSkill)
 
 		for _, damageType in ipairs(dmgTypeList) do
 			activeSkill.gainTable[damageType] = {}
+			activeSkill.skillGainTable[damageType] = {}
 			for _, toType in ipairs(dmgTypeList) do
 				local globalGain = m_max(skillModList:Sum("BASE", skillCfg,
 					"DamageAs"..toType,
@@ -4206,11 +4257,10 @@ function calcs.offence(env, actor, activeSkill)
 					"Skill"..damageType.."DamageGainAs"..toType,
 					isElemental[damageType] and "SkillElementalDamageGainAs"..toType or nil,
 					damageType ~= "Chaos" and "SkillNonChaosDamageGainAs"..toType or nil), 0)
-				if skillModList:Flag(skillCfg, "DamageGainIsOnlyCold") and toType ~= "Cold" then
-					activeSkill.gainTable[damageType]["Cold"] = (activeSkill.gainTable[damageType]["Cold"] or 0) + (globalGain + skillGain) / 100
-				else
-					activeSkill.gainTable[damageType][toType] = (activeSkill.gainTable[damageType][toType] or 0) + (globalGain + skillGain) / 100
-				end
+				-- Gains inherent to the skill happen in the skill conversion step; all other gains happen after global conversion
+				local gainToType = (skillModList:Flag(skillCfg, "DamageGainIsOnlyCold") and toType ~= "Cold") and "Cold" or toType
+				activeSkill.gainTable[damageType][gainToType] = (activeSkill.gainTable[damageType][gainToType] or 0) + globalGain / 100
+				activeSkill.skillGainTable[damageType][gainToType] = (activeSkill.skillGainTable[damageType][gainToType] or 0) + skillGain / 100
 			end
 		end
 
@@ -4247,16 +4297,19 @@ function calcs.offence(env, actor, activeSkill)
 			end
 		end
 
+		local unconvertedMinList, convertedMinList, skillGainedMinList, gainedMinList = calcConvertedAndGainedDamage(activeSkill, output, "Min")
+		local unconvertedMaxList, convertedMaxList, skillGainedMaxList, gainedMaxList = calcConvertedAndGainedDamage(activeSkill, output, "Max")
 		for _, damageType in ipairs(dmgTypeList) do
 			local damageTypeMin = damageType.."Min"
 			local damageTypeMax = damageType.."Max"
 			local convMult = activeSkill.conversionTable[damageType].mult
-			local convertedMin, convertedMax = calcConvertedDamage(activeSkill, output, cfg, damageType)
-			local gainedMin, gainedMax = calcGainedDamage(activeSkill, output, cfg, damageType)
+			local convertedMin, convertedMax = convertedMinList[damageType], convertedMaxList[damageType]
+			local skillGainedMin, skillGainedMax = skillGainedMinList[damageType], skillGainedMaxList[damageType]
+			local gainedMin, gainedMax = gainedMinList[damageType], gainedMaxList[damageType]
 			local baseMin = output[damageTypeMin.."Base"]
 			local baseMax = output[damageTypeMax.."Base"]
-			local summedMin = baseMin * convMult + convertedMin + gainedMin
-			local summedMax = baseMax * convMult + convertedMax + gainedMax
+			local summedMin = unconvertedMinList[damageType] + convertedMin + skillGainedMin + gainedMin
+			local summedMax = unconvertedMaxList[damageType] + convertedMax + skillGainedMax + gainedMax
 			output[damageType.."SummedMinBase"] = summedMin
 			output[damageType.."SummedMaxBase"] = summedMax
 			if breakdown then
@@ -4269,6 +4322,9 @@ function calcs.offence(env, actor, activeSkill)
 				end
 				if convertedMin ~= 0 or convertedMax ~= 0 then
 					t_insert(breakdown[damageType], s_format("+ %d to %d ^8(damage converted from other damage types)", round(convertedMin), round(convertedMax)))
+				end
+				if skillGainedMin ~= 0 or skillGainedMax ~= 0 then
+					t_insert(breakdown[damageType], s_format("+ %d to %d ^8(damage gained by the skill, after conversion)", round(skillGainedMin), round(skillGainedMax)))
 				end
 				if gainedMin ~= 0 or gainedMax ~= 0 then
 					t_insert(breakdown[damageType], s_format("+ %d to %d ^8(damage gained from other damage types)", round(gainedMin), round(gainedMax)))

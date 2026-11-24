@@ -59,6 +59,34 @@ describe("TestAttacks", function()
 		assert.are.equals(baseSpellCritMulti, build.calcsTab.mainOutput.CritMultiplier)
 	end)
 
+	it("converts the elemental damage Twister gains with global conversion (upstream issue #2004)", function()
+		build.itemsTab:CreateDisplayItemFromRaw([[
+			New Item
+			Ironhead Spear
+			Adds 2 to 4 Physical Damage
+		]])
+		build.itemsTab:AddDisplayItem()
+		build.configTab.input.twisterLightning = true
+		build.configTab.input.customMods = [[
+		100% of Lightning Damage Converted to Cold Damage
+		]]
+		build.configTab:BuildModList()
+		build.skillsTab:PasteSocketGroup("Twister 20/0  1")
+		local groupIndex = #build.skillsTab.socketGroupList
+		build.mainSocketGroup = groupIndex
+		build.calcsTab.input.skill_number = groupIndex
+		build.buildFlag = true
+		runCallback("OnFrame")
+		build.calcsTab:BuildOutput()
+		runCallback("OnFrame")
+
+		-- Twister gains 50% of its damage as Lightning in the skill step, which the global conversion then turns into Cold
+		local output = build.calcsTab.mainOutput.MainHand
+		assert.is_true(output.PhysicalSummedMinBase > 0)
+		assert.are.equals(0, output.LightningSummedMinBase)
+		assert.is_true(math.abs(output.ColdSummedMinBase - 0.5 * output.PhysicalSummedMinBase) < 0.0001)
+	end)
+
 	it("correctly converts spell damage per stat to attack damage", function()
 		assert.are.equals(0, build.calcsTab.mainEnv.player.modDB:Sum("INC", { flags = ModFlag.Attack }, "Damage"))
 		build.itemsTab:CreateDisplayItemFromRaw([[
